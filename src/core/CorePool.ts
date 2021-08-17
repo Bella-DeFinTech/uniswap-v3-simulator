@@ -1,9 +1,9 @@
 import BN from "bn.js";
-import { TickManager } from "../managers/TickManager";
-import { PositionManager } from "../managers/PositionManager";
+import { TickManager } from "../manager/TickManager";
+import { PositionManager } from "../manager/PositionManager";
 import { Position } from "../model/Position";
 import { Tick } from "../model/Tick";
-import { TickMath } from "../utils/TickMath";
+import { TickMath } from "../util/TickMath";
 
 export class CorePool {
   token0: string;

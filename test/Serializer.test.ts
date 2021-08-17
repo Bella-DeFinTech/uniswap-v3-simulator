@@ -1,7 +1,7 @@
 import assert from "assert";
-import { PositionManager } from "../src/managers/PositionManager";
+import { PositionManager } from "../src/manager/PositionManager";
 import { Position } from "../src/model/Position";
-import { Serializer } from "../src/utils/Serializer";
+import { Serializer } from "../src/util/Serializer";
 
 describe("Test Serializer", function () {
   it("should do serialize/deserialize right", function () {

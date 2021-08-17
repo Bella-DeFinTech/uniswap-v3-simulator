@@ -2,7 +2,7 @@ import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { PoolConfig } from "../entity/PoolConfig";
 import { Record } from "../entity/Record";
 import { Snapshot } from "../entity/Snapshot";
-import { DBManager } from "../managers/DBManager";
+import { DBManager } from "../manager/DBManager";
 
 export class PoolState {
   id: string = "0";

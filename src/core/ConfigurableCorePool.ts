@@ -1,12 +1,12 @@
 import BN from "bn.js";
-import { TickManager } from "../managers/TickManager";
-import { PositionManager } from "../managers/PositionManager";
+import { TickManager } from "../manager/TickManager";
+import { PositionManager } from "../manager/PositionManager";
 import { PoolState } from "../model/PoolState";
 import { Record } from "../entity/Record";
 import { PoolConfig } from "../entity/PoolConfig";
 import { CorePool } from "./CorePool";
 import { ActionType } from "../enum/ActionType";
-import { Serializer } from "../utils/Serializer";
+import { Serializer } from "../util/Serializer";
 import { Snapshot } from "../entity/Snapshot";
 
 export class ConfigurableCorePool extends CorePool {
