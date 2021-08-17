@@ -139,3 +139,6 @@ output.json
 
 # mocha test report
 mochawesome-report/
+
+#prettier ignore
+.prettierignore

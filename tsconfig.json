@@ -3,10 +3,12 @@
     "experimentalDecorators": true,
     "target": "es2018",
     "module": "commonjs",
-    "strict": false,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
     "esModuleInterop": true,
     "outDir": "dist"
   },
-  "include": ["./src", "./test"],
-  // "files": [""]
+  "include": ["./src", "./test"]
 }
