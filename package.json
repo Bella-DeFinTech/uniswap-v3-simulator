@@ -1,0 +1,44 @@
+{
+  "name": "uniswap-v3-simulator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/cli.js",
+  "types": "dist/cli.d.ts",
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "test": "yarn mocha"
+  },
+  "author": "",
+  "license": "BSL-1.0",
+  "devDependencies": {
+    "@types/chai": "^4.2.21",
+    "@types/mocha": "^9.0.0",
+    "chai": "^4.3.4",
+    "hardhat": "^2.6.0",
+    "mocha": "^9.0.3",
+    "mochawesome": "^6.2.2",
+    "prettier": "2.3.2",
+    "ts-node": "^10.2.0",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "bn.js": "^5.2.0",
+    "reflect-metadata": "^0.1.13",
+    "typedjson": "^1.7.0"
+  },
+  "mocha": {
+    "colors": true,
+    "recursive": [
+      "test/**/*.test.ts"
+    ],
+    "reporter": [
+      "mochawesome"
+    ],
+    "require": [
+      "ts-node/register"
+    ],
+    "timeout": 3600000
+  }
+}
