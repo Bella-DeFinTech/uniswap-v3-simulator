@@ -4,12 +4,11 @@ import { PoolConfig } from "../entity/PoolConfig";
 
 export class SimulatorClient {
   static initCorePoolFromConfig(poolConfig: PoolConfig): ConfigurableCorePool {
-    return new ConfigurableCorePool(poolConfig);
+    return new ConfigurableCorePool(new PoolState(poolConfig));
   }
 
   static recoverCorePoolFromSnapshot(snapshotId: string): ConfigurableCorePool {
-    let poolState = PoolState.from(snapshotId);
-    return new ConfigurableCorePool(poolState.poolConfig, poolState);
+    return new ConfigurableCorePool(PoolState.from(snapshotId));
   }
 
   static staticizeCurrentSnapshotPersistence(poolStates: Array<PoolState>) {

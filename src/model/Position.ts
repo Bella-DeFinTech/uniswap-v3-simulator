@@ -1,11 +1,31 @@
 import BN from "bn.js";
 
 export class Position {
-  liquidity: BN = new BN(0);
-  feeGrowthInside0LastX128: BN = new BN(0);
-  feeGrowthInside1LastX128: BN = new BN(0);
-  tokensOwed0: BN = new BN(0);
-  tokensOwed1: BN = new BN(0);
+  private _liquidity: BN = new BN(0);
+  private _feeGrowthInside0LastX128: BN = new BN(0);
+  private _feeGrowthInside1LastX128: BN = new BN(0);
+  private _tokensOwed0: BN = new BN(0);
+  private _tokensOwed1: BN = new BN(0);
+
+  public get liquidity(): BN {
+    return this._liquidity;
+  }
+
+  public get feeGrowthInside0LastX128(): BN {
+    return this._feeGrowthInside0LastX128;
+  }
+
+  public get feeGrowthInside1LastX128(): BN {
+    return this._feeGrowthInside1LastX128;
+  }
+
+  public get tokensOwed0(): BN {
+    return this._tokensOwed0;
+  }
+
+  public get tokensOwed1(): BN {
+    return this._tokensOwed1;
+  }
 
   update(
     liquidityDelta: BN,

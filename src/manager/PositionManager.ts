@@ -10,20 +10,16 @@ export class PositionManager {
     this.positions = positions;
   }
 
-  get(owner: string, tickLower: number, tickUpper: number): Position {
+  static getKey(owner: string, tickLower: number, tickUpper: number): string {
     // TODO
-    return new Position();
+    return '';
   }
 
-  set(owner: string, tickLower: number, tickUpper: number) {
-    // TODO
-  }
-
-  setKey(key: string, position: Position) {
+  set(key: string, position: Position) {
     this.positions.set(key, position);
   }
 
-  getKey(key: string): Position {
+  get(key: string): Position {
     return this.positions.get(key) || new Position();
   }
 }

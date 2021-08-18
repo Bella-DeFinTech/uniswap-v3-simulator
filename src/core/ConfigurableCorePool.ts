@@ -3,7 +3,6 @@ import { TickManager } from "../manager/TickManager";
 import { PositionManager } from "../manager/PositionManager";
 import { PoolState } from "../model/PoolState";
 import { Record } from "../entity/Record";
-import { PoolConfig } from "../entity/PoolConfig";
 import { CorePool } from "./CorePool";
 import { ActionType } from "../enum/ActionType";
 import { Serializer } from "../util/Serializer";
@@ -23,26 +22,20 @@ export class ConfigurableCorePool extends CorePool {
     actionParams: object
   ) {};
 
-  constructor(poolConfig: PoolConfig);
-  constructor(poolConfig: PoolConfig, poolState: PoolState);
-  constructor(
-    poolConfig: PoolConfig,
-    poolState: PoolState = new PoolState(null, poolConfig)
-  ) {
+  constructor(poolState: PoolState) {
     super(
-      poolConfig.token0,
-      poolConfig.token1,
-      poolConfig.fee,
-      poolConfig.tickSpacing
+      poolState.poolConfig.token0,
+      poolState.poolConfig.token1,
+      poolState.poolConfig.fee,
+      poolState.poolConfig.tickSpacing
     );
     if (poolState.hasBaseSnapshot()) {
-      let poolConfig = poolState.poolConfig;
       let state = <Snapshot>poolState.baseSnapshot;
       super(
-        poolConfig.token0,
-        poolConfig.token1,
-        poolConfig.fee,
-        poolConfig.tickSpacing,
+        poolState.poolConfig.token0,
+        poolState.poolConfig.token1,
+        poolState.poolConfig.fee,
+        poolState.poolConfig.tickSpacing,
         state.token0Balance,
         state.token1Balance,
         state.sqrtPriceX96,
@@ -104,7 +97,7 @@ export class ConfigurableCorePool extends CorePool {
     // TODO
   }
 
-  private doRecord(actionType: ActionType, actionParams: object): Record {
+  private applyRecord(actionType: ActionType, actionParams: object): Record {
     // TODO
     return {
       id: "0",
@@ -116,7 +109,7 @@ export class ConfigurableCorePool extends CorePool {
   }
 
   private postProcess(actionType: ActionType, actionParams: object) {
-    let record = this.doRecord(actionType, actionParams);
+    let record = this.applyRecord(actionType, actionParams);
     this.postProcessorCallback(
       record.id,
       record.actionType,

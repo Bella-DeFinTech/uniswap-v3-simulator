@@ -23,7 +23,7 @@ export class TickManager {
     // TODO
   }
 
-  nextInitializedTick(
+  getNextInitializedTick(
     tick: number,
     tickSpacing: number,
     leftToRight: boolean
