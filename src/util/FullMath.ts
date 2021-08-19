@@ -1,12 +1,12 @@
-import BN from "bn.js";
+import JSBI from 'jsbi';
 
 export abstract class FullMath {
-  static mulDiv(a: BN, b: BN, denominator: BN): BN {
+  static mulDiv(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
     // TODO
-    return new BN(0);
+    return JSBI.BigInt(0);
   }
-  static mulDivRoundingUp(a: BN, b: BN, denominator: BN): BN {
+  static mulDivRoundingUp(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
     // TODO
-    return new BN(0);
+    return JSBI.BigInt(0);
   }
 }

@@ -1,4 +1,4 @@
-import BN from "bn.js";
+import JSBI from 'jsbi';
 import { Tick } from "../model/Tick";
 import { jsonMapMember, jsonObject } from "typedjson";
 
@@ -36,11 +36,11 @@ export class TickManager {
     tickLower: number,
     tickUpper: number,
     tickCurrent: number,
-    feeGrowthGlobal0X128: BN,
-    feeGrowthGlobal1X128: BN,
+    feeGrowthGlobal0X128: JSBI,
+    feeGrowthGlobal1X128: JSBI,
     leftToRight: boolean
-  ): BN {
+  ): JSBI {
     // TODO
-    return new BN(0);
+    return JSBI.BigInt(0);
   }
 }

@@ -1,4 +1,4 @@
-import BN from "bn.js";
+import JSBI from 'jsbi';
 import { PoolState } from "../model/PoolState";
 import { TickManager } from "./TickManager";
 import { PositionManager } from "./PositionManager";
@@ -8,12 +8,12 @@ import { PoolConfig } from "../entity/PoolConfig";
 export class DBManager {
   static persistSnapshot(
     poolState: PoolState,
-    token0Balance: BN,
-    token1Balance: BN,
-    sqrtPriceX96: BN,
+    token0Balance: JSBI,
+    token1Balance: JSBI,
+    sqrtPriceX96: JSBI,
     tickCurrent: number,
-    feeGrowthGlobal0X128: BN,
-    feeGrowthGlobal1X128: BN,
+    feeGrowthGlobal0X128: JSBI,
+    feeGrowthGlobal1X128: JSBI,
     tickManager: TickManager,
     positionManager: PositionManager
   ) {
@@ -26,12 +26,12 @@ export class DBManager {
     return {
       id: "0",
       poolConfig: DBManager.readPoolConfig(poolConfigId),
-      token0Balance: new BN(0),
-      token1Balance: new BN(0),
-      sqrtPriceX96: new BN(0),
+      token0Balance: JSBI.BigInt(0),
+      token1Balance: JSBI.BigInt(0),
+      sqrtPriceX96: JSBI.BigInt(0),
       tickCurrent: 0,
-      feeGrowthGlobal0X128: new BN(0),
-      feeGrowthGlobal1X128: new BN(0),
+      feeGrowthGlobal0X128: JSBI.BigInt(0),
+      feeGrowthGlobal1X128: JSBI.BigInt(0),
       ticks_json: "",
       positions_json: "",
       timestamp: new Date(),

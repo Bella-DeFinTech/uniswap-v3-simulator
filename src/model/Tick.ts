@@ -1,25 +1,25 @@
-import BN from "bn.js";
+import JSBI from 'jsbi';
 
 export class Tick {
-  private _liquidityGross: BN = new BN(0);
-  private _liquidityNet: BN = new BN(0);
-  private _feeGrowthOutside0X128: BN = new BN(0);
-  private _feeGrowthOutside1X128: BN = new BN(0);
+  private _liquidityGross: JSBI = JSBI.BigInt(0);
+  private _liquidityNet: JSBI = JSBI.BigInt(0);
+  private _feeGrowthOutside0X128: JSBI = JSBI.BigInt(0);
+  private _feeGrowthOutside1X128: JSBI = JSBI.BigInt(0);
   private _initialized: boolean = false;
 
-  public get liquidityGross(): BN {
+  public get liquidityGross(): JSBI {
     return this._liquidityGross;
   }
 
-  public get liquidityNet(): BN {
+  public get liquidityNet(): JSBI {
     return this._liquidityNet;
   }
 
-  public get feeGrowthOutside0X128(): BN {
+  public get feeGrowthOutside0X128(): JSBI {
     return this._feeGrowthOutside0X128;
   }
 
-  public get feeGrowthOutside1X128(): BN {
+  public get feeGrowthOutside1X128(): JSBI {
     return this._feeGrowthOutside1X128;
   }
 
@@ -28,18 +28,18 @@ export class Tick {
   }
 
   update(
-    liquidityDelta: BN,
+    liquidityDelta: JSBI,
     tickCurrent: number,
-    feeGrowthGlobal0X128: BN,
-    feeGrowthGlobal1X128: BN,
+    feeGrowthGlobal0X128: JSBI,
+    feeGrowthGlobal1X128: JSBI,
     leftToRight: boolean
   ) {
     // TODO
   }
 
-  cross(feeGrowthGlobal0X128: BN, feeGrowthGlobal1X128: BN): BN {
+  cross(feeGrowthGlobal0X128: JSBI, feeGrowthGlobal1X128: JSBI): JSBI {
     // TODO
-    let liquidityNet = new BN(0);
+    let liquidityNet = JSBI.BigInt(0);
     return liquidityNet;
   }
 }

@@ -1,4 +1,4 @@
-import BN from "bn.js";
+import JSBI from 'jsbi';
 import { TickManager } from "../manager/TickManager";
 import { PositionManager } from "../manager/PositionManager";
 import { Position } from "../model/Position";
@@ -10,12 +10,12 @@ export class CorePool {
   readonly token1: string;
   readonly fee: number;
   readonly tickSpacing: number;
-  private _token0Balance: BN;
-  private _token1Balance: BN;
-  private _sqrtPriceX96: BN;
+  private _token0Balance: JSBI;
+  private _token1Balance: JSBI;
+  private _sqrtPriceX96: JSBI;
   private _tickCurrent: number;
-  private _feeGrowthGlobal0X128: BN;
-  private _feeGrowthGlobal1X128: BN;
+  private _feeGrowthGlobal0X128: JSBI;
+  private _feeGrowthGlobal1X128: JSBI;
   private tickManager: TickManager;
   private positionManager: PositionManager;
 
@@ -24,12 +24,12 @@ export class CorePool {
     token1: string,
     fee: number,
     tickSpacing: number,
-    token0Balance: BN = new BN(0),
-    token1Balance: BN = new BN(0),
-    sqrtPriceX96: BN = new BN(0),
+    token0Balance: JSBI = JSBI.BigInt(0),
+    token1Balance: JSBI = JSBI.BigInt(0),
+    sqrtPriceX96: JSBI = JSBI.BigInt(0),
     tickCurrent: number = 0,
-    feeGrowthGlobal0X128: BN = new BN(0),
-    feeGrowthGlobal1X128: BN = new BN(0),
+    feeGrowthGlobal0X128: JSBI = JSBI.BigInt(0),
+    feeGrowthGlobal1X128: JSBI = JSBI.BigInt(0),
     tickManager: TickManager = new TickManager(),
     positionManager: PositionManager = new PositionManager()
   ) {
@@ -47,15 +47,15 @@ export class CorePool {
     this.positionManager = positionManager;
   }
 
-  public get token0Balance(): BN {
+  public get token0Balance(): JSBI {
     return this._token0Balance;
   }
 
-  public get token1Balance(): BN {
+  public get token1Balance(): JSBI {
     return this._token1Balance;
   }
 
-  public get sqrtPriceX96(): BN {
+  public get sqrtPriceX96(): JSBI {
     return this._sqrtPriceX96;
   }
 
@@ -63,54 +63,54 @@ export class CorePool {
     return this._tickCurrent;
   }
 
-  public get feeGrowthGlobal0X128(): BN {
+  public get feeGrowthGlobal0X128(): JSBI {
     return this._feeGrowthGlobal0X128;
   }
 
-  public get feeGrowthGlobal1X128(): BN {
+  public get feeGrowthGlobal1X128(): JSBI {
     return this._feeGrowthGlobal1X128;
   }
 
-  initialize(sqrtPriceX96: BN) {
+  initialize(sqrtPriceX96: JSBI) {
     // TODO
     this._tickCurrent = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
     this._sqrtPriceX96 = sqrtPriceX96;
   }
 
-  mint(tickLower: number, tickUpper: number, amount: BN) {
+  mint(tickLower: number, tickUpper: number, amount: JSBI) {
     // TODO
   }
 
-  burn(tickLower: number, tickUpper: number, amount: BN) {
+  burn(tickLower: number, tickUpper: number, amount: JSBI) {
     // TODO
   }
 
   collect(
     tickLower: number,
     tickUpper: number,
-    amount0Requested: BN,
-    amount1Requested: BN
+    amount0Requested: JSBI,
+    amount1Requested: JSBI
   ) {
     // TODO
   }
 
-  swap(zeroForOne: boolean, amountSpecified: BN, sqrtPriceLimitX96: BN) {
+  swap(zeroForOne: boolean, amountSpecified: JSBI, sqrtPriceLimitX96: JSBI) {
     // TODO
   }
 
   private modifyPosition(
     tickLower: number,
     tickUpper: number,
-    liquidityDelta: BN
-  ): { amount0: BN; amount1: BN } {
+    liquidityDelta: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
     // TODO
-    return { amount0: new BN(0), amount1: new BN(0) };
+    return { amount0: JSBI.BigInt(0), amount1: JSBI.BigInt(0) };
   }
 
   private updatePosition(
     tickLower: number,
     tickUpper: number,
-    liquidityDelta: BN
+    liquidityDelta: JSBI
   ) {
     // TODO
   }
