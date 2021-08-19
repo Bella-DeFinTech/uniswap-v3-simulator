@@ -1,10 +1,17 @@
-import JSBI from 'jsbi';
+import JSBI from "jsbi";
+import { jsonMember, jsonObject } from "typedjson";
 
+@jsonObject
 export class Position {
+  @jsonMember
   private _liquidity: JSBI = JSBI.BigInt(0);
+  @jsonMember
   private _feeGrowthInside0LastX128: JSBI = JSBI.BigInt(0);
+  @jsonMember
   private _feeGrowthInside1LastX128: JSBI = JSBI.BigInt(0);
+  @jsonMember
   private _tokensOwed0: JSBI = JSBI.BigInt(0);
+  @jsonMember
   private _tokensOwed1: JSBI = JSBI.BigInt(0);
 
   public get liquidity(): JSBI {
