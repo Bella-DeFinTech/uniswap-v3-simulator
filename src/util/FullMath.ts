@@ -1,12 +1,14 @@
-import JSBI from 'jsbi';
+import JSBI from "jsbi";
+import { FullMath as MathLibrary } from "@uniswap/v3-sdk";
 
 export abstract class FullMath {
   static mulDiv(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
-    // TODO
-    return JSBI.BigInt(0);
+    const product = JSBI.multiply(a, b);
+    return JSBI.divide(product, denominator);
   }
+
   static mulDivRoundingUp(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
-    // TODO
+    MathLibrary.mulDivRoundingUp(a, b, denominator);
     return JSBI.BigInt(0);
   }
 }
