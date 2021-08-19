@@ -1,4 +1,4 @@
-import BN from "bn.js";
+import JSBI from 'jsbi';
 import { TickManager } from "../manager/TickManager";
 import { PositionManager } from "../manager/PositionManager";
 import { PoolState } from "../model/PoolState";
@@ -51,7 +51,7 @@ export class ConfigurableCorePool extends CorePool {
     this.poolState = poolState;
   }
 
-  mint(tickLower: number, tickUpper: number, amount: BN) {
+  mint(tickLower: number, tickUpper: number, amount: JSBI) {
     // TODO
     this.postProcess(ActionType.MINT, {
       tickLower: tickLower,
@@ -60,20 +60,20 @@ export class ConfigurableCorePool extends CorePool {
     });
   }
 
-  burn(tickLower: number, tickUpper: number, amount: BN) {
+  burn(tickLower: number, tickUpper: number, amount: JSBI) {
     // TODO
   }
 
   collect(
     tickLower: number,
     tickUpper: number,
-    amount0Requested: BN,
-    amount1Requested: BN
+    amount0Requested: JSBI,
+    amount1Requested: JSBI
   ) {
     // TODO
   }
 
-  swap(zeroForOne: boolean, amountSpecified: BN, sqrtPriceLimitX96: BN) {
+  swap(zeroForOne: boolean, amountSpecified: JSBI, sqrtPriceLimitX96: JSBI) {
     // TODO
   }
 

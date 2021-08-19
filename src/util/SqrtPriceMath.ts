@@ -1,38 +1,38 @@
-import BN from "bn.js";
+import JSBI from 'jsbi';
 
 export abstract class SqrtPriceMath {
   static getAmount0Delta(
-    sqrtRatioAX96: BN,
-    sqrtRatioBX96: BN,
-    liquidity: BN
-  ): BN {
+    sqrtRatioAX96: JSBI,
+    sqrtRatioBX96: JSBI,
+    liquidity: JSBI
+  ): JSBI {
     //TODO
-    return new BN(0);
+    return JSBI.BigInt(0);
   }
   static getAmount1Delta(
-    sqrtRatioAX96: BN,
-    sqrtRatioBX96: BN,
-    liquidity: BN
-  ): BN {
+    sqrtRatioAX96: JSBI,
+    sqrtRatioBX96: JSBI,
+    liquidity: JSBI
+  ): JSBI {
     //TODO
-    return new BN(0);
+    return JSBI.BigInt(0);
   }
   static getNextSqrtPriceFromInput(
-    sqrtRatioAX96: BN,
-    liquidity: BN,
-    amountIn: BN,
+    sqrtRatioAX96: JSBI,
+    liquidity: JSBI,
+    amountIn: JSBI,
     zeroForOne: boolean
-  ): BN {
+  ): JSBI {
     //TODO
-    return new BN(0);
+    return JSBI.BigInt(0);
   }
   static getNextSqrtPriceFromOutput(
-    sqrtRatioAX96: BN,
-    liquidity: BN,
-    amountOut: BN,
+    sqrtRatioAX96: JSBI,
+    liquidity: JSBI,
+    amountOut: JSBI,
     zeroForOne: boolean
-  ): BN {
+  ): JSBI {
     //TODO
-    return new BN(0);
+    return JSBI.BigInt(0);
   }
 }

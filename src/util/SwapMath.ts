@@ -1,19 +1,19 @@
-import BN from "bn.js";
+import JSBI from 'jsbi';
 
 export abstract class SwapMath {
   static computeSwapStep(
-    sqrtRatioCurrentX96: BN,
-    sqrtRatioTargetX96: BN,
-    liquidity: BN,
-    amountRemaining: BN,
+    sqrtRatioCurrentX96: JSBI,
+    sqrtRatioTargetX96: JSBI,
+    liquidity: JSBI,
+    amountRemaining: JSBI,
     feePips: number
-  ): { sqrtRatioNextX96: BN; amountIn: BN; amountOut: BN; feeAmount: BN } {
+  ): { sqrtRatioNextX96: JSBI; amountIn: JSBI; amountOut: JSBI; feeAmount: JSBI } {
     // TODO
     return {
-      sqrtRatioNextX96: new BN(0),
-      amountIn: new BN(0),
-      amountOut: new BN(0),
-      feeAmount: new BN(0),
+      sqrtRatioNextX96: JSBI.BigInt(0),
+      amountIn: JSBI.BigInt(0),
+      amountOut: JSBI.BigInt(0),
+      feeAmount: JSBI.BigInt(0),
     };
   }
 }
