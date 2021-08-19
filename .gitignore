@@ -142,3 +142,5 @@ mochawesome-report/
 
 #prettier ignore
 .prettierignore
+
+cache
