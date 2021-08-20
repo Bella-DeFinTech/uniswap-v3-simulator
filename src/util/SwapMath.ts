@@ -1,5 +1,7 @@
 import JSBI from "jsbi";
-import { FeeAmount, SqrtPriceMath, FullMath } from "@uniswap/v3-sdk";
+import { FullMath } from "./FullMath";
+import { SqrtPriceMath } from "./SqrtPriceMath";
+import { FeeAmount } from "../enum/FeeAmount";
 import { ZERO, NEGATIVE_ONE, MAX_FEE } from "../enum/InternalConstants";
 
 export abstract class SwapMath {
@@ -32,13 +34,13 @@ export abstract class SwapMath {
         MAX_FEE
       );
       returnValues.amountIn = zeroForOne
-        ? SqrtPriceMath.getAmount0Delta(
+        ? SqrtPriceMath.getAmount0DeltaWithRoundUp(
             sqrtRatioTargetX96,
             sqrtRatioCurrentX96,
             liquidity,
             true
           )
-        : SqrtPriceMath.getAmount1Delta(
+        : SqrtPriceMath.getAmount1DeltaWithRoundUp(
             sqrtRatioCurrentX96,
             sqrtRatioTargetX96,
             liquidity,
@@ -58,13 +60,13 @@ export abstract class SwapMath {
       }
     } else {
       returnValues.amountOut = zeroForOne
-        ? SqrtPriceMath.getAmount1Delta(
+        ? SqrtPriceMath.getAmount1DeltaWithRoundUp(
             sqrtRatioTargetX96,
             sqrtRatioCurrentX96,
             liquidity,
             false
           )
-        : SqrtPriceMath.getAmount0Delta(
+        : SqrtPriceMath.getAmount0DeltaWithRoundUp(
             sqrtRatioCurrentX96,
             sqrtRatioTargetX96,
             liquidity,
@@ -94,7 +96,7 @@ export abstract class SwapMath {
       returnValues.amountIn =
         max && exactIn
           ? returnValues.amountIn
-          : SqrtPriceMath.getAmount0Delta(
+          : SqrtPriceMath.getAmount0DeltaWithRoundUp(
               returnValues.sqrtRatioNextX96,
               sqrtRatioCurrentX96,
               liquidity,
@@ -103,7 +105,7 @@ export abstract class SwapMath {
       returnValues.amountOut =
         max && !exactIn
           ? returnValues.amountOut
-          : SqrtPriceMath.getAmount1Delta(
+          : SqrtPriceMath.getAmount1DeltaWithRoundUp(
               returnValues.sqrtRatioNextX96,
               sqrtRatioCurrentX96,
               liquidity,
@@ -113,7 +115,7 @@ export abstract class SwapMath {
       returnValues.amountIn =
         max && exactIn
           ? returnValues.amountIn
-          : SqrtPriceMath.getAmount1Delta(
+          : SqrtPriceMath.getAmount1DeltaWithRoundUp(
               sqrtRatioCurrentX96,
               returnValues.sqrtRatioNextX96,
               liquidity,
@@ -122,7 +124,7 @@ export abstract class SwapMath {
       returnValues.amountOut =
         max && !exactIn
           ? returnValues.amountOut
-          : SqrtPriceMath.getAmount0Delta(
+          : SqrtPriceMath.getAmount0DeltaWithRoundUp(
               sqrtRatioCurrentX96,
               returnValues.sqrtRatioNextX96,
               liquidity,

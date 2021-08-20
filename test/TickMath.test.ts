@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import JSBI from "jsbi";
-import { ONE } from "../src/enum/InternalConstants";
+import { ONE, MaxUint256 } from "../src/enum/InternalConstants";
 import { TickMath } from "../src/util/TickMath";
 
 describe("TickMath", () => {
@@ -62,6 +62,37 @@ describe("TickMath", () => {
       expect(
         TickMath.getTickAtSqrtRatio(JSBI.subtract(TickMath.MAX_SQRT_RATIO, ONE))
       ).eql(TickMath.MAX_TICK - 1);
+    });
+  });
+
+  describe("mostSignificantBit", () => {
+    it("throws for zero", () => {
+      expect(() => TickMath.mostSignificantBit(JSBI.BigInt(0))).throw("ZERO");
+    });
+    it("correct value for every power of 2", () => {
+      for (let i = 1; i < 256; i++) {
+        const x = JSBI.exponentiate(JSBI.BigInt(2), JSBI.BigInt(i));
+        expect(TickMath.mostSignificantBit(x)).equal(i);
+      }
+    });
+    it("correct value for every power of 2 - 1", () => {
+      for (let i = 2; i < 256; i++) {
+        const x = JSBI.subtract(
+          JSBI.exponentiate(JSBI.BigInt(2), JSBI.BigInt(i)),
+          JSBI.BigInt(1)
+        );
+        expect(TickMath.mostSignificantBit(x)).equal(i - 1);
+      }
+    });
+
+    it("succeeds for MaxUint256", () => {
+      expect(TickMath.mostSignificantBit(MaxUint256)).equal(255);
+    });
+
+    it("throws for MaxUint256 + 1", () => {
+      expect(() =>
+        TickMath.mostSignificantBit(JSBI.add(MaxUint256, ONE))
+      ).throw("MAX");
     });
   });
 });

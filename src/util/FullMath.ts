@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { FullMath as MathLibrary } from "@uniswap/v3-sdk";
+import { ZERO, ONE } from "../enum/InternalConstants";
 
 export abstract class FullMath {
   static mulDiv(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
@@ -8,7 +8,10 @@ export abstract class FullMath {
   }
 
   static mulDivRoundingUp(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
-    MathLibrary.mulDivRoundingUp(a, b, denominator);
-    return JSBI.BigInt(0);
+    const product = JSBI.multiply(a, b);
+    let result = JSBI.divide(product, denominator);
+    if (JSBI.notEqual(JSBI.remainder(product, denominator), ZERO))
+      result = JSBI.add(result, ONE);
+    return result;
   }
 }
