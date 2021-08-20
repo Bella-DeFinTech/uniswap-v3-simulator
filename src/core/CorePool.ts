@@ -77,12 +77,30 @@ export class CorePool {
     this._sqrtPriceX96 = sqrtPriceX96;
   }
 
-  mint(recipient: string, tickLower: number, tickUpper: number, amount: JSBI) {
+  mint(
+    recipient: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    return {
+      amount0: JSBI.BigInt(0),
+      amount1: JSBI.BigInt(0),
+    };
   }
 
-  burn(owner: string, tickLower: number, tickUpper: number, amount: JSBI) {
+  burn(
+    owner: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    return {
+      amount0: JSBI.BigInt(0),
+      amount1: JSBI.BigInt(0),
+    };
   }
 
   collect(
@@ -91,12 +109,24 @@ export class CorePool {
     tickUpper: number,
     amount0Requested: JSBI,
     amount1Requested: JSBI
-  ) {
+  ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    return {
+      amount0: JSBI.BigInt(0),
+      amount1: JSBI.BigInt(0),
+    };
   }
 
-  swap(zeroForOne: boolean, amountSpecified: JSBI, sqrtPriceLimitX96: JSBI) {
+  swap(
+    zeroForOne: boolean,
+    amountSpecified: JSBI,
+    sqrtPriceLimitX96: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    return {
+      amount0: JSBI.BigInt(0),
+      amount1: JSBI.BigInt(0),
+    };
   }
 
   private modifyPosition(
