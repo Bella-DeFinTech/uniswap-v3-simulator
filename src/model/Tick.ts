@@ -1,10 +1,17 @@
 import JSBI from 'jsbi';
+import { jsonMember, jsonObject } from "typedjson";
 
+@jsonObject
 export class Tick {
+  @jsonMember
   private _liquidityGross: JSBI = JSBI.BigInt(0);
+  @jsonMember
   private _liquidityNet: JSBI = JSBI.BigInt(0);
+  @jsonMember
   private _feeGrowthOutside0X128: JSBI = JSBI.BigInt(0);
+  @jsonMember
   private _feeGrowthOutside1X128: JSBI = JSBI.BigInt(0);
+  @jsonMember
   private _initialized: boolean = false;
 
   public get liquidityGross(): JSBI {

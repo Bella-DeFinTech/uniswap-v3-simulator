@@ -8,7 +8,8 @@
     "dist/**"
   ],
   "scripts": {
-    "test": "yarn mocha"
+    "test": "yarn mocha",
+    "lint": "yarn prettier --write ."
   },
   "author": "",
   "license": "BSL-1.0",
