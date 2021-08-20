@@ -1,4 +1,4 @@
-import JSBI from 'jsbi';
+import JSBI from "jsbi";
 import { TickManager } from "../manager/TickManager";
 import { PositionManager } from "../manager/PositionManager";
 import { PoolState } from "../model/PoolState";
@@ -51,7 +51,7 @@ export class ConfigurableCorePool extends CorePool {
     this.poolState = poolState;
   }
 
-  mint(tickLower: number, tickUpper: number, amount: JSBI) {
+  mint(recipient: string, tickLower: number, tickUpper: number, amount: JSBI) {
     // TODO
     this.postProcess(ActionType.MINT, {
       tickLower: tickLower,
@@ -60,11 +60,12 @@ export class ConfigurableCorePool extends CorePool {
     });
   }
 
-  burn(tickLower: number, tickUpper: number, amount: JSBI) {
+  burn(owner: string, tickLower: number, tickUpper: number, amount: JSBI) {
     // TODO
   }
 
   collect(
+    recipient: string,
     tickLower: number,
     tickUpper: number,
     amount0Requested: JSBI,
