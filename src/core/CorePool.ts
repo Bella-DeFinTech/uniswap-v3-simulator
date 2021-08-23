@@ -1,4 +1,4 @@
-import JSBI from 'jsbi';
+import JSBI from "jsbi";
 import { TickManager } from "../manager/TickManager";
 import { PositionManager } from "../manager/PositionManager";
 import { Position } from "../model/Position";
@@ -77,42 +77,80 @@ export class CorePool {
     this._sqrtPriceX96 = sqrtPriceX96;
   }
 
-  mint(tickLower: number, tickUpper: number, amount: JSBI) {
+  mint(
+    recipient: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    return {
+      amount0: JSBI.BigInt(0),
+      amount1: JSBI.BigInt(0),
+    };
   }
 
-  burn(tickLower: number, tickUpper: number, amount: JSBI) {
+  burn(
+    owner: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    return {
+      amount0: JSBI.BigInt(0),
+      amount1: JSBI.BigInt(0),
+    };
   }
 
   collect(
+    recipient: string,
     tickLower: number,
     tickUpper: number,
     amount0Requested: JSBI,
     amount1Requested: JSBI
-  ) {
+  ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    return {
+      amount0: JSBI.BigInt(0),
+      amount1: JSBI.BigInt(0),
+    };
   }
 
-  swap(zeroForOne: boolean, amountSpecified: JSBI, sqrtPriceLimitX96: JSBI) {
+  swap(
+    zeroForOne: boolean,
+    amountSpecified: JSBI,
+    sqrtPriceLimitX96: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    return {
+      amount0: JSBI.BigInt(0),
+      amount1: JSBI.BigInt(0),
+    };
   }
 
   private modifyPosition(
+    owner: string,
     tickLower: number,
     tickUpper: number,
     liquidityDelta: JSBI
-  ): { amount0: JSBI; amount1: JSBI } {
+  ): { position: Position; amount0: JSBI; amount1: JSBI } {
     // TODO
-    return { amount0: JSBI.BigInt(0), amount1: JSBI.BigInt(0) };
+    return {
+      position: new Position(),
+      amount0: JSBI.BigInt(0),
+      amount1: JSBI.BigInt(0),
+    };
   }
 
   private updatePosition(
+    owner: string,
     tickLower: number,
     tickUpper: number,
     liquidityDelta: JSBI
-  ) {
+  ): Position {
     // TODO
+    return new Position();
   }
 
   getTick(tick: number): Tick {
