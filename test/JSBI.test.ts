@@ -11,4 +11,12 @@ describe("Test JSBI", function () {
     let b2 = JSBI.BigInt(2);
     assert.equal(JSBI.divide(a2, b2), 2);
   });
+
+  it("notEqual in value can be replaced by !=", function () {
+    let a1 = JSBI.BigInt(-5);
+    let b1 = JSBI.BigInt(2);
+    assert.ok(JSBI.notEqual(a1, b1));
+    assert.ok(a1 != b1);
+    assert.ok((a1 != b1) == JSBI.notEqual(a1, b1));
+  });
 });
