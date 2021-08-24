@@ -1,4 +1,4 @@
-import JSBI from 'jsbi';
+import JSBI from "jsbi";
 import { jsonMember, jsonObject } from "typedjson";
 
 @jsonObject
@@ -40,8 +40,9 @@ export class Tick {
     feeGrowthGlobal0X128: JSBI,
     feeGrowthGlobal1X128: JSBI,
     leftToRight: boolean
-  ) {
+  ): boolean {
     // TODO
+    return false;
   }
 
   cross(feeGrowthGlobal0X128: JSBI, feeGrowthGlobal1X128: JSBI): JSBI {
