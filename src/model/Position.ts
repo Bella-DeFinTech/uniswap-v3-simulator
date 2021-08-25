@@ -1,17 +1,18 @@
 import JSBI from "jsbi";
 import { jsonMember, jsonObject } from "typedjson";
+import { JSBIDeserializer, JSBISerializer } from "../util/Serializer";
 
 @jsonObject
 export class Position {
-  @jsonMember
+  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
   private _liquidity: JSBI = JSBI.BigInt(0);
-  @jsonMember
+  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
   private _feeGrowthInside0LastX128: JSBI = JSBI.BigInt(0);
-  @jsonMember
+  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
   private _feeGrowthInside1LastX128: JSBI = JSBI.BigInt(0);
-  @jsonMember
+  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
   private _tokensOwed0: JSBI = JSBI.BigInt(0);
-  @jsonMember
+  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
   private _tokensOwed1: JSBI = JSBI.BigInt(0);
 
   public get liquidity(): JSBI {

@@ -1,17 +1,18 @@
 import JSBI from "jsbi";
 import { jsonMember, jsonObject } from "typedjson";
+import { JSBIDeserializer, JSBISerializer } from "../util/Serializer";
 
 @jsonObject
 export class Tick {
-  @jsonMember
+  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
   private _liquidityGross: JSBI = JSBI.BigInt(0);
-  @jsonMember
+  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
   private _liquidityNet: JSBI = JSBI.BigInt(0);
-  @jsonMember
+  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
   private _feeGrowthOutside0X128: JSBI = JSBI.BigInt(0);
-  @jsonMember
+  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
   private _feeGrowthOutside1X128: JSBI = JSBI.BigInt(0);
-  @jsonMember
+  @jsonMember(Boolean)
   private _initialized: boolean = false;
 
   public get liquidityGross(): JSBI {

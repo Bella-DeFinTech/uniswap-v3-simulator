@@ -1,3 +1,4 @@
+import JSBI from "jsbi";
 import { TypedJSON } from "typedjson";
 import { Constructor } from "typedjson/src/types";
 
@@ -12,3 +13,6 @@ export abstract class Serializer {
     return serializer.parse(json);
   }
 }
+
+export const JSBISerializer = (jsbi: JSBI): string => jsbi.toString();
+export const JSBIDeserializer = (str: string): JSBI => JSBI.BigInt(str);
