@@ -135,7 +135,26 @@ export class CorePool {
     tickUpper: number,
     liquidityDelta: JSBI
   ): { position: Position; amount0: JSBI; amount1: JSBI } {
-    // TODO
+    // check ticks
+    if(tickLower > tickUpper){
+      console.error('tickLower upper than tickUpper')
+    }
+    else if(tickLower < TickMath.MIN_TICK){
+      console.error('[Error]: tickLower lower than MIN_TICK')
+    }
+    else if(tickUpper > TickMath.MAX_TICK){
+      console.error('[Error]: tickUpper bigger than MAX_TICK')
+    }
+    else{
+      // check ticks pass, update position
+      this.updatePosition(owner, tickLower, tickUpper, liquidityDelta)
+
+      // check if liquidity happen add() or remove()
+      if(liquidityDelta !== JSBI.BigInt(0)){
+        
+      }
+    }
+    
     return {
       position: new Position(),
       amount0: JSBI.BigInt(0),
