@@ -7,8 +7,8 @@ export class SimulatorClient {
     return new ConfigurableCorePool(new PoolState(poolConfig));
   }
 
-  static recoverCorePoolFromSnapshot(snapshotId: string): ConfigurableCorePool {
-    return new ConfigurableCorePool(PoolState.from(snapshotId));
+  static async recoverCorePoolFromSnapshot(snapshotId: string): Promise<ConfigurableCorePool> {
+    return new ConfigurableCorePool(await PoolState.from(snapshotId));
   }
 
   static staticizeCurrentSnapshotPersistence(poolStates: Array<PoolState>) {
