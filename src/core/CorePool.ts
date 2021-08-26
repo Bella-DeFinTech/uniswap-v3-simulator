@@ -4,6 +4,7 @@ import { PositionManager } from "../manager/PositionManager";
 import { Position } from "../model/Position";
 import { Tick } from "../model/Tick";
 import { TickMath } from "../util/TickMath";
+import { SqrtPriceMath } from "../util/SqrtPriceMath";
 
 export class CorePool {
   readonly token0: string;
@@ -135,26 +136,46 @@ export class CorePool {
     tickUpper: number,
     liquidityDelta: JSBI
   ): { position: Position; amount0: JSBI; amount1: JSBI } {
+    let amount0: JSBI, amount1: JSBI;
     // check ticks
-    if(tickLower > tickUpper){
-      console.error('tickLower upper than tickUpper')
-    }
-    else if(tickLower < TickMath.MIN_TICK){
-      console.error('[Error]: tickLower lower than MIN_TICK')
-    }
-    else if(tickUpper > TickMath.MAX_TICK){
-      console.error('[Error]: tickUpper bigger than MAX_TICK')
-    }
-    else{
+    if (tickLower > tickUpper) {
+      // error handling
+      console.error("tickLower upper than tickUpper");
+    } else if (tickLower < TickMath.MIN_TICK) {
+      console.error("[Error]: tickLower lower than MIN_TICK");
+    } else if (tickUpper > TickMath.MAX_TICK) {
+      console.error("[Error]: tickUpper bigger than MAX_TICK");
+    } else {
       // check ticks pass, update position
-      this.updatePosition(owner, tickLower, tickUpper, liquidityDelta)
+      this.updatePosition(owner, tickLower, tickUpper, liquidityDelta);
 
       // check if liquidity happen add() or remove()
-      if(liquidityDelta !== JSBI.BigInt(0)){
-        
+      if (liquidityDelta !== JSBI.BigInt(0)) {
+        if (this._tickCurrent < tickLower) {
+          amount0 = SqrtPriceMath.getAmount0Delta(
+            TickMath.getSqrtRatioAtTick(tickLower),
+            TickMath.getSqrtRatioAtTick(tickUpper),
+            liquidityDelta
+          );
+        } else if (tickLower < this._tickCurrent) {
+          amount0 = SqrtPriceMath.getAmount0Delta(
+            TickMath.getSqrtRatioAtTick(tickLower),
+            TickMath.getSqrtRatioAtTick(tickUpper),
+            liquidityDelta
+          );
+
+          amount1 = SqrtPriceMath.getAmount1Delta(
+            TickMath.getSqrtRatioAtTick(tickLower),
+            TickMath.getSqrtRatioAtTick(tickUpper),
+            liquidityDelta
+          );
+
+          // modify liquidity
+        } else {
+        }
       }
     }
-    
+
     return {
       position: new Position(),
       amount0: JSBI.BigInt(0),
