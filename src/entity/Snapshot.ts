@@ -7,6 +7,7 @@ export type Snapshot = {
   token0Balance: JSBI;
   token1Balance: JSBI;
   sqrtPriceX96: JSBI;
+  liquidity: JSBI;
   tickCurrent: number;
   feeGrowthGlobal0X128: JSBI;
   feeGrowthGlobal1X128: JSBI;

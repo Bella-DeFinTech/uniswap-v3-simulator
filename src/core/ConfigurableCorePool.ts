@@ -39,6 +39,7 @@ export class ConfigurableCorePool extends CorePool {
         state.token0Balance,
         state.token1Balance,
         state.sqrtPriceX96,
+        state.liquidity,
         state.tickCurrent,
         state.feeGrowthGlobal0X128,
         state.feeGrowthGlobal1X128,
