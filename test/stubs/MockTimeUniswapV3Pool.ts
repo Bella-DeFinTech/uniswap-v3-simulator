@@ -1,6 +1,10 @@
 import { EventFilter, BigNumber, BigNumberish, Signer } from "ethers";
 import { ContractTransaction } from "@ethersproject/contracts";
-import { Listener, Provider } from "@ethersproject/providers";
+import {
+  Listener,
+  Provider,
+  TransactionResponse,
+} from "@ethersproject/providers";
 import { BytesLike } from "@ethersproject/bytes";
 
 export class MockTimeUniswapV3Pool {
@@ -121,8 +125,11 @@ export class MockTimeUniswapV3Pool {
     return new Promise((resolve) => {});
   }
 
-  initialize(sqrtPriceX96: BigNumberish): Promise<ContractTransaction> {
-    return new Promise((resolve) => {});
+  // initialize(sqrtPriceX96: BigNumberish): Promise<ContractTransaction> {
+  //   return new Promise((resolve) => {});
+  // }
+  initialize(sqrtPriceX96: BigNumberish): void {
+    return;
   }
 
   liquidity(): Promise<BigNumber> {
