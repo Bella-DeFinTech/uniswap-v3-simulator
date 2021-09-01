@@ -5,7 +5,7 @@ import { PositionManager } from "./PositionManager";
 import { Snapshot } from "../entity/Snapshot";
 import { SnapshotProfile } from "../entity/SnapshotProfile";
 import { PoolConfig } from "../entity/PoolConfig";
-import sqlite3, { Database, RunResult } from "sqlite3";
+import { Knex, knex as knexBuilder } from "knex";
 import {
   Serializer,
   JSBISerializer,
@@ -13,103 +13,137 @@ import {
 } from "../util/Serializer";
 import { DateConverter } from "../util/DateConverter";
 
-sqlite3.verbose();
 const DATE_FORMAT: string = "YYYY-MM-DD HH:mm:ss.SSS";
 
-export class DBManager {
-  private db: Database;
+type SnapshotRecord = {
+  id: number;
+  poolConfigId: string;
+  snapshotId: string;
+  description: string;
+  token0Balance: string;
+  token1Balance: string;
+  sqrtPriceX96: string;
+  liquidity: string;
+  tickCurrent: number;
+  feeGrowthGlobal0X128: string;
+  feeGrowthGlobal1X128: string;
+  tickManager: string;
+  positionManager: string;
+  timestamp: string;
+};
 
-  constructor(db: Database) {
-    this.db = db;
+type PoolConfigRecord = {
+  id: number;
+  poolConfigId: string;
+  token0: string;
+  token1: string;
+  fee: number;
+  tickSpacing: number;
+  timestamp: string;
+};
+
+export class DBManager {
+  private knex: Knex;
+
+  constructor(knex: Knex) {
+    this.knex = knex;
   }
 
   static async buildInstance(dbPath: string): Promise<DBManager> {
-    let dbManager = new DBManager(new sqlite3.Database(dbPath)); //:memory:
+    const config: Knex.Config = {
+      client: "sqlite3",
+      connection: {
+        filename: dbPath, //:memory:
+      },
+      // sqlite does not support inserting default values. Set the `useNullAsDefault` flag to hide the warning.
+      useNullAsDefault: true,
+    };
+    let dbManager = new DBManager(knexBuilder(config));
     await dbManager.initTables();
     return dbManager;
   }
 
   private initTables() {
-    return Promise.all([
-      new Promise((resolve, reject) => {
-        this.db.run(
-          "CREATE TABLE IF NOT EXISTS snapshot(\
-            id INTEGER PRIMARY KEY AUTOINCREMENT,\
-            snapshotId VARCHAR(32),\
-            poolConfigId VARCHAR(32),\
-            description VARCHAR(255),\
-            token0Balance VARCHAR(255),\
-            token1Balance VARCHAR(255),\
-            sqrtPriceX96 VARCHAR(255),\
-            liquidity VARCHAR(255),\
-            tickCurrent INTEGER,\
-            feeGrowthGlobal0X128 VARCHAR(255),\
-            feeGrowthGlobal1X128 VARCHAR(255),\
-            tickManager VARCHAR(255),\
-            positionManager VARCHAR(255),\
-            timestamp TEXT\
-          );",
-          [],
-          function (error: Error, results: RunResult) {
-            if (error) reject(error);
-            resolve(results);
-          }
-        );
-      }),
-      new Promise((resolve, reject) => {
-        this.db.run(
-          "CREATE TABLE IF NOT EXISTS poolConfig(\
-            id INTEGER PRIMARY KEY AUTOINCREMENT,\
-            poolConfigId VARCHAR(32),\
-            token0 VARCHAR(255),\
-            token1 VARCHAR(255),\
-            fee INTEGER,\
-            tickSpacing INTEGER,\
-            timestamp TEXT\
-          );",
-          [],
-          function (error: Error, results: RunResult) {
-            if (error) reject(error);
-            resolve(results);
-          }
-        );
-      }),
-    ]);
+    const knex = this.knex;
+    let tasks = [
+      knex.schema.hasTable("poolConfig").then((exists: boolean) =>
+        !exists
+          ? knex.schema.createTable(
+              "poolConfig",
+              function (t: Knex.TableBuilder) {
+                t.increments("id").primary();
+                t.string("poolConfigId", 32);
+                t.string("token0", 255);
+                t.string("token1", 255);
+                t.integer("fee");
+                t.integer("tickSpacing");
+                t.text("timestamp");
+              }
+            )
+          : Promise.resolve()
+      ),
+      knex.schema.hasTable("snapshot").then((exists: boolean) =>
+        !exists
+          ? knex.schema.createTable(
+              "snapshot",
+              function (t: Knex.TableBuilder) {
+                t.increments("id").primary();
+                t.string("snapshotId", 32);
+                t.string("poolConfigId", 32);
+                t.string("description", 255);
+                t.string("token0Balance", 255);
+                t.string("token1Balance", 255);
+                t.string("sqrtPriceX96", 255);
+                t.string("liquidity", 255);
+                t.integer("tickCurrent");
+                t.string("feeGrowthGlobal0X128", 255);
+                t.string("feeGrowthGlobal1X128", 255);
+                t.string("tickManager");
+                t.string("positionManager");
+                t.text("timestamp");
+              }
+            )
+          : Promise.resolve()
+      ),
+    ];
+    return Promise.all(tasks);
   }
 
-  persistSnapshot(poolState: PoolState): Promise<RunResult> {
+  persistSnapshot(poolState: PoolState): Promise<Array<number>> {
     let poolConfigId = poolState.poolConfig.id;
     let snapshot = <Snapshot>poolState.snapshot;
-    return this.runWithTransaction(
-      this.readPoolConfig(poolConfigId)
-        .then((poolConfig: PoolConfig) => {
-          if (poolConfig === undefined)
-            this.insertPoolConfig(poolState.poolConfig);
-        })
-        .then(() =>
-          this.insertSnapshot(
-            snapshot.id,
-            poolConfigId,
-            snapshot.description,
-            snapshot.token0Balance,
-            snapshot.token1Balance,
-            snapshot.sqrtPriceX96,
-            snapshot.liquidity,
-            snapshot.tickCurrent,
-            snapshot.feeGrowthGlobal0X128,
-            snapshot.feeGrowthGlobal1X128,
-            snapshot.tickManager,
-            snapshot.positionManager,
-            snapshot.timestamp
+    return this.knex.transaction((trx) =>
+      this.readPoolConfig(poolConfigId, trx).then(
+        (poolConfig: PoolConfigRecord | undefined) =>
+          (!poolConfig
+            ? this.insertPoolConfig(poolState.poolConfig, trx)
+            : Promise.resolve([])
+          ).then(() =>
+            this.insertSnapshot(
+              snapshot.id,
+              poolConfigId,
+              snapshot.description,
+              snapshot.token0Balance,
+              snapshot.token1Balance,
+              snapshot.sqrtPriceX96,
+              snapshot.liquidity,
+              snapshot.tickCurrent,
+              snapshot.feeGrowthGlobal0X128,
+              snapshot.feeGrowthGlobal1X128,
+              snapshot.tickManager,
+              snapshot.positionManager,
+              snapshot.timestamp,
+              trx
+            )
           )
-        )
+      )
     );
   }
 
   getSnapshotProfiles(): Promise<SnapshotProfile[]> {
-    return this.readSnapshotProfiles().then((rows: any[]) =>
+    return this.readSnapshotProfiles().then((rows: SnapshotRecord[]) =>
       Promise.resolve(
-        rows.map((row: any): SnapshotProfile => {
+        rows.map((row: SnapshotRecord): SnapshotProfile => {
           return {
             id: row.snapshotId,
             description: row.description,
@@ -119,81 +153,81 @@ export class DBManager {
     );
   }
 
-  getSnapshot(snapshotId: string): Promise<Snapshot> {
-    let snapshotResult: {
-      poolConfigId: string;
-      snapshotId: string;
-      description: string;
-      token0Balance: string;
-      token1Balance: string;
-      sqrtPriceX96: string;
-      liquidity: string;
-      tickCurrent: number;
-      feeGrowthGlobal0X128: string;
-      feeGrowthGlobal1X128: string;
-      tickManager: string;
-      positionManager: string;
-      timestamp: string;
-    };
-    return this.readSnapshot(snapshotId)
-      .then((snapshot) => {
-        snapshotResult = snapshot;
-        return this.getPoolConfig(snapshotResult.poolConfigId);
-      })
-      .then((poolConfig: PoolConfig) =>
-        Promise.resolve({
-          id: snapshotResult.snapshotId,
-          description: snapshotResult.description,
-          poolConfig: poolConfig,
-          token0Balance: JSBIDeserializer(snapshotResult.token0Balance),
-          token1Balance: JSBIDeserializer(snapshotResult.token1Balance),
-          sqrtPriceX96: JSBIDeserializer(snapshotResult.sqrtPriceX96),
-          liquidity: JSBIDeserializer(snapshotResult.liquidity),
-          tickCurrent: snapshotResult.tickCurrent,
-          feeGrowthGlobal0X128: JSBIDeserializer(
-            snapshotResult.feeGrowthGlobal0X128
-          ),
-          feeGrowthGlobal1X128: JSBIDeserializer(
-            snapshotResult.feeGrowthGlobal1X128
-          ),
-          tickManager: <TickManager>(
-            Serializer.deserialize(TickManager, snapshotResult.tickManager)
-          ),
-          positionManager: <PositionManager>(
-            Serializer.deserialize(
-              PositionManager,
-              snapshotResult.positionManager
+  getSnapshot(snapshotId: string): Promise<Snapshot | undefined> {
+    return this.readSnapshot(snapshotId).then(
+      (snapshot: SnapshotRecord | undefined) =>
+        !snapshot
+          ? Promise.resolve(undefined)
+          : this.getPoolConfig(snapshot.poolConfigId).then(
+              (poolConfig: PoolConfig | undefined) =>
+                !poolConfig
+                  ? Promise.reject(new Error("PoolConfig is of shortage!"))
+                  : Promise.resolve({
+                      id: snapshot.snapshotId,
+                      description: snapshot.description,
+                      poolConfig: <PoolConfig>poolConfig,
+                      token0Balance: JSBIDeserializer(snapshot.token0Balance),
+                      token1Balance: JSBIDeserializer(snapshot.token1Balance),
+                      sqrtPriceX96: JSBIDeserializer(snapshot.sqrtPriceX96),
+                      liquidity: JSBIDeserializer(snapshot.liquidity),
+                      tickCurrent: snapshot.tickCurrent,
+                      feeGrowthGlobal0X128: JSBIDeserializer(
+                        snapshot.feeGrowthGlobal0X128
+                      ),
+                      feeGrowthGlobal1X128: JSBIDeserializer(
+                        snapshot.feeGrowthGlobal1X128
+                      ),
+                      tickManager: <TickManager>(
+                        Serializer.deserialize(
+                          TickManager,
+                          snapshot.tickManager
+                        )
+                      ),
+                      positionManager: <PositionManager>(
+                        Serializer.deserialize(
+                          PositionManager,
+                          snapshot.positionManager
+                        )
+                      ),
+                      timestamp: DateConverter.parseDate(snapshot.timestamp),
+                    })
             )
-          ),
-          timestamp: DateConverter.parseDate(snapshotResult.timestamp),
-        })
-      );
-  }
-
-  getPoolConfig(poolConfigId: string): Promise<PoolConfig> {
-    return this.readPoolConfig(poolConfigId).then((res) =>
-      Promise.resolve({
-        id: res.poolConfigId,
-        tickSpacing: res.tickSpacing,
-        token0: res.token0,
-        token1: res.token1,
-        fee: res.fee,
-      })
     );
   }
 
-  close() {
-    this.db.close();
+  getPoolConfig(poolConfigId: string): Promise<PoolConfig | undefined> {
+    return this.readPoolConfig(poolConfigId).then((res) =>
+      !res
+        ? Promise.resolve(undefined)
+        : Promise.resolve({
+            id: res.poolConfigId,
+            tickSpacing: res.tickSpacing,
+            token0: res.token0,
+            token1: res.token1,
+            fee: res.fee,
+          })
+    );
   }
 
-  private readSnapshot(snapshotId: string): Promise<any> {
-    return this.get("SELECT * FROM snapshot WHERE snapshotId = ?", [
-      snapshotId,
-    ]);
+  close(): Promise<void> {
+    return this.knex.destroy();
   }
 
-  private readSnapshotProfiles(): Promise<any[]> {
-    return this.all("SELECT snapshotId, description FROM snapshot", []);
+  private readSnapshot(
+    snapshotId: string,
+    trx?: Knex.Transaction
+  ): Promise<SnapshotRecord | undefined> {
+    return this.getBuilderContext("snapshot", trx)
+      .where("snapshotId", snapshotId)
+      .first();
+  }
+
+  private readSnapshotProfiles(
+    trx?: Knex.Transaction
+  ): Promise<SnapshotRecord[]> {
+    return this.getBuilderContext("snapshot", trx)
+      .select("snapshotId")
+      .select("description");
   }
 
   private insertSnapshot(
@@ -209,105 +243,57 @@ export class DBManager {
     feeGrowthGlobal1X128: JSBI,
     tickManager: TickManager,
     positionManager: PositionManager,
-    timestamp: Date
-  ): Promise<RunResult> {
-    return this.run(
-      "INSERT INTO snapshot(\
-      snapshotId, poolConfigId, description, token0Balance, token1Balance, sqrtPriceX96, liquidity, tickCurrent, \
-      feeGrowthGlobal0X128, feeGrowthGlobal1X128, tickManager, positionManager, timestamp) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
-      [
+    timestamp: Date,
+    trx?: Knex.Transaction
+  ): Promise<Array<number>> {
+    return this.getBuilderContext("snapshot", trx).insert([
+      {
         snapshotId,
         poolConfigId,
         description,
-        JSBISerializer(token0Balance),
-        JSBISerializer(token1Balance),
-        JSBISerializer(sqrtPriceX96),
-        JSBISerializer(liquidity),
+        token0Balance: JSBISerializer(token0Balance),
+        token1Balance: JSBISerializer(token1Balance),
+        sqrtPriceX96: JSBISerializer(sqrtPriceX96),
+        liquidity: JSBISerializer(liquidity),
         tickCurrent,
-        JSBISerializer(feeGrowthGlobal0X128),
-        JSBISerializer(feeGrowthGlobal1X128),
-        Serializer.serialize(TickManager, tickManager),
-        Serializer.serialize(PositionManager, positionManager),
-        DateConverter.formatDate(timestamp, DATE_FORMAT),
-      ]
-    );
-  }
-
-  private readPoolConfig(poolConfigId: string): Promise<any> {
-    return this.get("SELECT * FROM poolConfig WHERE poolConfigId = ?", [
-      poolConfigId,
+        feeGrowthGlobal0X128: JSBISerializer(feeGrowthGlobal0X128),
+        feeGrowthGlobal1X128: JSBISerializer(feeGrowthGlobal1X128),
+        tickManager: Serializer.serialize(TickManager, tickManager),
+        positionManager: Serializer.serialize(PositionManager, positionManager),
+        timestamp: DateConverter.formatDate(timestamp, DATE_FORMAT),
+      },
     ]);
   }
 
-  private insertPoolConfig(poolConfig: PoolConfig): Promise<RunResult> {
-    return this.run(
-      "INSERT INTO poolConfig(poolConfigId, token0, token1, fee, tickSpacing, timestamp) VALUES(?,?,?,?,?,?)",
-      [
-        poolConfig.id,
-        poolConfig.token0,
-        poolConfig.token1,
-        poolConfig.fee,
-        poolConfig.tickSpacing,
-        DateConverter.formatDate(new Date(), DATE_FORMAT),
-      ]
-    );
+  private readPoolConfig(
+    poolConfigId: string,
+    trx?: Knex.Transaction
+  ): Promise<PoolConfigRecord | undefined> {
+    return this.getBuilderContext("poolConfig", trx)
+      .where("poolConfigId", poolConfigId)
+      .first();
   }
 
-  private startTransaction(): Promise<RunResult> {
-    return this.run("BEGIN TRANSACTION;", []);
+  private insertPoolConfig(
+    poolConfig: PoolConfig,
+    trx?: Knex.Transaction
+  ): Promise<Array<number>> {
+    return this.getBuilderContext("poolConfig", trx).insert([
+      {
+        poolConfigId: poolConfig.id,
+        token0: poolConfig.token0,
+        token1: poolConfig.token1,
+        fee: poolConfig.fee,
+        tickSpacing: poolConfig.tickSpacing,
+        timestamp: DateConverter.formatDate(new Date(), DATE_FORMAT),
+      },
+    ]);
   }
 
-  private commit(): Promise<RunResult> {
-    return this.run("COMMIT;", []);
-  }
-
-  private rollback(): Promise<RunResult> {
-    return this.run("ROLLBACK;", []);
-  }
-
-  private runWithTransaction(chain: Promise<RunResult>): Promise<RunResult> {
-    let result: RunResult;
-    let error: Error;
-    return this.startTransaction()
-      .then(() => chain)
-      .then((runResult) => {
-        result = runResult;
-        return this.commit();
-      })
-      .catch((err: Error) => {
-        error = err;
-        return this.rollback();
-      })
-      .then(() => {
-        if (error) throw error;
-        else return Promise.resolve(result);
-      });
-  }
-
-  private run(sql: string, params: any): Promise<RunResult> {
-    return new Promise((resolve, reject) => {
-      this.db.run(sql, params, function (this: RunResult, error: Error) {
-        if (error) reject(error);
-        resolve(this);
-      });
-    });
-  }
-
-  private get(sql: string, params: any): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, function (error: Error, row: any) {
-        if (error) reject(error);
-        resolve(row);
-      });
-    });
-  }
-
-  private all(sql: string, params: any): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, params, function (error: Error, rows: any[]) {
-        if (error) reject(error);
-        resolve(rows);
-      });
-    });
+  private getBuilderContext(
+    tableName: string,
+    trx?: Knex.Transaction
+  ): Knex.QueryBuilder {
+    return trx ? trx(tableName) : this.knex(tableName);
   }
 }
