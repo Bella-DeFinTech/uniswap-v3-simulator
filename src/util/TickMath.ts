@@ -1,13 +1,18 @@
 import assert from "assert";
 import JSBI from "jsbi";
-import { ZERO, ONE, TWO, Q32, MaxUint256 } from "../enum/InternalConstants";
+import {
+  ZERO,
+  ONE,
+  TWO,
+  Q32,
+  MaxUint128,
+  MaxUint256,
+} from "../enum/InternalConstants";
 
-const POWERS_OF_2 = [128, 64, 32, 16, 8, 4, 2, 1].map(
-  (pow: number): [number, JSBI] => [
-    pow,
-    JSBI.exponentiate(TWO, JSBI.BigInt(pow)),
-  ]
-);
+const POWERS_OF_2 = [128, 64, 32, 16, 8, 4, 2, 1].map((pow: number): [
+  number,
+  JSBI
+] => [pow, JSBI.exponentiate(TWO, JSBI.BigInt(pow))]);
 
 function mulShift(val: JSBI, mulBy: string): JSBI {
   return JSBI.signedRightShift(
@@ -182,5 +187,12 @@ export abstract class TickMath {
       }
     }
     return msb;
+  }
+
+  static tickSpacingToMaxLiquidityPerTick(tickSpacing: number): JSBI {
+    const minTick = (this.MIN_TICK / tickSpacing) * tickSpacing;
+    const maxTick = (this.MAX_TICK / tickSpacing) * tickSpacing;
+    const numTicks = (maxTick - minTick) / tickSpacing + 1;
+    return JSBI.divide(MaxUint128, JSBI.BigInt(numTicks));
   }
 }

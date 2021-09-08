@@ -9,6 +9,7 @@ import { StepComputations } from "../entity/StepComputations";
 import { ZERO, ONE, NEGATIVE_ONE, Q128 } from "../enum/InternalConstants";
 import { SwapMath } from "../util/SwapMath";
 import { LiquidityMath } from "../util/LiquidityMath";
+import { TickMath } from "../util/TickMath";
 import { FullMath } from "../util/FullMath";
 import { FeeAmount } from "../enum/FeeAmount";
 
@@ -17,6 +18,7 @@ export class CorePool {
   readonly token1: string;
   readonly fee: FeeAmount;
   readonly tickSpacing: number;
+  readonly maxLiquidityPerTick: JSBI;
   private _token0Balance: JSBI;
   private _token1Balance: JSBI;
   private _sqrtPriceX96: JSBI;
@@ -46,6 +48,9 @@ export class CorePool {
     this.token1 = token1;
     this.fee = fee;
     this.tickSpacing = tickSpacing;
+    this.maxLiquidityPerTick = TickMath.tickSpacingToMaxLiquidityPerTick(
+      tickSpacing
+    );
     this._token0Balance = token0Balance;
     this._token1Balance = token1Balance;
     this._sqrtPriceX96 = sqrtPriceX96;
@@ -195,12 +200,14 @@ export class CorePool {
       // because each iteration of the while loop rounds, we can't optimize this code (relative to the smart contract)
       // by simply traversing to the next available tick, we instead need to exactly replicate
       // tickBitmap.nextInitializedTickWithinOneWord
-      ({ nextTick: step.tickNext, initialized: step.initialized } =
-        this.tickManager.getNextInitializedTick(
-          state.tick,
-          this.tickSpacing,
-          zeroForOne
-        ));
+      ({
+        nextTick: step.tickNext,
+        initialized: step.initialized,
+      } = this.tickManager.getNextInitializedTick(
+        state.tick,
+        this.tickSpacing,
+        zeroForOne
+      ));
 
       if (step.tickNext < TickMath.MIN_TICK) {
         step.tickNext = TickMath.MIN_TICK;
@@ -209,20 +216,24 @@ export class CorePool {
       }
 
       step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);
-      [state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount] =
-        SwapMath.computeSwapStep(
-          state.sqrtPriceX96,
-          (
-            zeroForOne
-              ? JSBI.lessThan(step.sqrtPriceNextX96, sqrtPriceLimitX96)
-              : JSBI.greaterThan(step.sqrtPriceNextX96, sqrtPriceLimitX96)
-          )
-            ? sqrtPriceLimitX96
-            : step.sqrtPriceNextX96,
-          state.liquidity,
-          state.amountSpecifiedRemaining,
-          this.fee
-        );
+      [
+        state.sqrtPriceX96,
+        step.amountIn,
+        step.amountOut,
+        step.feeAmount,
+      ] = SwapMath.computeSwapStep(
+        state.sqrtPriceX96,
+        (
+          zeroForOne
+            ? JSBI.lessThan(step.sqrtPriceNextX96, sqrtPriceLimitX96)
+            : JSBI.greaterThan(step.sqrtPriceNextX96, sqrtPriceLimitX96)
+        )
+          ? sqrtPriceLimitX96
+          : step.sqrtPriceNextX96,
+        state.liquidity,
+        state.amountSpecifiedRemaining,
+        this.fee
+      );
 
       if (exactInput) {
         state.amountSpecifiedRemaining = JSBI.subtract(

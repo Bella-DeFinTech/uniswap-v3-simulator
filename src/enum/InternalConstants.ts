@@ -6,6 +6,10 @@ export const NEGATIVE_ONE = JSBI.BigInt(-1);
 export const ZERO = JSBI.BigInt(0);
 export const ONE = JSBI.BigInt(1);
 export const TWO = JSBI.BigInt(2);
+export const MaxUint128 = JSBI.subtract(
+  JSBI.exponentiate(JSBI.BigInt(2), JSBI.BigInt(128)),
+  ONE
+);
 export const MaxUint160 = JSBI.subtract(
   JSBI.exponentiate(JSBI.BigInt(2), JSBI.BigInt(160)),
   ONE
