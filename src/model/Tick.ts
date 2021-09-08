@@ -56,7 +56,7 @@ export class Tick {
     tickCurrent: number,
     feeGrowthGlobal0X128: JSBI,
     feeGrowthGlobal1X128: JSBI,
-    leftToRight: boolean
+    upper: boolean
   ): boolean {
     const liquidityGrossBefore = this.liquidityGross;
     const liquidityGrossAfter = LiquidityMath.addDelta(
@@ -74,7 +74,7 @@ export class Tick {
       }
     }
     this._liquidityGross = liquidityGrossAfter;
-    this._liquidityNet = leftToRight
+    this._liquidityNet = upper
       ? JSBI.subtract(this._liquidityNet, liquidityDelta)
       : JSBI.add(this._liquidityNet, liquidityDelta);
     return flipped;

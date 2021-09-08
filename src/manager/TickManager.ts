@@ -7,29 +7,39 @@ import { jsonMapMember, jsonObject } from "typedjson";
 export class TickManager {
   @jsonMapMember(Number, Tick, { name: "ticks_json" })
   // key = Tick.tickIndex
-  private ticks: Map<number, Tick>;
+  private sortedTicks: Map<number, Tick>;
 
   constructor(ticks: Map<number, Tick> = new Map()) {
-    this.ticks = ticks;
+    this.sortedTicks = ticks;
+    this.sortTicks();
   }
 
-  get(tickIndex: number): Tick {
-    if (this.ticks.has(tickIndex)) return this.ticks.get(tickIndex)!;
+  getTickAndInitIfAbsent(tickIndex: number): Tick {
+    if (this.sortedTicks.has(tickIndex))
+      return this.sortedTicks.get(tickIndex)!;
     const newTick = new Tick(tickIndex);
     this.set(newTick);
+    this.sortTicks();
     return newTick;
   }
 
+  getTickReadonly(tickIndex: number): Tick {
+    if (this.sortedTicks.has(tickIndex))
+      return this.sortedTicks.get(tickIndex)!;
+    return new Tick(tickIndex);
+  }
+
   set(tick: Tick) {
-    this.ticks.set(tick.tickIndex, tick);
+    this.sortedTicks.set(tick.tickIndex, tick);
+    this.sortTicks();
   }
 
   private nextInitializedTick(
     sortedTicks: readonly Tick[],
     tick: number,
-    leftToRight: boolean
+    lte: boolean
   ): Tick {
-    if (leftToRight) {
+    if (lte) {
       assert(!this.isBelowSmallest(sortedTicks, tick), "BELOW_SMALLEST");
       if (this.isAtOrAboveLargest(sortedTicks, tick)) {
         return sortedTicks[sortedTicks.length - 1];
@@ -52,12 +62,12 @@ export class TickManager {
   getNextInitializedTick(
     tick: number,
     tickSpacing: number,
-    leftToRight: boolean
+    lte: boolean
   ): { nextTick: number; initialized: boolean } {
     const sortedTicks = this.getSortedTicks();
     const compressed = Math.floor(tick / tickSpacing); // matches rounding in the code
 
-    if (leftToRight) {
+    if (lte) {
       const wordPos = compressed >> 8;
       const minimum = (wordPos << 8) * tickSpacing;
 
@@ -65,8 +75,7 @@ export class TickManager {
         return { nextTick: minimum, initialized: false };
       }
 
-      const index = this.nextInitializedTick(sortedTicks, tick, leftToRight)
-        .tickIndex;
+      const index = this.nextInitializedTick(sortedTicks, tick, lte).tickIndex;
       const nextInitializedTick = Math.max(minimum, index);
       return {
         nextTick: nextInitializedTick,
@@ -80,8 +89,7 @@ export class TickManager {
         return { nextTick: maximum, initialized: false };
       }
 
-      const index = this.nextInitializedTick(sortedTicks, tick, leftToRight)
-        .tickIndex;
+      const index = this.nextInitializedTick(sortedTicks, tick, lte).tickIndex;
       const nextInitializedTick = Math.min(maximum, index);
       return {
         nextTick: nextInitializedTick,
@@ -97,8 +105,14 @@ export class TickManager {
     feeGrowthGlobal0X128: JSBI,
     feeGrowthGlobal1X128: JSBI
   ): { feeGrowthInside0X128: JSBI; feeGrowthInside1X128: JSBI } {
-    const lower = this.get(tickLower);
-    const upper = this.get(tickUpper);
+    assert(
+      this.sortedTicks.has(tickLower) &&
+        this.sortedTicks.has(tickUpper) &&
+        this.sortedTicks.has(tickCurrent),
+      "INVALID_TICK"
+    );
+    const lower = this.getTickAndInitIfAbsent(tickLower);
+    const upper = this.getTickAndInitIfAbsent(tickUpper);
     let feeGrowthBelow0X128: JSBI;
     let feeGrowthBelow1X128: JSBI;
     if (tickCurrent >= tickLower) {
@@ -143,12 +157,19 @@ export class TickManager {
   }
 
   clear(tick: number) {
-    this.ticks.delete(tick);
+    this.sortedTicks.delete(tick);
+    this.sortTicks();
+  }
+
+  private sortTicks() {
+    const sortedTicks = new Map(
+      [...this.sortedTicks.entries()].sort((a, b) => a[0] - b[0])
+    );
+    this.sortedTicks = sortedTicks;
   }
 
   private getSortedTicks(): Tick[] {
-    const sortedTicks = new Map([...this.ticks.entries()].sort());
-    return Array.from(sortedTicks.values());
+    return Array.from(this.sortedTicks.values());
   }
 
   private isBelowSmallest(sortedTicks: readonly Tick[], tick: number): boolean {
