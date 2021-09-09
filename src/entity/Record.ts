@@ -1,9 +1,10 @@
 import { ActionType } from "../enum/ActionType";
+import { MethodParams, ReturnParams } from "../interface/ActionParams";
 
 export type Record = {
   id: string;
-  eventId: number;
   actionType: ActionType;
-  actionParams: object;
+  actionParams: MethodParams;
+  actionReturnValues: ReturnParams;
   timestamp: Date;
 };

@@ -2,80 +2,94 @@ import JSBI from "jsbi";
 import { PoolState } from "../model/PoolState";
 import { Record } from "../entity/Record";
 import { CorePool } from "./CorePool";
+import { Visitable } from "../interface/Visitable";
 import { ActionType } from "../enum/ActionType";
-import { Snapshot } from "../entity/Snapshot";
+import { PoolStateHelper } from "../util/PoolStateHelper";
+import { IDGenerator } from "../util/IDGenerator";
+import { Transition } from "../model/Transition";
+import { SimulatorVisitor } from "../interface/SimulatorVisitor";
+import { SimulatorConsoleVisitor } from "../manager/SimulatorConsoleVisitor";
+import { SimulatorPersistenceVisitor } from "../manager/SimulatorPersistenceVisitor";
+import {
+  MethodParams,
+  ReturnParams,
+  MintParams,
+  BurnParams,
+  SwapParams,
+  CollectParams,
+  GeneralReturnParams,
+} from "../interface/ActionParams";
+import { SimulatorRoadmapManager } from "../manager/SimulatorRoadmapManager";
 
-export class ConfigurableCorePool extends CorePool {
-  private poolState: PoolState;
+export class ConfigurableCorePool implements Visitable {
+  readonly id: string;
+  private _poolState: PoolState;
+  private simulatorRoadmapManager: SimulatorRoadmapManager;
+  private corePool: CorePool;
   private postProcessorCallback: (
-    this: ConfigurableCorePool,
-    recordId: string,
-    actionType: ActionType,
-    actionParams: object
-  ) => void = function (
-    this: ConfigurableCorePool,
-    recordId: string,
-    actionType: ActionType,
-    actionParams: object
-  ) {};
+    configurableCorePool: ConfigurableCorePool,
+    transition: Transition
+  ) => void = function () {};
 
   constructor(poolState: PoolState) {
-    super(
-      poolState.poolConfig.token0,
-      poolState.poolConfig.token1,
-      poolState.poolConfig.fee,
-      poolState.poolConfig.tickSpacing
-    );
-    if (poolState.hasBaseSnapshot()) {
-      let state = <Snapshot>poolState.baseSnapshot;
-      super(
-        poolState.poolConfig.token0,
-        poolState.poolConfig.token1,
-        poolState.poolConfig.fee,
-        poolState.poolConfig.tickSpacing,
-        state.token0Balance,
-        state.token1Balance,
-        state.sqrtPriceX96,
-        state.liquidity,
-        state.tickCurrent,
-        state.feeGrowthGlobal0X128,
-        state.feeGrowthGlobal1X128,
-        state.tickManager,
-        state.positionManager
+    this.id = IDGenerator.guid();
+    if (poolState.hasSnapshot()) {
+      this.corePool = PoolStateHelper.buildCorePoolBySnapshot(
+        poolState.snapshot!
+      );
+    } else if (poolState.hasBaseSnapshot()) {
+      this.corePool = PoolStateHelper.buildCorePoolBySnapshot(
+        poolState.baseSnapshot!
+      );
+    } else {
+      this.corePool = PoolStateHelper.buildCorePoolByPoolConfig(
+        poolState.poolConfig
       );
     }
-    this.poolState = poolState;
+    this._poolState = poolState;
+    this.simulatorRoadmapManager = SimulatorRoadmapManager.instance;
+    this.simulatorRoadmapManager.addPoolState(this.poolState);
+    this.simulatorRoadmapManager.addRoute(this);
   }
 
   mint(
     recipient: string,
     tickLower: number,
     tickUpper: number,
-    amount: JSBI
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: Transition
+    ) => void
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
-    this.postProcess(ActionType.MINT, {
-      tickLower: tickLower,
-      tickUpper: tickUpper,
-      amount: amount,
-    });
-    return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
-    };
+    let res = this.corePool.mint(recipient, tickLower, tickUpper, amount);
+    this.postProcess(
+      ActionType.MINT,
+      { recipient, tickLower, tickUpper, amount } as MintParams,
+      res as GeneralReturnParams,
+      postProcessorCallback
+    );
+    return res;
   }
 
   burn(
     owner: string,
     tickLower: number,
     tickUpper: number,
-    amount: JSBI
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: Transition
+    ) => void
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
-    return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
-    };
+    let res = this.corePool.burn(owner, tickLower, tickUpper, amount);
+    this.postProcess(
+      ActionType.BURN,
+      { owner, tickLower, tickUpper, amount } as BurnParams,
+      res as GeneralReturnParams,
+      postProcessorCallback
+    );
+    return res;
   }
 
   collect(
@@ -83,64 +97,251 @@ export class ConfigurableCorePool extends CorePool {
     tickLower: number,
     tickUpper: number,
     amount0Requested: JSBI,
-    amount1Requested: JSBI
+    amount1Requested: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: Transition
+    ) => void
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
-    return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
-    };
+    let res = this.corePool.collect(
+      recipient,
+      tickLower,
+      tickUpper,
+      amount0Requested,
+      amount1Requested
+    );
+    this.postProcess(
+      ActionType.COLLECT,
+      {
+        recipient,
+        tickLower,
+        tickUpper,
+        amount0Requested,
+        amount1Requested,
+      } as CollectParams,
+      res as GeneralReturnParams,
+      postProcessorCallback
+    );
+    return res;
   }
 
   swap(
     zeroForOne: boolean,
     amountSpecified: JSBI,
-    sqrtPriceLimitX96: JSBI
+    sqrtPriceLimitX96: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: Transition
+    ) => void
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
-    return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
-    };
+    let res = this.corePool.swap(
+      zeroForOne,
+      amountSpecified,
+      sqrtPriceLimitX96
+    );
+    this.postProcess(
+      ActionType.SWAP,
+      { zeroForOne, amountSpecified, sqrtPriceLimitX96 } as SwapParams,
+      res as GeneralReturnParams,
+      postProcessorCallback
+    );
+    return res;
   }
 
+  // pool state will not move to next until we finish calling user custom PostProcessor
   updatePostProcessor(
     callback: (
-      this: ConfigurableCorePool,
-      recordId: string,
-      actionType: ActionType,
-      actionParams: object
+      configurableCorePool: ConfigurableCorePool,
+      transition: Transition
     ) => void
   ) {
     this.postProcessorCallback = callback;
   }
 
-  takeSnapshot(): string {
-    // TODO
-    return "0";
+  takeSnapshot(
+    description: string,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: Transition
+    ) => void
+  ): string {
+    this.poolState.takeSnapshot(
+      description,
+      this.corePool.token0Balance,
+      this.corePool.token1Balance,
+      this.corePool.sqrtPriceX96,
+      this.corePool.liquidity,
+      this.corePool.tickCurrent,
+      this.corePool.feeGrowthGlobal0X128,
+      this.corePool.feeGrowthGlobal1X128,
+      this.corePool.tickManager,
+      this.corePool.positionManager
+    );
+    let snapshotId = this.poolState.id;
+    this.postProcess(ActionType.SNAPSHOT, {}, {}, postProcessorCallback);
+    return snapshotId;
   }
 
-  recover(snapshotId: string) {
-    // TODO
+  fork(): ConfigurableCorePool {
+    return new ConfigurableCorePool(this.poolState);
   }
 
-  private applyRecord(actionType: ActionType, actionParams: object): Record {
-    // TODO
+  persistSnapshots(
+    toPoolStateId: string,
+    fromPoolStateId?: string
+  ): Promise<Array<number>> {
+    let simulatorPersistenceVisitor: SimulatorVisitor =
+      new SimulatorPersistenceVisitor();
+    let snapshotIds: Array<number> = [];
+    let poolStateVisitCallback = ({}, returnValue: number) => {
+      if (returnValue > 0) snapshotIds.push(returnValue);
+    };
+    return this.traverseOnPoolStateChain(
+      simulatorPersistenceVisitor,
+      toPoolStateId,
+      fromPoolStateId,
+      poolStateVisitCallback
+    ).then(() => snapshotIds);
+  }
+
+  stepBack() {
+    let fromTransition = this.poolState.fromTransition;
+    if (!fromTransition) {
+      throw new Error("This is already initial poolState.");
+    }
+    this.recover((this.poolState.fromTransition as Transition).source.id);
+  }
+
+  recover(poolStateId: string) {
+    if (!this.simulatorRoadmapManager.hasPoolState(poolStateId)) {
+      throw new Error("Can't find poolState, id: " + poolStateId);
+    }
+    let poolState: PoolState = this.simulatorRoadmapManager.getPoolState(
+      poolStateId
+    ) as PoolState;
+    this._poolState = poolState;
+    this.corePool = poolState.recoverCorePool();
+  }
+
+  // this will take snapshot during PoolStates to speed up
+  showStateTransitionRoute(
+    toPoolStateId: string,
+    fromPoolStateId?: string
+  ): Promise<void> {
+    let simulatorConsoleVisitor: SimulatorVisitor =
+      new SimulatorConsoleVisitor();
+    return this.traverseOnPoolStateChain(
+      simulatorConsoleVisitor,
+      toPoolStateId,
+      fromPoolStateId
+    );
+  }
+
+  traverseOnPoolStateChain(
+    visitor: SimulatorVisitor,
+    toPoolStateId: string,
+    fromPoolStateId?: string,
+    poolStateVisitCallback?: (poolState: PoolState, returnValue: any) => void
+  ): Promise<void> {
+    if (fromPoolStateId) {
+      if (fromPoolStateId == toPoolStateId) {
+        throw new Error("Internal transition is not allowed!");
+      }
+      if (!this.simulatorRoadmapManager.hasPoolState(fromPoolStateId)) {
+        throw new Error("Can't find poolState, id: " + fromPoolStateId);
+      }
+    }
+    if (!this.simulatorRoadmapManager.hasPoolState(toPoolStateId)) {
+      throw new Error("Can't find poolState, id: " + toPoolStateId);
+    }
+    let toPoolState: PoolState = this.simulatorRoadmapManager.getPoolState(
+      toPoolStateId
+    ) as PoolState;
+    return this.accept(visitor).then(() =>
+      this.handleSingleStepOnChain(
+        toPoolState,
+        visitor,
+        fromPoolStateId,
+        poolStateVisitCallback
+      )
+    );
+  }
+
+  get poolState(): PoolState {
+    return this._poolState;
+  }
+
+  accept(visitor: SimulatorVisitor): Promise<string> {
+    return visitor.visitOnConfigurableCorePool(this);
+  }
+
+  private handleSingleStepOnChain(
+    poolState: PoolState,
+    simulatorVisitor: SimulatorVisitor,
+    fromPoolStateId?: string,
+    poolStateVisitCallback?: (poolState: PoolState, returnValue: any) => void
+  ): Promise<void> {
+    if (!poolState.fromTransition || poolState.id == fromPoolStateId) {
+      return poolState.accept(simulatorVisitor).then(() => Promise.resolve());
+    } else {
+      let fromTransition = poolState.fromTransition as Transition;
+      return this.handleSingleStepOnChain(
+        fromTransition.source,
+        simulatorVisitor,
+        fromPoolStateId,
+        poolStateVisitCallback
+      )
+        .then(() => fromTransition.accept(simulatorVisitor))
+        .then(() => poolState.accept(simulatorVisitor, poolStateVisitCallback))
+        .then(() => Promise.resolve());
+    }
+  }
+
+  private buildRecord(
+    actionType: ActionType,
+    actionParams: MethodParams,
+    actionReturnValues: ReturnParams
+  ): Record {
     return {
-      id: "0",
-      eventId: 1,
-      actionType: actionType,
-      actionParams: [],
+      id: IDGenerator.guid(),
+      actionType,
+      actionParams,
+      actionReturnValues,
       timestamp: new Date(),
     };
   }
 
-  private postProcess(actionType: ActionType, actionParams: object) {
-    let record = this.applyRecord(actionType, actionParams);
-    this.postProcessorCallback(
-      record.id,
-      record.actionType,
-      record.actionParams
+  private getNextPoolState(fromTransition: Transition) {
+    let nextPoolState = new PoolState(
+      this.poolState.poolConfig,
+      undefined,
+      fromTransition
     );
+    fromTransition.target = nextPoolState;
+    return nextPoolState;
+  }
+
+  private postProcess(
+    actionType: ActionType,
+    actionParams: MethodParams,
+    actionReturnValues: ReturnParams,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: Transition
+    ) => void
+  ) {
+    let record: Record = this.buildRecord(
+      actionType,
+      actionParams,
+      actionReturnValues
+    );
+    let transition: Transition = this.poolState.addTransition(record);
+    let nextPoolState: PoolState = this.getNextPoolState(transition);
+    this.simulatorRoadmapManager.addPoolState(nextPoolState);
+    let postProcessor = postProcessorCallback
+      ? postProcessorCallback
+      : this.postProcessorCallback;
+    postProcessor(this, transition);
+    this._poolState = nextPoolState;
   }
 }

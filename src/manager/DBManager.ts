@@ -3,17 +3,28 @@ import { PoolState } from "../model/PoolState";
 import { TickManager } from "./TickManager";
 import { PositionManager } from "./PositionManager";
 import { Snapshot } from "../entity/Snapshot";
+import { Roadmap } from "../model/Roadmap";
 import { SnapshotProfile } from "../entity/SnapshotProfile";
-import { PoolConfig } from "../entity/PoolConfig";
+import { PoolConfig } from "../model/PoolConfig";
 import { Knex, knex as knexBuilder } from "knex";
 import {
   Serializer,
   JSBISerializer,
   JSBIDeserializer,
+  NumberArraySerializer,
+  NumberArrayDeserializer,
 } from "../util/Serializer";
 import { DateConverter } from "../util/DateConverter";
 
 const DATE_FORMAT: string = "YYYY-MM-DD HH:mm:ss.SSS";
+
+type RoadmapRecord = {
+  id: number;
+  roadmapId: string;
+  description: string;
+  snapshots: string;
+  timestamp: string;
+};
 
 type SnapshotRecord = {
   id: number;
@@ -44,12 +55,20 @@ type PoolConfigRecord = {
 
 export class DBManager {
   private knex: Knex;
+  private static _instance: DBManager;
 
   constructor(knex: Knex) {
     this.knex = knex;
   }
 
-  static async buildInstance(dbPath: string): Promise<DBManager> {
+  public static get instance(): DBManager {
+    if (!DBManager._instance) {
+      throw new Error("Please build an instance first!");
+    }
+    return DBManager._instance;
+  }
+
+  static buildInstance(dbPath: string): Promise<DBManager> {
     const config: Knex.Config = {
       client: "sqlite3",
       connection: {
@@ -59,11 +78,13 @@ export class DBManager {
       useNullAsDefault: true,
     };
     let dbManager = new DBManager(knexBuilder(config));
-    await dbManager.initTables();
-    return dbManager;
+    return dbManager.initTables().then(() => {
+      this._instance = dbManager;
+      return dbManager;
+    });
   }
 
-  private initTables() {
+  private initTables(): Promise<void[]> {
     const knex = this.knex;
     let tasks = [
       knex.schema.hasTable("poolConfig").then((exists: boolean) =>
@@ -105,11 +126,36 @@ export class DBManager {
             )
           : Promise.resolve()
       ),
+      knex.schema.hasTable("roadmap").then((exists: boolean) =>
+        !exists
+          ? knex.schema.createTable("roadmap", function (t: Knex.TableBuilder) {
+              t.increments("id").primary();
+              t.string("roadmapId", 32);
+              t.string("description", 255);
+              t.string("snapshots", 255);
+              t.text("timestamp");
+            })
+          : Promise.resolve()
+      ),
     ];
     return Promise.all(tasks);
   }
 
-  persistSnapshot(poolState: PoolState): Promise<Array<number>> {
+  persistRoadmap(roadmap: Roadmap): Promise<number> {
+    return this.knex
+      .transaction((trx) =>
+        this.insertRoadmap(
+          roadmap.id,
+          roadmap.description,
+          roadmap.snapshots,
+          roadmap.timestamp,
+          trx
+        )
+      )
+      .then((ids) => Promise.resolve(ids[0]));
+  }
+
+  persistSnapshot(poolState: PoolState): Promise<number> {
     let poolConfigId = poolState.poolConfig.id;
     let snapshot = <Snapshot>poolState.snapshot;
     return this.knex.transaction((trx) =>
@@ -118,24 +164,26 @@ export class DBManager {
           (!poolConfig
             ? this.insertPoolConfig(poolState.poolConfig, trx)
             : Promise.resolve([])
-          ).then(() =>
-            this.insertSnapshot(
-              snapshot.id,
-              poolConfigId,
-              snapshot.description,
-              snapshot.token0Balance,
-              snapshot.token1Balance,
-              snapshot.sqrtPriceX96,
-              snapshot.liquidity,
-              snapshot.tickCurrent,
-              snapshot.feeGrowthGlobal0X128,
-              snapshot.feeGrowthGlobal1X128,
-              snapshot.tickManager,
-              snapshot.positionManager,
-              snapshot.timestamp,
-              trx
-            )
           )
+            .then(() =>
+              this.insertSnapshot(
+                snapshot.id,
+                poolConfigId,
+                snapshot.description,
+                snapshot.token0Balance,
+                snapshot.token1Balance,
+                snapshot.sqrtPriceX96,
+                snapshot.liquidity,
+                snapshot.tickCurrent,
+                snapshot.feeGrowthGlobal0X128,
+                snapshot.feeGrowthGlobal1X128,
+                snapshot.tickManager,
+                snapshot.positionManager,
+                snapshot.timestamp,
+                trx
+              )
+            )
+            .then((ids) => Promise.resolve(ids[0]))
       )
     );
   }
@@ -153,6 +201,30 @@ export class DBManager {
     );
   }
 
+  getSnapshots(snapshotIds: number[]): Promise<Snapshot[]> {
+    let snapshotRecords: SnapshotRecord[];
+    return this.readSnapshots(snapshotIds).then(
+      (snapshots: SnapshotRecord[]) => {
+        snapshotRecords = snapshots;
+        return snapshotRecords.length == 0
+          ? Promise.resolve([])
+          : this.getPoolConfig(snapshots[0].poolConfigId).then(
+              (poolConfig: PoolConfig | undefined) =>
+                !poolConfig
+                  ? Promise.reject(new Error("PoolConfig is of shortage!"))
+                  : Promise.resolve(
+                      snapshotRecords.map((snapshot: SnapshotRecord) =>
+                        this.transferSnapshotRecordToSnapshot(
+                          snapshot,
+                          poolConfig
+                        )
+                      )
+                    )
+            );
+      }
+    );
+  }
+
   getSnapshot(snapshotId: string): Promise<Snapshot | undefined> {
     return this.readSnapshot(snapshotId).then(
       (snapshot: SnapshotRecord | undefined) =>
@@ -162,35 +234,12 @@ export class DBManager {
               (poolConfig: PoolConfig | undefined) =>
                 !poolConfig
                   ? Promise.reject(new Error("PoolConfig is of shortage!"))
-                  : Promise.resolve({
-                      id: snapshot.snapshotId,
-                      description: snapshot.description,
-                      poolConfig: <PoolConfig>poolConfig,
-                      token0Balance: JSBIDeserializer(snapshot.token0Balance),
-                      token1Balance: JSBIDeserializer(snapshot.token1Balance),
-                      sqrtPriceX96: JSBIDeserializer(snapshot.sqrtPriceX96),
-                      liquidity: JSBIDeserializer(snapshot.liquidity),
-                      tickCurrent: snapshot.tickCurrent,
-                      feeGrowthGlobal0X128: JSBIDeserializer(
-                        snapshot.feeGrowthGlobal0X128
-                      ),
-                      feeGrowthGlobal1X128: JSBIDeserializer(
-                        snapshot.feeGrowthGlobal1X128
-                      ),
-                      tickManager: <TickManager>(
-                        Serializer.deserialize(
-                          TickManager,
-                          snapshot.tickManager
-                        )
-                      ),
-                      positionManager: <PositionManager>(
-                        Serializer.deserialize(
-                          PositionManager,
-                          snapshot.positionManager
-                        )
-                      ),
-                      timestamp: DateConverter.parseDate(snapshot.timestamp),
-                    })
+                  : Promise.resolve(
+                      this.transferSnapshotRecordToSnapshot(
+                        snapshot,
+                        poolConfig
+                      )
+                    )
             )
     );
   }
@@ -209,6 +258,19 @@ export class DBManager {
     );
   }
 
+  getRoadmap(roadmapId: string): Promise<Roadmap | undefined> {
+    return this.readRoadmap(roadmapId).then((res) =>
+      !res
+        ? Promise.resolve(undefined)
+        : Promise.resolve({
+            id: res.roadmapId,
+            description: res.description,
+            snapshots: NumberArrayDeserializer(res.snapshots),
+            timestamp: DateConverter.parseDate(res.timestamp),
+          })
+    );
+  }
+
   close(): Promise<void> {
     return this.knex.destroy();
   }
@@ -220,6 +282,13 @@ export class DBManager {
     return this.getBuilderContext("snapshot", trx)
       .where("snapshotId", snapshotId)
       .first();
+  }
+
+  private readSnapshots(
+    snapshotIds: number[],
+    trx?: Knex.Transaction
+  ): Promise<SnapshotRecord[]> {
+    return this.getBuilderContext("snapshot", trx).whereIn("id", snapshotIds);
   }
 
   private readSnapshotProfiles(
@@ -265,6 +334,32 @@ export class DBManager {
     ]);
   }
 
+  private insertRoadmap(
+    roadmapId: string,
+    description: string,
+    snapshots: number[],
+    timestamp: Date,
+    trx?: Knex.Transaction
+  ): Promise<Array<number>> {
+    return this.getBuilderContext("roadmap", trx).insert([
+      {
+        roadmapId,
+        description,
+        snapshots: NumberArraySerializer(snapshots),
+        timestamp: DateConverter.formatDate(timestamp, DATE_FORMAT),
+      },
+    ]);
+  }
+
+  private readRoadmap(
+    roadmapId: string,
+    trx?: Knex.Transaction
+  ): Promise<RoadmapRecord | undefined> {
+    return this.getBuilderContext("roadmap", trx)
+      .where("roadmapId", roadmapId)
+      .first();
+  }
+
   private readPoolConfig(
     poolConfigId: string,
     trx?: Knex.Transaction
@@ -288,6 +383,31 @@ export class DBManager {
         timestamp: DateConverter.formatDate(new Date(), DATE_FORMAT),
       },
     ]);
+  }
+
+  private transferSnapshotRecordToSnapshot(
+    snapshot: SnapshotRecord,
+    poolConfig: PoolConfig
+  ) {
+    return {
+      id: snapshot.snapshotId,
+      description: snapshot.description,
+      poolConfig,
+      token0Balance: JSBIDeserializer(snapshot.token0Balance),
+      token1Balance: JSBIDeserializer(snapshot.token1Balance),
+      sqrtPriceX96: JSBIDeserializer(snapshot.sqrtPriceX96),
+      liquidity: JSBIDeserializer(snapshot.liquidity),
+      tickCurrent: snapshot.tickCurrent,
+      feeGrowthGlobal0X128: JSBIDeserializer(snapshot.feeGrowthGlobal0X128),
+      feeGrowthGlobal1X128: JSBIDeserializer(snapshot.feeGrowthGlobal1X128),
+      tickManager: <TickManager>(
+        Serializer.deserialize(TickManager, snapshot.tickManager)
+      ),
+      positionManager: <PositionManager>(
+        Serializer.deserialize(PositionManager, snapshot.positionManager)
+      ),
+      timestamp: DateConverter.parseDate(snapshot.timestamp),
+    };
   }
 
   private getBuilderContext(

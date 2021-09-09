@@ -1,9 +1,9 @@
 import { DBManager } from "../src/manager/DBManager";
 import { PoolState } from "../src/model/PoolState";
 import { FeeAmount } from "../src/enum/FeeAmount";
-// import { ONE } from "../src/enum/InternalConstants";
-// import { TickManager } from "../src/manager/TickManager";
-// import { PositionManager } from "../src/manager/PositionManager";
+import { ONE } from "../src/enum/InternalConstants";
+import { TickManager } from "../src/manager/TickManager";
+import { PositionManager } from "../src/manager/PositionManager";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -53,7 +53,18 @@ describe("Test DBManager", async function () {
       fee: FeeAmount.MEDIUM,
     };
     let poolState = new PoolState(poolConfig);
-    poolState.takeSnapshot();
+    poolState.takeSnapshot(
+      "for test",
+      ONE,
+      ONE,
+      ONE,
+      ONE,
+      10,
+      ONE,
+      ONE,
+      new TickManager(),
+      new PositionManager()
+    );
     expect(db.persistSnapshot(poolState)).to.eventually.be.fulfilled;
     expect(db.getSnapshot(snapshotId)).to.eventually.be.not.undefined;
     expect(db.getSnapshotProfiles()).to.eventually.have.lengthOf(1);
