@@ -1,11 +1,8 @@
 import JSBI from "jsbi";
-import { TickManager } from "../manager/TickManager";
-import { PositionManager } from "../manager/PositionManager";
 import { PoolState } from "../model/PoolState";
 import { Record } from "../entity/Record";
 import { CorePool } from "./CorePool";
 import { ActionType } from "../enum/ActionType";
-import { Serializer } from "../util/Serializer";
 import { Snapshot } from "../entity/Snapshot";
 
 export class ConfigurableCorePool extends CorePool {
@@ -43,10 +40,8 @@ export class ConfigurableCorePool extends CorePool {
         state.tickCurrent,
         state.feeGrowthGlobal0X128,
         state.feeGrowthGlobal1X128,
-        <TickManager>Serializer.deserialize(TickManager, state.ticks_json),
-        <PositionManager>(
-          Serializer.deserialize(PositionManager, state.positions_json)
-        )
+        state.tickManager,
+        state.positionManager
       );
     }
     this.poolState = poolState;
