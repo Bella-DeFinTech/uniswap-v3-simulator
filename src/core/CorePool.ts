@@ -17,6 +17,7 @@ export class CorePool {
   readonly token1: string;
   readonly fee: FeeAmount;
   readonly tickSpacing: number;
+  readonly maxLiquidityPerTick: JSBI;
   private _token0Balance: JSBI;
   private _token1Balance: JSBI;
   private _sqrtPriceX96: JSBI;
@@ -46,6 +47,8 @@ export class CorePool {
     this.token1 = token1;
     this.fee = fee;
     this.tickSpacing = tickSpacing;
+    this.maxLiquidityPerTick =
+      TickMath.tickSpacingToMaxLiquidityPerTick(tickSpacing);
     this._token0Balance = token0Balance;
     this._token1Balance = token1Balance;
     this._sqrtPriceX96 = sqrtPriceX96;
