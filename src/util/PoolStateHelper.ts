@@ -10,13 +10,11 @@ export abstract class PoolStateHelper {
     let fromTransition = poolState.fromTransition;
     if (!fromTransition) {
       return poolState.hasBaseSnapshot()
-        ? PoolStateHelper.buildCorePoolBySnapshot(
-            poolState.baseSnapshot as Snapshot
-          )
+        ? PoolStateHelper.buildCorePoolBySnapshot(poolState.baseSnapshot!)
         : PoolStateHelper.buildCorePoolByPoolConfig(poolState.poolConfig);
     } else {
       if (poolState.hasSnapshot()) {
-        let snapshot = poolState.snapshot as Snapshot;
+        let snapshot = poolState.snapshot!;
         return PoolStateHelper.buildCorePoolBySnapshot(snapshot);
       } else {
         return PoolStateHelper.applyRecordOnCorePool(
@@ -60,7 +58,10 @@ export abstract class PoolStateHelper {
     corepool: CorePool,
     record: Record
   ): CorePool {
-    if (record.actionType == ActionType.SNAPSHOT) {
+    if (
+      record.actionType == ActionType.SNAPSHOT ||
+      record.actionType == ActionType.FORK
+    ) {
       return corepool;
     }
     let event: Function = corepool[record.actionType];
@@ -72,8 +73,6 @@ export abstract class PoolStateHelper {
   }
 
   private static actionParamsToParamsArray(actionParams: any): Array<any> {
-    return Object.keys(actionParams).map(
-      (paramKey) => actionParams[paramKey]
-    );
+    return Object.keys(actionParams).map((paramKey) => actionParams[paramKey]);
   }
 }

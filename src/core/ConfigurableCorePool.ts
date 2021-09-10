@@ -183,7 +183,8 @@ export class ConfigurableCorePool implements Visitable {
   }
 
   fork(): ConfigurableCorePool {
-    return new ConfigurableCorePool(this.poolState);
+    this.takeSnapshot("Automated for forking");
+    return new ConfigurableCorePool(this.poolState.fork());
   }
 
   persistSnapshot(): Promise<string> {
@@ -287,7 +288,11 @@ export class ConfigurableCorePool implements Visitable {
     fromPoolStateId?: string,
     poolStateVisitCallback?: (poolState: PoolState, returnValue: any) => void
   ): Promise<void> {
-    if (!poolState.fromTransition || poolState.id == fromPoolStateId) {
+    if (
+      !poolState.fromTransition ||
+      poolState.fromTransition.record.actionType == ActionType.FORK ||
+      poolState.id == fromPoolStateId
+    ) {
       return poolState.accept(simulatorVisitor).then(() => Promise.resolve());
     } else {
       let fromTransition = poolState.fromTransition!;

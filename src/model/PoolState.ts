@@ -10,6 +10,7 @@ import { Visitable } from "../interface/Visitable";
 import { SimulatorVisitor } from "../interface/SimulatorVisitor";
 import { PoolStateHelper } from "../util/PoolStateHelper";
 import { CorePool } from "../core/CorePool";
+import { ActionType } from "../enum/ActionType";
 
 export class PoolState implements Visitable {
   readonly id: string;
@@ -30,9 +31,7 @@ export class PoolState implements Visitable {
         "Please give at least a PoolConfig or a Snapshot from past persistence!"
       );
     }
-    this.poolConfig = baseSnapshot
-      ? baseSnapshot.poolConfig
-      : poolConfig!;
+    this.poolConfig = baseSnapshot ? baseSnapshot.poolConfig : poolConfig!;
     this.id = baseSnapshot ? baseSnapshot.id : IDGenerator.guid();
     this.baseSnapshot = baseSnapshot;
     this.fromTransition = fromTransition;
@@ -115,5 +114,24 @@ export class PoolState implements Visitable {
     const transition = new Transition(this, record);
     this.transitions.push(transition);
     return transition;
+  }
+
+  fork(): PoolState {
+    let record: Record = {
+      id: IDGenerator.guid(),
+      actionType: ActionType.FORK,
+      actionParams: {},
+      actionReturnValues: {},
+      timestamp: new Date(),
+    };
+    let transition: Transition = this.addTransition(record);
+    let forkedPoolState = new PoolState(
+      this.poolConfig,
+      this.baseSnapshot,
+      transition
+    );
+    transition.target = forkedPoolState;
+    forkedPoolState._snapshot = this.snapshot;
+    return forkedPoolState;
   }
 }

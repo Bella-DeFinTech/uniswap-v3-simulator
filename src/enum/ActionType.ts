@@ -4,4 +4,5 @@ export enum ActionType {
   COLLECT = "collect",
   SWAP = "swap",
   SNAPSHOT = "snapshot",
+  FORK = "fork",
 }
