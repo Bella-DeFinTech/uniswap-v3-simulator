@@ -186,6 +186,56 @@ export class ConfigurableCorePool implements Visitable {
     return new ConfigurableCorePool(this.poolState);
   }
 
+  persistSnapshot(): Promise<string> {
+    let simulatorPersistenceVisitor: SimulatorVisitor =
+      new SimulatorPersistenceVisitor();
+    return this.traverseOnPoolStateChain(
+      simulatorPersistenceVisitor,
+      this.poolState.id,
+      this.poolState.id
+    ).then(() => Promise.resolve(this.poolState.id));
+  }
+
+  stepBack() {
+    let fromTransition = this.poolState.fromTransition;
+    if (!fromTransition) {
+      throw new Error("This is already initial poolState.");
+    }
+    this.recover(fromTransition.source.id);
+  }
+
+  recover(poolStateId: string) {
+    if (!this.simulatorRoadmapManager.hasPoolState(poolStateId)) {
+      throw new Error("Can't find poolState, id: " + poolStateId);
+    }
+    let poolState: PoolState =
+      this.simulatorRoadmapManager.getPoolState(poolStateId)!;
+    this._poolState = poolState;
+    this.corePool = poolState.recoverCorePool();
+  }
+
+  get poolState(): PoolState {
+    return this._poolState;
+  }
+
+  accept(visitor: SimulatorVisitor): Promise<string> {
+    return visitor.visitOnConfigurableCorePool(this);
+  }
+
+  // this will take snapshot during PoolStates to speed up
+  showStateTransitionRoute(
+    toPoolStateId?: string,
+    fromPoolStateId?: string
+  ): Promise<void> {
+    let simulatorConsoleVisitor: SimulatorVisitor =
+      new SimulatorConsoleVisitor();
+    return this.traverseOnPoolStateChain(
+      simulatorConsoleVisitor,
+      toPoolStateId ? toPoolStateId : this.poolState.id,
+      fromPoolStateId
+    );
+  }
+
   persistSnapshots(
     toPoolStateId: string,
     fromPoolStateId?: string
@@ -201,62 +251,26 @@ export class ConfigurableCorePool implements Visitable {
       toPoolStateId,
       fromPoolStateId,
       poolStateVisitCallback
-    ).then(() => snapshotIds);
+    ).then(() => Promise.resolve(snapshotIds));
   }
 
-  stepBack() {
-    let fromTransition = this.poolState.fromTransition;
-    if (!fromTransition) {
-      throw new Error("This is already initial poolState.");
-    }
-    this.recover((this.poolState.fromTransition as Transition).source.id);
-  }
-
-  recover(poolStateId: string) {
-    if (!this.simulatorRoadmapManager.hasPoolState(poolStateId)) {
-      throw new Error("Can't find poolState, id: " + poolStateId);
-    }
-    let poolState: PoolState = this.simulatorRoadmapManager.getPoolState(
-      poolStateId
-    ) as PoolState;
-    this._poolState = poolState;
-    this.corePool = poolState.recoverCorePool();
-  }
-
-  // this will take snapshot during PoolStates to speed up
-  showStateTransitionRoute(
-    toPoolStateId: string,
-    fromPoolStateId?: string
-  ): Promise<void> {
-    let simulatorConsoleVisitor: SimulatorVisitor =
-      new SimulatorConsoleVisitor();
-    return this.traverseOnPoolStateChain(
-      simulatorConsoleVisitor,
-      toPoolStateId,
-      fromPoolStateId
-    );
-  }
-
-  traverseOnPoolStateChain(
+  private traverseOnPoolStateChain(
     visitor: SimulatorVisitor,
     toPoolStateId: string,
     fromPoolStateId?: string,
     poolStateVisitCallback?: (poolState: PoolState, returnValue: any) => void
   ): Promise<void> {
-    if (fromPoolStateId) {
-      if (fromPoolStateId == toPoolStateId) {
-        throw new Error("Internal transition is not allowed!");
-      }
-      if (!this.simulatorRoadmapManager.hasPoolState(fromPoolStateId)) {
-        throw new Error("Can't find poolState, id: " + fromPoolStateId);
-      }
+    if (
+      fromPoolStateId &&
+      !this.simulatorRoadmapManager.hasPoolState(fromPoolStateId)
+    ) {
+      throw new Error("Can't find poolState, id: " + fromPoolStateId);
     }
     if (!this.simulatorRoadmapManager.hasPoolState(toPoolStateId)) {
       throw new Error("Can't find poolState, id: " + toPoolStateId);
     }
-    let toPoolState: PoolState = this.simulatorRoadmapManager.getPoolState(
-      toPoolStateId
-    ) as PoolState;
+    let toPoolState: PoolState =
+      this.simulatorRoadmapManager.getPoolState(toPoolStateId)!;
     return this.accept(visitor).then(() =>
       this.handleSingleStepOnChain(
         toPoolState,
@@ -265,14 +279,6 @@ export class ConfigurableCorePool implements Visitable {
         poolStateVisitCallback
       )
     );
-  }
-
-  get poolState(): PoolState {
-    return this._poolState;
-  }
-
-  accept(visitor: SimulatorVisitor): Promise<string> {
-    return visitor.visitOnConfigurableCorePool(this);
   }
 
   private handleSingleStepOnChain(
@@ -284,7 +290,7 @@ export class ConfigurableCorePool implements Visitable {
     if (!poolState.fromTransition || poolState.id == fromPoolStateId) {
       return poolState.accept(simulatorVisitor).then(() => Promise.resolve());
     } else {
-      let fromTransition = poolState.fromTransition as Transition;
+      let fromTransition = poolState.fromTransition!;
       return this.handleSingleStepOnChain(
         fromTransition.source,
         simulatorVisitor,
