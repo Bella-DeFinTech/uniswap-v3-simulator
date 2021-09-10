@@ -56,14 +56,15 @@ export class Tick {
     tickCurrent: number,
     feeGrowthGlobal0X128: JSBI,
     feeGrowthGlobal1X128: JSBI,
-    upper: boolean
+    upper: boolean,
+    maxLiquidity: JSBI
   ): boolean {
     const liquidityGrossBefore = this.liquidityGross;
     const liquidityGrossAfter = LiquidityMath.addDelta(
       liquidityGrossBefore,
       liquidityDelta
     );
-    //assert(liquidityGrossAfter <= maxLiquidity)
+    assert(JSBI.lessThanOrEqual(liquidityGrossAfter, maxLiquidity), "LO");
     const flipped =
       JSBI.equal(liquidityGrossAfter, ZERO) !=
       JSBI.equal(liquidityGrossBefore, ZERO);

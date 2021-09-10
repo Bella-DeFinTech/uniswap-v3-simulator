@@ -12,7 +12,7 @@ export class PositionManager {
 
   static getKey(owner: string, tickLower: number, tickUpper: number): string {
     // TODO
-    return '';
+    return "";
   }
 
   set(key: string, position: Position) {
