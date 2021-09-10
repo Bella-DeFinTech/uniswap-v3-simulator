@@ -1,4 +1,4 @@
-import JSBI from 'jsbi';
+import JSBI from "jsbi";
 import { PoolConfig } from "./PoolConfig";
 
 export type Snapshot = {

@@ -1,4 +1,4 @@
-import JSBI from 'jsbi';
+import JSBI from "jsbi";
 import { PoolState } from "../model/PoolState";
 import { TickManager } from "./TickManager";
 import { PositionManager } from "./PositionManager";
