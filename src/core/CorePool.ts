@@ -396,22 +396,56 @@ export class CorePool {
     tickUpper: number,
     liquidityDelta: JSBI
   ): Position {
-    let position: Position = this.getPosition(owner, tickLower, tickUpper);
+    let _position: Position = this.getPosition(owner, tickLower, tickUpper);
 
-    let _tick = this.tickManager.get(this._tickCurrent);
+    let _tick = this.tickManager.getTickAndInitIfAbsent(this._tickCurrent);
 
-    let liquidityGrossBefore = _tick.liquidityGross;
-    let liquidityGrossAfter = LiquidityMath.addDelta(
-      liquidityGrossBefore,
-      liquidityDelta
+    let flippedLower = _tick.update(
+      liquidityDelta,
+      this._tickCurrent,
+      this._feeGrowthGlobal0X128,
+      this._feeGrowthGlobal1X128,
+      false,
+      this.maxLiquidityPerTick
     );
 
-    // TODO
-    return position;
+    let flippedUpper = _tick.update(
+      liquidityDelta,
+      this._tickCurrent,
+      this._feeGrowthGlobal0X128,
+      this._feeGrowthGlobal1X128,
+      true,
+      this.maxLiquidityPerTick
+    );
+
+    let _feeGrowthInsideStep = this.tickManager.getFeeGrowthInside(
+      tickLower,
+      tickUpper,
+      this._tickCurrent,
+      this._feeGrowthGlobal0X128,
+      this._feeGrowthGlobal1X128
+    );
+
+    _position.update(
+      liquidityDelta,
+      _feeGrowthInsideStep.feeGrowthInside0X128,
+      _feeGrowthInsideStep.feeGrowthInside1X128
+    );
+
+    if (liquidityDelta < ZERO) {
+      if (flippedLower) {
+        this.tickManager.clear(tickLower);
+      }
+      if (flippedUpper) {
+        this.tickManager.clear(tickUpper);
+      }
+    }
+
+    return _position;
   }
 
   getTick(tick: number): Tick {
-    return this.tickManager.get(tick);
+    return this.tickManager.getTickAndInitIfAbsent(tick);
   }
 
   getPosition(owner: string, tickLower: number, tickUpper: number): Position {
