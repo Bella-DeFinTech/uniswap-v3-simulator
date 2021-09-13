@@ -98,10 +98,21 @@ export class CorePool {
     tickUpper: number,
     amount: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
+    let amount0: JSBI = ZERO;
+    let amount1: JSBI = ZERO;
+    let position: Position = this.getPosition(recipient, tickLower, tickUpper);
+
+    if (amount > ZERO) {
+      let step = this.modifyPosition(recipient, tickLower, tickUpper, amount);
+      position = step.position;
+      amount0 = step.amount0;
+      amount1 = step.amount1;
+    } else {
+      console.error("[Error]: amount need greater than 0");
+    }
     return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
+      amount0,
+      amount1,
     };
   }
 
@@ -309,11 +320,16 @@ export class CorePool {
     tickUpper: number,
     liquidityDelta: JSBI
   ): { position: Position; amount0: JSBI; amount1: JSBI } {
-    let amount0: JSBI, amount1: JSBI;
+    let amount0: JSBI = ZERO,
+      amount1: JSBI = ZERO;
+
+    let position: Position = this.getPosition(owner, tickLower, tickUpper);
+
     // check ticks
+    // use assert
     if (tickLower > tickUpper) {
       // error handling
-      console.error("tickLower upper than tickUpper");
+      console.error("[Error]: tickLower upper than tickUpper");
     } else if (tickLower < TickMath.MIN_TICK) {
       console.error("[Error]: tickLower lower than MIN_TICK");
     } else if (tickUpper > TickMath.MAX_TICK) {
@@ -321,9 +337,9 @@ export class CorePool {
     } else {
       // check ticks pass, update position
       this.updatePosition(owner, tickLower, tickUpper, liquidityDelta);
-
+      // use switch or pattern matching
       // check if liquidity happen add() or remove()
-      if (liquidityDelta !== JSBI.BigInt(0)) {
+      if (liquidityDelta !== ZERO) {
         if (this._tickCurrent < tickLower) {
           amount0 = SqrtPriceMath.getAmount0Delta(
             TickMath.getSqrtRatioAtTick(tickLower),
@@ -343,16 +359,31 @@ export class CorePool {
             liquidityDelta
           );
 
-          // modify liquidity
+          this._liquidity = LiquidityMath.addDelta(
+            this._liquidity,
+            liquidityDelta
+          );
         } else {
+          amount1 = SqrtPriceMath.getAmount1Delta(
+            TickMath.getSqrtRatioAtTick(tickLower),
+            TickMath.getSqrtRatioAtTick(tickUpper),
+            liquidityDelta
+          );
         }
       }
-    }
+      let positionKey: string = PositionManager.getKey(
+        owner,
+        tickLower,
+        tickUpper
+      );
+      position = this.positionManager.get(positionKey);
 
+      // return structure obj
+    }
     return {
-      position: new Position(),
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
+      position,
+      amount0,
+      amount1,
     };
   }
 
@@ -362,8 +393,18 @@ export class CorePool {
     tickUpper: number,
     liquidityDelta: JSBI
   ): Position {
+    let position: Position = this.getPosition(owner, tickLower, tickUpper);
+
+    let _tick = this.tickManager.get(this._tickCurrent);
+
+    let liquidityGrossBefore = _tick.liquidityGross;
+    let liquidityGrossAfter = LiquidityMath.addDelta(
+      liquidityGrossBefore,
+      liquidityDelta
+    );
+
     // TODO
-    return new Position();
+    return position;
   }
 
   getTick(tick: number): Tick {
