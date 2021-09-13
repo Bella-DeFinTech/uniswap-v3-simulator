@@ -268,7 +268,7 @@ export class CorePool {
       if (JSBI.equal(state.sqrtPriceX96, step.sqrtPriceNextX96)) {
         // if the tick is initialized, run the tick transition
         if (step.initialized) {
-          let nextTick = this.tickManager.get(step.tickNext);
+          let nextTick = this.tickManager.getTickAndInitIfAbsent(step.tickNext);
           let liquidityNet = nextTick.cross(
             zeroForOne ? state.feeGrowthGlobalX128 : this._feeGrowthGlobal0X128,
             zeroForOne ? this._feeGrowthGlobal1X128 : state.feeGrowthGlobalX128
