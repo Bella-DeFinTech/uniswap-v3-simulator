@@ -101,15 +101,23 @@ export class CorePool {
     tickUpper: number,
     amount: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    let amount0: JSBI = ZERO;
-    let amount1: JSBI = ZERO;
-    let position: Position = this.getPosition(recipient, tickLower, tickUpper);
+    if (amount <= ZERO) {
+      console.error("[Error]: mint amount should greater than 0");
+    }
+
+    let amount0 = ZERO;
+    let amount1 = ZERO;
 
     if (amount > ZERO) {
-      let step = this.modifyPosition(recipient, tickLower, tickUpper, amount);
-      position = step.position;
-      amount0 = step.amount0;
-      amount1 = step.amount1;
+      let positionStep = this.modifyPosition(
+        recipient,
+        tickLower,
+        tickUpper,
+        amount
+      );
+
+      amount0 = positionStep.amount0;
+      amount1 = positionStep.amount1;
     } else {
       console.error("[Error]: amount need greater than 0");
     }
@@ -125,10 +133,21 @@ export class CorePool {
     tickUpper: number,
     amount: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
+    let positionStep = this.modifyPosition(owner, tickLower, tickUpper, amount);
+
+    let amount0 = JSBI.bitwiseNot(positionStep.amount0);
+    let amount1 = JSBI.bitwiseNot(positionStep.amount1);
+
+    if (amount0 > ZERO || amount1 > ZERO) {
+      let _position = this.getPosition(owner, tickLower, tickUpper);
+
+      let _newTokensOwed0 = JSBI.add(_position.tokensOwed0, amount0);
+      let _newTokensOwed1 = JSBI.add(_position.tokensOwed1, amount1);
+    }
+
     return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
+      amount0,
+      amount1,
     };
   }
 
