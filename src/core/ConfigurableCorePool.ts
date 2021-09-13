@@ -148,7 +148,7 @@ export class ConfigurableCorePool implements Visitable {
     return res;
   }
 
-  // pool state will not move to next until we finish calling user custom PostProcessor
+  // user custom PostProcessor will be called after pool state transition finishes
   updatePostProcessor(
     callback: (
       configurableCorePool: ConfigurableCorePool,
@@ -349,10 +349,10 @@ export class ConfigurableCorePool implements Visitable {
     let transition: Transition = this.poolState.addTransition(record);
     let nextPoolState: PoolState = this.getNextPoolState(transition);
     this.simulatorRoadmapManager.addPoolState(nextPoolState);
+    this._poolState = nextPoolState;
     let postProcessor = postProcessorCallback
       ? postProcessorCallback
       : this.postProcessorCallback;
     postProcessor(this, transition);
-    this._poolState = nextPoolState;
   }
 }
