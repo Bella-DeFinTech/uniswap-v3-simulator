@@ -1,8 +1,11 @@
-import JSBI from 'jsbi';
+import JSBI from "jsbi";
+import { PositionManager } from "../manager/PositionManager";
+import { TickManager } from "../manager/TickManager";
 import { PoolConfig } from "./PoolConfig";
 
 export type Snapshot = {
   id: string;
+  description: string;
   poolConfig: PoolConfig;
   token0Balance: JSBI;
   token1Balance: JSBI;
@@ -11,7 +14,7 @@ export type Snapshot = {
   tickCurrent: number;
   feeGrowthGlobal0X128: JSBI;
   feeGrowthGlobal1X128: JSBI;
-  ticks_json: string;
-  positions_json: string;
+  tickManager: TickManager;
+  positionManager: PositionManager;
   timestamp: Date;
 };
