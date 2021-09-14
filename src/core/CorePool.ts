@@ -101,14 +101,14 @@ export class CorePool {
     tickUpper: number,
     amount: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    if (amount <= ZERO) {
+    if (JSBI.lessThanOrEqual(amount, ZERO)) {
       console.error("[Error]: mint amount should greater than 0");
     }
 
     let amount0 = ZERO;
     let amount1 = ZERO;
 
-    if (amount > ZERO) {
+    if (JSBI.greaterThan(amount, ZERO)) {
       let positionStep = this.modifyPosition(
         recipient,
         tickLower,
@@ -138,11 +138,12 @@ export class CorePool {
     let amount0 = JSBI.bitwiseNot(positionStep.amount0);
     let amount1 = JSBI.bitwiseNot(positionStep.amount1);
 
-    if (amount0 > ZERO || amount1 > ZERO) {
+    if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
       let _position = this.getPosition(owner, tickLower, tickUpper);
 
       let _newTokensOwed0 = JSBI.add(_position.tokensOwed0, amount0);
       let _newTokensOwed1 = JSBI.add(_position.tokensOwed1, amount1);
+      // TODO, use new TokenOwed values set up new position and update it.
     }
 
     return {
@@ -347,7 +348,6 @@ export class CorePool {
 
     let position: Position = this.getPosition(owner, tickLower, tickUpper);
 
-    // check ticks
     // use assert
     if (tickLower > tickUpper) {
       // error handling
@@ -361,7 +361,7 @@ export class CorePool {
       this.updatePosition(owner, tickLower, tickUpper, liquidityDelta);
       // use switch or pattern matching
       // check if liquidity happen add() or remove()
-      if (liquidityDelta !== ZERO) {
+      if (JSBI.notEqual(liquidityDelta, ZERO)) {
         if (this._tickCurrent < tickLower) {
           amount0 = SqrtPriceMath.getAmount0Delta(
             TickMath.getSqrtRatioAtTick(tickLower),
@@ -393,14 +393,8 @@ export class CorePool {
           );
         }
       }
-      let positionKey: string = PositionManager.getKey(
-        owner,
-        tickLower,
-        tickUpper
-      );
-      position = this.positionManager.get(positionKey);
 
-      // return structure obj
+      position = this.getPosition(owner, tickLower, tickUpper);
     }
     return {
       position,
@@ -451,7 +445,7 @@ export class CorePool {
       _feeGrowthInsideStep.feeGrowthInside1X128
     );
 
-    if (liquidityDelta < ZERO) {
+    if (JSBI.lessThan(liquidityDelta, ZERO)) {
       if (flippedLower) {
         this.tickManager.clear(tickLower);
       }
