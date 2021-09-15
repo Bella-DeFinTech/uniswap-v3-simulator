@@ -46,7 +46,7 @@ export class Position {
   ) {
     let liquidityNext: JSBI;
     if (JSBI.equal(liquidityDelta, ZERO)) {
-      assert(JSBI.lessThanOrEqual(this.liquidity, ZERO), "NP");
+      assert(JSBI.greaterThanOrEqual(this.liquidity, ZERO), "NP");
       liquidityNext = this.liquidity;
     } else {
       liquidityNext = LiquidityMath.addDelta(this.liquidity, liquidityDelta);
@@ -73,5 +73,10 @@ export class Position {
       this._tokensOwed0 = JSBI.add(this.tokensOwed0, tokensOwed0);
       this._tokensOwed1 = JSBI.add(this.tokensOwed1, tokensOwed1);
     }
+  }
+
+  updateBurn(newTokensOwed0: JSBI, newTokensOwed1: JSBI) {
+    this._tokensOwed0 = newTokensOwed0;
+    this._tokensOwed1 = newTokensOwed1;
   }
 }
