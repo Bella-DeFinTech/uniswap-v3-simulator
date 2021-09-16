@@ -157,7 +157,7 @@ export class DBManager {
 
   persistSnapshot(poolState: PoolState): Promise<number> {
     let poolConfigId = poolState.poolConfig.id;
-    let snapshot = <Snapshot>poolState.snapshot;
+    let snapshot = poolState.snapshot!;
     return this.knex.transaction((trx) =>
       this.readPoolConfig(poolConfigId, trx).then(
         (poolConfig: PoolConfigRecord | undefined) =>

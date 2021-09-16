@@ -15,12 +15,17 @@ export class SimulatorPersistenceVisitor implements SimulatorVisitor {
     callback?: (poolState: PoolState, returnValue: number) => void
   ): Promise<string> {
     // avoid saving duplicate snapshot as well as not neglecting anyone
-    return (
+    let persistencePromise: Promise<number>;
+    if (
       poolState.fromTransition &&
       poolState.fromTransition.record.actionType == ActionType.SNAPSHOT
-        ? Promise.resolve(0)
-        : DBManager.instance.persistSnapshot(poolState)
-    ).then((returnValue) => {
+    ) {
+      persistencePromise = Promise.resolve(0);
+    } else {
+      poolState.recoverCorePool(true);
+      persistencePromise = DBManager.instance.persistSnapshot(poolState);
+    }
+    return persistencePromise.then((returnValue) => {
       if (callback) callback(poolState, returnValue);
       return Promise.resolve("ok");
     });

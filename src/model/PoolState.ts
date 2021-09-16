@@ -92,7 +92,7 @@ export class PoolState implements Visitable {
     let corePool = this.hasSnapshot()
       ? PoolStateHelper.buildCorePoolBySnapshot(this.snapshot as Snapshot)
       : PoolStateHelper.recoverCorePoolByPoolStateChain(this);
-    if (takeSnapshot || !this.hasSnapshot()) {
+    if (takeSnapshot && !this.hasSnapshot()) {
       this.takeSnapshot(
         "Automated for caching",
         corePool.token0Balance,
