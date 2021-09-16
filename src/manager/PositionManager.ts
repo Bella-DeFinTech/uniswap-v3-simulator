@@ -11,15 +11,29 @@ export class PositionManager {
   }
 
   static getKey(owner: string, tickLower: number, tickUpper: number): string {
-    // TODO
-    return "";
+    // We might need a fancier hash function here
+    // but for now, I think this will do, and it's more verbose:
+    return owner + "_" + tickLower.toString() + "_" + tickUpper.toString();
   }
 
   set(key: string, position: Position) {
     this.positions.set(key, position);
   }
 
-  get(key: string): Position {
-    return this.positions.get(key) || new Position();
+  getPositionAndInitIfAbsent(key: string): Position {
+    if (this.positions.has(key)) return this.positions.get(key)!;
+    const newPosition = new Position();
+    this.set(key, newPosition);
+    return newPosition;
+  }
+
+  getPositionReadonly(
+    owner: string,
+    tickLower: number,
+    tickUpper: number
+  ): Position {
+    const key = PositionManager.getKey(owner, tickLower, tickUpper);
+    if (this.positions.has(key)) return this.positions.get(key)!;
+    return new Position();
   }
 }
