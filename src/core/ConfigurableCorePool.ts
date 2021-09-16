@@ -29,7 +29,7 @@ export class ConfigurableCorePool implements Visitable {
   private postProcessorCallback: (
     configurableCorePool: ConfigurableCorePool,
     transition: Transition
-  ) => void = function () {};
+  ) => Promise<void> = async function () {};
 
   constructor(poolState: PoolState) {
     this.id = IDGenerator.guid();
@@ -60,17 +60,16 @@ export class ConfigurableCorePool implements Visitable {
     postProcessorCallback?: (
       configurableCorePool: ConfigurableCorePool,
       transition: Transition
-    ) => void
-  ): { amount0: JSBI; amount1: JSBI } {
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }> {
     try {
       let res = this.corePool.mint(recipient, tickLower, tickUpper, amount);
-      this.postProcess(
+      return this.postProcess(
         ActionType.MINT,
         { recipient, tickLower, tickUpper, amount } as MintParams,
         res as GeneralReturnParams,
         postProcessorCallback
-      );
-      return res;
+      ).then(() => Promise.resolve(res));
     } catch (error) {
       this.recover(this.poolState.id);
       throw error;
@@ -85,17 +84,16 @@ export class ConfigurableCorePool implements Visitable {
     postProcessorCallback?: (
       configurableCorePool: ConfigurableCorePool,
       transition: Transition
-    ) => void
-  ): { amount0: JSBI; amount1: JSBI } {
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }> {
     try {
       let res = this.corePool.burn(owner, tickLower, tickUpper, amount);
-      this.postProcess(
+      return this.postProcess(
         ActionType.BURN,
         { owner, tickLower, tickUpper, amount } as BurnParams,
         res as GeneralReturnParams,
         postProcessorCallback
-      );
-      return res;
+      ).then(() => Promise.resolve(res));
     } catch (error) {
       this.recover(this.poolState.id);
       throw error;
@@ -111,8 +109,8 @@ export class ConfigurableCorePool implements Visitable {
     postProcessorCallback?: (
       configurableCorePool: ConfigurableCorePool,
       transition: Transition
-    ) => void
-  ): { amount0: JSBI; amount1: JSBI } {
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }> {
     try {
       let res = this.corePool.collect(
         recipient,
@@ -121,7 +119,7 @@ export class ConfigurableCorePool implements Visitable {
         amount0Requested,
         amount1Requested
       );
-      this.postProcess(
+      return this.postProcess(
         ActionType.COLLECT,
         {
           recipient,
@@ -132,8 +130,7 @@ export class ConfigurableCorePool implements Visitable {
         } as CollectParams,
         res as GeneralReturnParams,
         postProcessorCallback
-      );
-      return res;
+      ).then(() => Promise.resolve(res));
     } catch (error) {
       this.recover(this.poolState.id);
       throw error;
@@ -147,21 +144,20 @@ export class ConfigurableCorePool implements Visitable {
     postProcessorCallback?: (
       configurableCorePool: ConfigurableCorePool,
       transition: Transition
-    ) => void
-  ): { amount0: JSBI; amount1: JSBI } {
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }> {
     try {
       let res = this.corePool.swap(
         zeroForOne,
         amountSpecified,
         sqrtPriceLimitX96
       );
-      this.postProcess(
+      return this.postProcess(
         ActionType.SWAP,
         { zeroForOne, amountSpecified, sqrtPriceLimitX96 } as SwapParams,
         res as GeneralReturnParams,
         postProcessorCallback
-      );
-      return res;
+      ).then(() => Promise.resolve(res));
     } catch (error) {
       this.recover(this.poolState.id);
       throw error;
@@ -173,7 +169,7 @@ export class ConfigurableCorePool implements Visitable {
     callback: (
       configurableCorePool: ConfigurableCorePool,
       transition: Transition
-    ) => void
+    ) => Promise<void>
   ) {
     this.postProcessorCallback = callback;
   }
@@ -352,8 +348,8 @@ export class ConfigurableCorePool implements Visitable {
     postProcessorCallback?: (
       configurableCorePool: ConfigurableCorePool,
       transition: Transition
-    ) => void
-  ) {
+    ) => Promise<void>
+  ): Promise<void> {
     let record: Record = this.buildRecord(
       actionType,
       actionParams,
@@ -366,6 +362,6 @@ export class ConfigurableCorePool implements Visitable {
     let postProcessor = postProcessorCallback
       ? postProcessorCallback
       : this.postProcessorCallback;
-    postProcessor(this, transition);
+    return postProcessor(this, transition);
   }
 }
