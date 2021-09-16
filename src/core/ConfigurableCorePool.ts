@@ -62,14 +62,19 @@ export class ConfigurableCorePool implements Visitable {
       transition: Transition
     ) => void
   ): { amount0: JSBI; amount1: JSBI } {
-    let res = this.corePool.mint(recipient, tickLower, tickUpper, amount);
-    this.postProcess(
-      ActionType.MINT,
-      { recipient, tickLower, tickUpper, amount } as MintParams,
-      res as GeneralReturnParams,
-      postProcessorCallback
-    );
-    return res;
+    try {
+      let res = this.corePool.mint(recipient, tickLower, tickUpper, amount);
+      this.postProcess(
+        ActionType.MINT,
+        { recipient, tickLower, tickUpper, amount } as MintParams,
+        res as GeneralReturnParams,
+        postProcessorCallback
+      );
+      return res;
+    } catch (error) {
+      this.recover(this.poolState.id);
+      throw error;
+    }
   }
 
   burn(
@@ -82,14 +87,19 @@ export class ConfigurableCorePool implements Visitable {
       transition: Transition
     ) => void
   ): { amount0: JSBI; amount1: JSBI } {
-    let res = this.corePool.burn(owner, tickLower, tickUpper, amount);
-    this.postProcess(
-      ActionType.BURN,
-      { owner, tickLower, tickUpper, amount } as BurnParams,
-      res as GeneralReturnParams,
-      postProcessorCallback
-    );
-    return res;
+    try {
+      let res = this.corePool.burn(owner, tickLower, tickUpper, amount);
+      this.postProcess(
+        ActionType.BURN,
+        { owner, tickLower, tickUpper, amount } as BurnParams,
+        res as GeneralReturnParams,
+        postProcessorCallback
+      );
+      return res;
+    } catch (error) {
+      this.recover(this.poolState.id);
+      throw error;
+    }
   }
 
   collect(
@@ -103,26 +113,31 @@ export class ConfigurableCorePool implements Visitable {
       transition: Transition
     ) => void
   ): { amount0: JSBI; amount1: JSBI } {
-    let res = this.corePool.collect(
-      recipient,
-      tickLower,
-      tickUpper,
-      amount0Requested,
-      amount1Requested
-    );
-    this.postProcess(
-      ActionType.COLLECT,
-      {
+    try {
+      let res = this.corePool.collect(
         recipient,
         tickLower,
         tickUpper,
         amount0Requested,
-        amount1Requested,
-      } as CollectParams,
-      res as GeneralReturnParams,
-      postProcessorCallback
-    );
-    return res;
+        amount1Requested
+      );
+      this.postProcess(
+        ActionType.COLLECT,
+        {
+          recipient,
+          tickLower,
+          tickUpper,
+          amount0Requested,
+          amount1Requested,
+        } as CollectParams,
+        res as GeneralReturnParams,
+        postProcessorCallback
+      );
+      return res;
+    } catch (error) {
+      this.recover(this.poolState.id);
+      throw error;
+    }
   }
 
   swap(
@@ -134,18 +149,23 @@ export class ConfigurableCorePool implements Visitable {
       transition: Transition
     ) => void
   ): { amount0: JSBI; amount1: JSBI } {
-    let res = this.corePool.swap(
-      zeroForOne,
-      amountSpecified,
-      sqrtPriceLimitX96
-    );
-    this.postProcess(
-      ActionType.SWAP,
-      { zeroForOne, amountSpecified, sqrtPriceLimitX96 } as SwapParams,
-      res as GeneralReturnParams,
-      postProcessorCallback
-    );
-    return res;
+    try {
+      let res = this.corePool.swap(
+        zeroForOne,
+        amountSpecified,
+        sqrtPriceLimitX96
+      );
+      this.postProcess(
+        ActionType.SWAP,
+        { zeroForOne, amountSpecified, sqrtPriceLimitX96 } as SwapParams,
+        res as GeneralReturnParams,
+        postProcessorCallback
+      );
+      return res;
+    } catch (error) {
+      this.recover(this.poolState.id);
+      throw error;
+    }
   }
 
   // user custom PostProcessor will be called after pool state transition finishes
