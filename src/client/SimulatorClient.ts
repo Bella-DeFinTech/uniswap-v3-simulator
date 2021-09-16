@@ -50,6 +50,10 @@ export class SimulatorClient {
     return this.dbManager.getSnapshotProfiles();
   }
 
+  shutdown() : Promise<void>{
+    return this.dbManager.close();
+  }
+
   // TODO
   clearSnapshotPersistence(snapshotId: string) {
     throw new Error("not implemented.");
