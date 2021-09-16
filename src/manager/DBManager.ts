@@ -400,11 +400,10 @@ export class DBManager {
       tickCurrent: snapshot.tickCurrent,
       feeGrowthGlobal0X128: JSBIDeserializer(snapshot.feeGrowthGlobal0X128),
       feeGrowthGlobal1X128: JSBIDeserializer(snapshot.feeGrowthGlobal1X128),
-      tickManager: <TickManager>(
-        Serializer.deserialize(TickManager, snapshot.tickManager)
-      ),
-      positionManager: <PositionManager>(
-        Serializer.deserialize(PositionManager, snapshot.positionManager)
+      tickManager: Serializer.deserialize(TickManager, snapshot.tickManager),
+      positionManager: Serializer.deserialize(
+        PositionManager,
+        snapshot.positionManager
       ),
       timestamp: DateConverter.parseDate(snapshot.timestamp),
     };

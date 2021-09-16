@@ -11,6 +11,7 @@ import { SimulatorVisitor } from "../interface/SimulatorVisitor";
 import { PoolStateHelper } from "../util/PoolStateHelper";
 import { CorePool } from "../core/CorePool";
 import { ActionType } from "../enum/ActionType";
+import { Serializer } from "../util/Serializer";
 
 export class PoolState implements Visitable {
   readonly id: string;
@@ -68,8 +69,14 @@ export class PoolState implements Visitable {
       tickCurrent,
       feeGrowthGlobal0X128,
       feeGrowthGlobal1X128,
-      tickManager,
-      positionManager,
+      tickManager: Serializer.deserialize(
+        TickManager,
+        Serializer.serialize(TickManager, tickManager)
+      ),
+      positionManager: Serializer.deserialize(
+        PositionManager,
+        Serializer.serialize(PositionManager, positionManager)
+      ),
       timestamp: new Date(),
     };
   }

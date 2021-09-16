@@ -3,14 +3,14 @@ import { TypedJSON } from "typedjson";
 import { Constructor } from "typedjson/src/types";
 
 export abstract class Serializer {
-  static serialize(rootConstructor: Constructor<any>, object: object): string {
+  static serialize<T>(rootConstructor: Constructor<T>, object: T): string {
     let serializer = new TypedJSON(rootConstructor);
     return serializer.stringify(object);
   }
 
-  static deserialize(rootConstructor: Constructor<any>, json: string): object {
+  static deserialize<T>(rootConstructor: Constructor<T>, jsonStr: string): T {
     let serializer = new TypedJSON(rootConstructor);
-    return serializer.parse(json);
+    return serializer.parse(jsonStr);
   }
 }
 
