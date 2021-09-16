@@ -357,6 +357,8 @@ export class CorePool {
     tickUpper: number,
     liquidityDelta: JSBI
   ): { position: Position; amount0: JSBI; amount1: JSBI } {
+    this.checkTicks(tickLower, tickUpper);
+
     let amount0: JSBI = ZERO,
       amount1: JSBI = ZERO;
 
@@ -369,8 +371,6 @@ export class CorePool {
         "Liquidity Underflow"
       );
     }
-
-    this.checkTicks(tickLower, tickUpper);
 
     // check ticks pass, update position
     position = this.updatePosition(owner, tickLower, tickUpper, liquidityDelta);
