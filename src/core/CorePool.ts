@@ -127,22 +127,17 @@ export class CorePool {
     tickUpper: number,
     amount: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    let amount0: JSBI;
-    let amount1: JSBI;
-
-    ({ amount0: amount0, amount1: amount1 } = this.modifyPosition(
+    let { position, amount0, amount1 } = this.modifyPosition(
       owner,
       tickLower,
       tickUpper,
-      amount
-    ));
+      JSBI.unaryMinus(amount)
+    );
 
     amount0 = JSBI.unaryMinus(amount0);
     amount1 = JSBI.unaryMinus(amount1);
 
     if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
-      let position = this.getPosition(owner, tickLower, tickUpper);
-
       let newTokensOwed0 = JSBI.add(position.tokensOwed0, amount0);
       let newTokensOwed1 = JSBI.add(position.tokensOwed1, amount1);
 
