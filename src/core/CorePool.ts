@@ -339,6 +339,18 @@ export class CorePool {
     return { amount0, amount1 };
   }
 
+  private checkTicks(tickLower: number, tickUpper: number) {
+    assert(tickLower < tickUpper, "tickLower should lower than tickUpper");
+    assert(
+      tickLower >= TickMath.MIN_TICK,
+      "tickLower should NOT lower than MIN_TICK"
+    );
+    assert(
+      tickUpper <= TickMath.MAX_TICK,
+      "tickUpper should NOT greater than MAX_TICK"
+    );
+  }
+
   private modifyPosition(
     owner: string,
     tickLower: number,
@@ -358,9 +370,7 @@ export class CorePool {
       );
     }
 
-    assert(tickLower > tickUpper, "tickLower upper than tickUpper");
-    assert(tickLower < TickMath.MIN_TICK, "tickLower lower than MIN_TICK");
-    assert(tickUpper > TickMath.MAX_TICK, "tickUpper bigger than MAX_TICK");
+    this.checkTicks(tickLower, tickUpper);
 
     // check ticks pass, update position
     position = this.updatePosition(owner, tickLower, tickUpper, liquidityDelta);
