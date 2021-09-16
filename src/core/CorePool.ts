@@ -141,11 +141,12 @@ export class CorePool {
     amount1 = JSBI.unaryMinus(amount1);
 
     if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
-      let _position = this.getPosition(owner, tickLower, tickUpper);
+      let position = this.getPosition(owner, tickLower, tickUpper);
 
-      let _newTokensOwed0 = JSBI.add(_position.tokensOwed0, amount0);
-      let _newTokensOwed1 = JSBI.add(_position.tokensOwed1, amount1);
-      // TODO, use new TokenOwed values set up new position and update it.
+      let newTokensOwed0 = JSBI.add(position.tokensOwed0, amount0);
+      let newTokensOwed1 = JSBI.add(position.tokensOwed1, amount1);
+
+      position.updateBurn(newTokensOwed0, newTokensOwed1);
     }
 
     return {
@@ -162,6 +163,7 @@ export class CorePool {
     amount1Requested: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    this.checkTicks(tickLower, tickUpper);
     return {
       amount0: JSBI.BigInt(0),
       amount1: JSBI.BigInt(0),
@@ -480,8 +482,10 @@ export class CorePool {
   }
 
   getPosition(owner: string, tickLower: number, tickUpper: number): Position {
-    return this.positionManager.get(
-      PositionManager.getKey(owner, tickLower, tickUpper)
+    return this.positionManager.getPositionReadonly(
+      owner,
+      tickLower,
+      tickUpper
     );
   }
 }
