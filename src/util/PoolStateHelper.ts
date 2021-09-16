@@ -67,10 +67,7 @@ export abstract class PoolStateHelper {
     corepool: CorePool,
     record: Record
   ): CorePool {
-    if (
-      record.actionType == ActionType.SNAPSHOT ||
-      record.actionType == ActionType.FORK
-    ) {
+    if (record.actionType == ActionType.FORK) {
       return corepool;
     }
     let event: Function = corepool[record.actionType];

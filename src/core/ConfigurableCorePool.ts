@@ -158,13 +158,8 @@ export class ConfigurableCorePool implements Visitable {
     this.postProcessorCallback = callback;
   }
 
-  takeSnapshot(
-    description: string,
-    postProcessorCallback?: (
-      configurableCorePool: ConfigurableCorePool,
-      transition: Transition
-    ) => void
-  ): string {
+  takeSnapshot(description: string): boolean {
+    if (this.poolState.hasSnapshot()) return false;
     this.poolState.takeSnapshot(
       description,
       this.corePool.token0Balance,
@@ -177,9 +172,7 @@ export class ConfigurableCorePool implements Visitable {
       this.corePool.tickManager,
       this.corePool.positionManager
     );
-    let snapshotId = this.poolState.id;
-    this.postProcess(ActionType.SNAPSHOT, {}, {}, postProcessorCallback);
-    return snapshotId;
+    return true;
   }
 
   fork(): ConfigurableCorePool {

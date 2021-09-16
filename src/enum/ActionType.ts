@@ -3,6 +3,5 @@ export enum ActionType {
   BURN = "burn",
   COLLECT = "collect",
   SWAP = "swap",
-  SNAPSHOT = "snapshot",
   FORK = "fork",
 }
