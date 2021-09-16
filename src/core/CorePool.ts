@@ -101,26 +101,20 @@ export class CorePool {
     tickUpper: number,
     amount: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    if (JSBI.lessThanOrEqual(amount, ZERO)) {
-      console.error("[Error]: mint amount should greater than 0");
-    }
+    assert(JSBI.greaterThan(amount, ZERO), "Mint amount should greater than 0");
 
     let amount0 = ZERO;
     let amount1 = ZERO;
 
-    if (JSBI.greaterThan(amount, ZERO)) {
-      let positionStep = this.modifyPosition(
-        recipient,
-        tickLower,
-        tickUpper,
-        amount
-      );
+    let positionStep = this.modifyPosition(
+      recipient,
+      tickLower,
+      tickUpper,
+      amount
+    );
 
-      amount0 = positionStep.amount0;
-      amount1 = positionStep.amount1;
-    } else {
-      console.error("[Error]: amount need greater than 0");
-    }
+    amount0 = positionStep.amount0;
+    amount1 = positionStep.amount1;
     return {
       amount0,
       amount1,
@@ -133,10 +127,18 @@ export class CorePool {
     tickUpper: number,
     amount: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    let positionStep = this.modifyPosition(owner, tickLower, tickUpper, amount);
+    let amount0: JSBI;
+    let amount1: JSBI;
 
-    let amount0 = JSBI.bitwiseNot(positionStep.amount0);
-    let amount1 = JSBI.bitwiseNot(positionStep.amount1);
+    ({ amount0: amount0, amount1: amount1 } = this.modifyPosition(
+      owner,
+      tickLower,
+      tickUpper,
+      amount
+    ));
+
+    amount0 = JSBI.unaryMinus(amount0);
+    amount1 = JSBI.unaryMinus(amount1);
 
     if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
       let _position = this.getPosition(owner, tickLower, tickUpper);
@@ -348,54 +350,55 @@ export class CorePool {
 
     let position: Position = this.getPosition(owner, tickLower, tickUpper);
 
-    // use assert
-    if (tickLower > tickUpper) {
-      // error handling
-      console.error("[Error]: tickLower upper than tickUpper");
-    } else if (tickLower < TickMath.MIN_TICK) {
-      console.error("[Error]: tickLower lower than MIN_TICK");
-    } else if (tickUpper > TickMath.MAX_TICK) {
-      console.error("[Error]: tickUpper bigger than MAX_TICK");
-    } else {
-      // check ticks pass, update position
-      this.updatePosition(owner, tickLower, tickUpper, liquidityDelta);
-      // use switch or pattern matching
-      // check if liquidity happen add() or remove()
-      if (JSBI.notEqual(liquidityDelta, ZERO)) {
-        if (this._tickCurrent < tickLower) {
-          amount0 = SqrtPriceMath.getAmount0Delta(
-            TickMath.getSqrtRatioAtTick(tickLower),
-            TickMath.getSqrtRatioAtTick(tickUpper),
-            liquidityDelta
-          );
-        } else if (tickLower < this._tickCurrent) {
-          amount0 = SqrtPriceMath.getAmount0Delta(
-            TickMath.getSqrtRatioAtTick(tickLower),
-            TickMath.getSqrtRatioAtTick(tickUpper),
-            liquidityDelta
-          );
-
-          amount1 = SqrtPriceMath.getAmount1Delta(
-            TickMath.getSqrtRatioAtTick(tickLower),
-            TickMath.getSqrtRatioAtTick(tickUpper),
-            liquidityDelta
-          );
-
-          this._liquidity = LiquidityMath.addDelta(
-            this._liquidity,
-            liquidityDelta
-          );
-        } else {
-          amount1 = SqrtPriceMath.getAmount1Delta(
-            TickMath.getSqrtRatioAtTick(tickLower),
-            TickMath.getSqrtRatioAtTick(tickUpper),
-            liquidityDelta
-          );
-        }
-      }
-
-      position = this.getPosition(owner, tickLower, tickUpper);
+    if (JSBI.lessThan(liquidityDelta, ZERO)) {
+      const negatedLiquidityDelta = JSBI.multiply(liquidityDelta, NEGATIVE_ONE);
+      assert(
+        JSBI.greaterThanOrEqual(position.liquidity, negatedLiquidityDelta),
+        "Liquidity Underflow"
+      );
     }
+
+    assert(tickLower > tickUpper, "tickLower upper than tickUpper");
+    assert(tickLower < TickMath.MIN_TICK, "tickLower lower than MIN_TICK");
+    assert(tickUpper > TickMath.MAX_TICK, "tickUpper bigger than MAX_TICK");
+
+    // check ticks pass, update position
+    position = this.updatePosition(owner, tickLower, tickUpper, liquidityDelta);
+    // use switch or pattern matching
+    // check if liquidity happen add() or remove()
+    if (JSBI.notEqual(liquidityDelta, ZERO)) {
+      if (this.tickCurrent < tickLower) {
+        amount0 = SqrtPriceMath.getAmount0Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+      } else if (this.tickCurrent < tickUpper) {
+        amount0 = SqrtPriceMath.getAmount0Delta(
+          this._sqrtPriceX96,
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+
+        amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          this._sqrtPriceX96,
+          liquidityDelta
+        );
+
+        this._liquidity = LiquidityMath.addDelta(
+          this._liquidity,
+          liquidityDelta
+        );
+      } else {
+        amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+      }
+    }
+
     return {
       position,
       amount0,
@@ -409,40 +412,45 @@ export class CorePool {
     tickUpper: number,
     liquidityDelta: JSBI
   ): Position {
-    let _position: Position = this.getPosition(owner, tickLower, tickUpper);
+    let position: Position = this.getPosition(owner, tickLower, tickUpper);
 
-    let _tick = this.tickManager.getTickAndInitIfAbsent(this._tickCurrent);
+    let tick = this.tickManager.getTickAndInitIfAbsent(this.tickCurrent);
 
-    let flippedLower = _tick.update(
-      liquidityDelta,
-      this._tickCurrent,
-      this._feeGrowthGlobal0X128,
-      this._feeGrowthGlobal1X128,
-      false,
-      this.maxLiquidityPerTick
-    );
+    let flippedLower: boolean = false;
+    let flippedUpper: boolean = false;
 
-    let flippedUpper = _tick.update(
-      liquidityDelta,
-      this._tickCurrent,
-      this._feeGrowthGlobal0X128,
-      this._feeGrowthGlobal1X128,
-      true,
-      this.maxLiquidityPerTick
-    );
+    if (JSBI.notEqual(liquidityDelta, ZERO)) {
+      flippedLower = tick.update(
+        liquidityDelta,
+        this.tickCurrent,
+        this.feeGrowthGlobal0X128,
+        this.feeGrowthGlobal1X128,
+        false,
+        this.maxLiquidityPerTick
+      );
 
-    let _feeGrowthInsideStep = this.tickManager.getFeeGrowthInside(
+      flippedUpper = tick.update(
+        liquidityDelta,
+        this.tickCurrent,
+        this.feeGrowthGlobal0X128,
+        this.feeGrowthGlobal1X128,
+        true,
+        this.maxLiquidityPerTick
+      );
+    }
+
+    let feeGrowthInsideStep = this.tickManager.getFeeGrowthInside(
       tickLower,
       tickUpper,
-      this._tickCurrent,
-      this._feeGrowthGlobal0X128,
-      this._feeGrowthGlobal1X128
+      this.tickCurrent,
+      this.feeGrowthGlobal0X128,
+      this.feeGrowthGlobal1X128
     );
 
-    _position.update(
+    position.update(
       liquidityDelta,
-      _feeGrowthInsideStep.feeGrowthInside0X128,
-      _feeGrowthInsideStep.feeGrowthInside1X128
+      feeGrowthInsideStep.feeGrowthInside0X128,
+      feeGrowthInsideStep.feeGrowthInside1X128
     );
 
     if (JSBI.lessThan(liquidityDelta, ZERO)) {
@@ -454,11 +462,11 @@ export class CorePool {
       }
     }
 
-    return _position;
+    return position;
   }
 
   getTick(tick: number): Tick {
-    return this.tickManager.getTickAndInitIfAbsent(tick);
+    return this.tickManager.getTickReadonly(tick);
   }
 
   getPosition(owner: string, tickLower: number, tickUpper: number): Position {
