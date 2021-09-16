@@ -4,6 +4,9 @@ import { PoolState } from "../model/PoolState";
 import { Record } from "../entity/Record";
 import { PoolConfig } from "../model/PoolConfig";
 import { ActionType } from "../enum/ActionType";
+import { Serializer } from "./Serializer";
+import { TickManager } from "../manager/TickManager";
+import { PositionManager } from "../manager/PositionManager";
 
 export abstract class PoolStateHelper {
   static recoverCorePoolByPoolStateChain(poolState: PoolState): CorePool {
@@ -40,8 +43,14 @@ export abstract class PoolStateHelper {
       snapshot.tickCurrent,
       snapshot.feeGrowthGlobal0X128,
       snapshot.feeGrowthGlobal1X128,
-      snapshot.tickManager,
-      snapshot.positionManager
+      Serializer.deserialize(
+        TickManager,
+        Serializer.serialize(TickManager, snapshot.tickManager)
+      ),
+      Serializer.deserialize(
+        PositionManager,
+        Serializer.serialize(PositionManager, snapshot.positionManager)
+      )
     );
   }
 
