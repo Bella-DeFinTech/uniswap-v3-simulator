@@ -419,7 +419,9 @@ export class CorePool {
     tickUpper: number,
     liquidityDelta: JSBI
   ): Position {
-    let position: Position = this.getPosition(owner, tickLower, tickUpper);
+    let position: Position = this.positionManager.getPositionAndInitIfAbsent(
+      PositionManager.getKey(owner, tickLower, tickUpper)
+    );
 
     let tick = this.tickManager.getTickAndInitIfAbsent(this.tickCurrent);
 
