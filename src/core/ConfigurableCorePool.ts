@@ -62,6 +62,7 @@ export class ConfigurableCorePool implements Visitable {
       transition: Transition
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }> {
+    let currentPoolStateId = this.poolState.id;
     try {
       let res = this.corePool.mint(recipient, tickLower, tickUpper, amount);
       return this.postProcess(
@@ -71,7 +72,7 @@ export class ConfigurableCorePool implements Visitable {
         postProcessorCallback
       ).then(() => Promise.resolve(res));
     } catch (error) {
-      this.recover(this.poolState.id);
+      this.recover(currentPoolStateId);
       throw error;
     }
   }
@@ -86,6 +87,7 @@ export class ConfigurableCorePool implements Visitable {
       transition: Transition
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }> {
+    let currentPoolStateId = this.poolState.id;
     try {
       let res = this.corePool.burn(owner, tickLower, tickUpper, amount);
       return this.postProcess(
@@ -95,7 +97,7 @@ export class ConfigurableCorePool implements Visitable {
         postProcessorCallback
       ).then(() => Promise.resolve(res));
     } catch (error) {
-      this.recover(this.poolState.id);
+      this.recover(currentPoolStateId);
       throw error;
     }
   }
@@ -111,6 +113,7 @@ export class ConfigurableCorePool implements Visitable {
       transition: Transition
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }> {
+    let currentPoolStateId = this.poolState.id;
     try {
       let res = this.corePool.collect(
         recipient,
@@ -132,7 +135,7 @@ export class ConfigurableCorePool implements Visitable {
         postProcessorCallback
       ).then(() => Promise.resolve(res));
     } catch (error) {
-      this.recover(this.poolState.id);
+      this.recover(currentPoolStateId);
       throw error;
     }
   }
@@ -146,6 +149,7 @@ export class ConfigurableCorePool implements Visitable {
       transition: Transition
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }> {
+    let currentPoolStateId = this.poolState.id;
     try {
       let res = this.corePool.swap(
         zeroForOne,
@@ -159,7 +163,7 @@ export class ConfigurableCorePool implements Visitable {
         postProcessorCallback
       ).then(() => Promise.resolve(res));
     } catch (error) {
-      this.recover(this.poolState.id);
+      this.recover(currentPoolStateId);
       throw error;
     }
   }
