@@ -5,6 +5,7 @@ import { PositionManager } from "../manager/PositionManager";
 import { Position } from "../model/Position";
 import { Tick } from "../model/Tick";
 import { TickMath } from "../util/TickMath";
+import { SqrtPriceMath } from "../util/SqrtPriceMath";
 import { StepComputations } from "../entity/StepComputations";
 import { ZERO, ONE, NEGATIVE_ONE, Q128 } from "../enum/InternalConstants";
 import { SwapMath } from "../util/SwapMath";
@@ -100,10 +101,23 @@ export class CorePool {
     tickUpper: number,
     amount: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
+    assert(JSBI.greaterThan(amount, ZERO), "Mint amount should greater than 0");
+
+    let amount0 = ZERO;
+    let amount1 = ZERO;
+
+    let positionStep = this.modifyPosition(
+      recipient,
+      tickLower,
+      tickUpper,
+      amount
+    );
+
+    amount0 = positionStep.amount0;
+    amount1 = positionStep.amount1;
     return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
+      amount0,
+      amount1,
     };
   }
 
@@ -113,10 +127,26 @@ export class CorePool {
     tickUpper: number,
     amount: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
+    let { position, amount0, amount1 } = this.modifyPosition(
+      owner,
+      tickLower,
+      tickUpper,
+      JSBI.unaryMinus(amount)
+    );
+
+    amount0 = JSBI.unaryMinus(amount0);
+    amount1 = JSBI.unaryMinus(amount1);
+
+    if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
+      let newTokensOwed0 = JSBI.add(position.tokensOwed0, amount0);
+      let newTokensOwed1 = JSBI.add(position.tokensOwed1, amount1);
+
+      position.updateBurn(newTokensOwed0, newTokensOwed1);
+    }
+
     return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
+      amount0,
+      amount1,
     };
   }
 
@@ -128,6 +158,7 @@ export class CorePool {
     amount1Requested: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
     // TODO
+    this.checkTicks(tickLower, tickUpper);
     return {
       amount0: JSBI.BigInt(0),
       amount1: JSBI.BigInt(0),
@@ -256,7 +287,7 @@ export class CorePool {
       if (JSBI.equal(state.sqrtPriceX96, step.sqrtPriceNextX96)) {
         // if the tick is initialized, run the tick transition
         if (step.initialized) {
-          let nextTick = this.tickManager.get(step.tickNext);
+          let nextTick = this.tickManager.getTickAndInitIfAbsent(step.tickNext);
           let liquidityNet = nextTick.cross(
             zeroForOne ? state.feeGrowthGlobalX128 : this._feeGrowthGlobal0X128,
             zeroForOne ? this._feeGrowthGlobal1X128 : state.feeGrowthGlobalX128
@@ -305,17 +336,80 @@ export class CorePool {
     return { amount0, amount1 };
   }
 
+  private checkTicks(tickLower: number, tickUpper: number) {
+    assert(tickLower < tickUpper, "tickLower should lower than tickUpper");
+    assert(
+      tickLower >= TickMath.MIN_TICK,
+      "tickLower should NOT lower than MIN_TICK"
+    );
+    assert(
+      tickUpper <= TickMath.MAX_TICK,
+      "tickUpper should NOT greater than MAX_TICK"
+    );
+  }
+
   private modifyPosition(
     owner: string,
     tickLower: number,
     tickUpper: number,
     liquidityDelta: JSBI
   ): { position: Position; amount0: JSBI; amount1: JSBI } {
-    // TODO
+    this.checkTicks(tickLower, tickUpper);
+
+    let amount0: JSBI = ZERO,
+      amount1: JSBI = ZERO;
+
+    let position: Position = this.getPosition(owner, tickLower, tickUpper);
+
+    if (JSBI.lessThan(liquidityDelta, ZERO)) {
+      const negatedLiquidityDelta = JSBI.multiply(liquidityDelta, NEGATIVE_ONE);
+      assert(
+        JSBI.greaterThanOrEqual(position.liquidity, negatedLiquidityDelta),
+        "Liquidity Underflow"
+      );
+    }
+
+    // check ticks pass, update position
+    position = this.updatePosition(owner, tickLower, tickUpper, liquidityDelta);
+    // use switch or pattern matching
+    // check if liquidity happen add() or remove()
+    if (JSBI.notEqual(liquidityDelta, ZERO)) {
+      if (this.tickCurrent < tickLower) {
+        amount0 = SqrtPriceMath.getAmount0Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+      } else if (this.tickCurrent < tickUpper) {
+        amount0 = SqrtPriceMath.getAmount0Delta(
+          this._sqrtPriceX96,
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+
+        amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          this._sqrtPriceX96,
+          liquidityDelta
+        );
+
+        this._liquidity = LiquidityMath.addDelta(
+          this._liquidity,
+          liquidityDelta
+        );
+      } else {
+        amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+      }
+    }
+
     return {
-      position: new Position(),
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
+      position,
+      amount0,
+      amount1,
     };
   }
 
@@ -325,17 +419,70 @@ export class CorePool {
     tickUpper: number,
     liquidityDelta: JSBI
   ): Position {
-    // TODO
-    return new Position();
+    let position: Position = this.positionManager.getPositionAndInitIfAbsent(
+      PositionManager.getKey(owner, tickLower, tickUpper)
+    );
+
+    let tick = this.tickManager.getTickAndInitIfAbsent(this.tickCurrent);
+
+    let flippedLower: boolean = false;
+    let flippedUpper: boolean = false;
+
+    if (JSBI.notEqual(liquidityDelta, ZERO)) {
+      flippedLower = tick.update(
+        liquidityDelta,
+        this.tickCurrent,
+        this.feeGrowthGlobal0X128,
+        this.feeGrowthGlobal1X128,
+        false,
+        this.maxLiquidityPerTick
+      );
+
+      flippedUpper = tick.update(
+        liquidityDelta,
+        this.tickCurrent,
+        this.feeGrowthGlobal0X128,
+        this.feeGrowthGlobal1X128,
+        true,
+        this.maxLiquidityPerTick
+      );
+    }
+
+    let feeGrowthInsideStep = this.tickManager.getFeeGrowthInside(
+      tickLower,
+      tickUpper,
+      this.tickCurrent,
+      this.feeGrowthGlobal0X128,
+      this.feeGrowthGlobal1X128
+    );
+
+    position.update(
+      liquidityDelta,
+      feeGrowthInsideStep.feeGrowthInside0X128,
+      feeGrowthInsideStep.feeGrowthInside1X128
+    );
+
+    if (JSBI.lessThan(liquidityDelta, ZERO)) {
+      if (flippedLower) {
+        this.tickManager.clear(tickLower);
+      }
+      if (flippedUpper) {
+        this.tickManager.clear(tickUpper);
+      }
+    }
+
+    return position;
   }
 
   getTick(tick: number): Tick {
-    return this.tickManager.get(tick);
+    return this.tickManager.getTickReadonly(tick);
   }
 
   getPosition(owner: string, tickLower: number, tickUpper: number): Position {
-    return this.positionManager.get(
-      PositionManager.getKey(owner, tickLower, tickUpper)
+    return this.positionManager.getPositionReadonly(
+      owner,
+      tickLower,
+      tickUpper
     );
   }
 }
