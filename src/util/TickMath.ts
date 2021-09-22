@@ -1,6 +1,13 @@
 import assert from "assert";
 import JSBI from "jsbi";
-import { ZERO, ONE, TWO, Q32, MaxUint256 } from "../enum/InternalConstants";
+import {
+  ZERO,
+  ONE,
+  TWO,
+  Q32,
+  MaxUint128,
+  MaxUint256,
+} from "../enum/InternalConstants";
 
 const POWERS_OF_2 = [128, 64, 32, 16, 8, 4, 2, 1].map(
   (pow: number): [number, JSBI] => [
@@ -182,5 +189,21 @@ export abstract class TickMath {
       }
     }
     return msb;
+  }
+
+  static tickSpacingToMaxLiquidityPerTick(tickSpacing: number): JSBI {
+    const minTick = JSBI.multiply(
+      JSBI.divide(JSBI.BigInt(this.MIN_TICK), JSBI.BigInt(tickSpacing)),
+      JSBI.BigInt(tickSpacing)
+    );
+    const maxTick = JSBI.multiply(
+      JSBI.divide(JSBI.BigInt(this.MAX_TICK), JSBI.BigInt(tickSpacing)),
+      JSBI.BigInt(tickSpacing)
+    );
+    const numTicks = JSBI.add(
+      JSBI.divide(JSBI.subtract(maxTick, minTick), JSBI.BigInt(tickSpacing)),
+      ONE
+    );
+    return JSBI.divide(MaxUint128, JSBI.BigInt(numTicks));
   }
 }
