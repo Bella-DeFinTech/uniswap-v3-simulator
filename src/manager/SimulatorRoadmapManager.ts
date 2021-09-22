@@ -2,11 +2,14 @@ import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { Roadmap } from "../model/Roadmap";
 import { Snapshot } from "../entity/Snapshot";
 import { PoolStateContainer } from "../interface/PoolStateContainer";
+import { SimulatorRoadmapManager as ISimulatorRoadmapManager } from "../interface/SimulatorRoadmapManager";
 import { PoolState } from "../model/PoolState";
 import { DBManager } from "./DBManager";
 import { PoolStateHelper } from "../util/PoolStateHelper";
 
-export class SimulatorRoadmapManager implements PoolStateContainer {
+export class SimulatorRoadmapManager
+  implements ISimulatorRoadmapManager, PoolStateContainer
+{
   private poolStates: Map<string, PoolState>;
   private static _instance: SimulatorRoadmapManager;
   private configurableCorePools: Map<string, ConfigurableCorePool> = new Map();

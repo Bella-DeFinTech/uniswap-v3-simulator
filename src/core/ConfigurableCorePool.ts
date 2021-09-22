@@ -20,14 +20,15 @@ import {
   GeneralReturnParams,
 } from "../interface/ActionParams";
 import { SimulatorRoadmapManager } from "../manager/SimulatorRoadmapManager";
+import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/ConfigurableCorePool";
 
-export class ConfigurableCorePool implements Visitable {
+export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   readonly id: string;
   private _poolState: PoolState;
   private simulatorRoadmapManager: SimulatorRoadmapManager;
   private corePool: CorePool;
   private postProcessorCallback: (
-    configurableCorePool: ConfigurableCorePool,
+    configurableCorePool: IConfigurableCorePool,
     transition: Transition
   ) => Promise<void> = async function () {};
 
@@ -52,6 +53,10 @@ export class ConfigurableCorePool implements Visitable {
     this.simulatorRoadmapManager.addRoute(this);
   }
 
+  getPoolStateId(): string {
+    return this.poolState.id;
+  }
+
   initialize(sqrtPriceX96: JSBI) {
     this.corePool.initialize(sqrtPriceX96);
   }
@@ -62,7 +67,7 @@ export class ConfigurableCorePool implements Visitable {
     tickUpper: number,
     amount: JSBI,
     postProcessorCallback?: (
-      configurableCorePool: ConfigurableCorePool,
+      configurableCorePool: IConfigurableCorePool,
       transition: Transition
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }> {
@@ -87,7 +92,7 @@ export class ConfigurableCorePool implements Visitable {
     tickUpper: number,
     amount: JSBI,
     postProcessorCallback?: (
-      configurableCorePool: ConfigurableCorePool,
+      configurableCorePool: IConfigurableCorePool,
       transition: Transition
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }> {
@@ -113,7 +118,7 @@ export class ConfigurableCorePool implements Visitable {
     amount0Requested: JSBI,
     amount1Requested: JSBI,
     postProcessorCallback?: (
-      configurableCorePool: ConfigurableCorePool,
+      configurableCorePool: IConfigurableCorePool,
       transition: Transition
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }> {
@@ -149,7 +154,7 @@ export class ConfigurableCorePool implements Visitable {
     amountSpecified: JSBI,
     sqrtPriceLimitX96: JSBI,
     postProcessorCallback?: (
-      configurableCorePool: ConfigurableCorePool,
+      configurableCorePool: IConfigurableCorePool,
       transition: Transition
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }> {
@@ -175,7 +180,7 @@ export class ConfigurableCorePool implements Visitable {
   // user custom PostProcessor will be called after pool state transition finishes
   updatePostProcessor(
     callback: (
-      configurableCorePool: ConfigurableCorePool,
+      configurableCorePool: IConfigurableCorePool,
       transition: Transition
     ) => Promise<void>
   ) {
@@ -199,7 +204,7 @@ export class ConfigurableCorePool implements Visitable {
     return true;
   }
 
-  fork(): ConfigurableCorePool {
+  fork(): IConfigurableCorePool {
     this.takeSnapshot("Automated for forking");
     return new ConfigurableCorePool(this.poolState.fork());
   }
@@ -354,7 +359,7 @@ export class ConfigurableCorePool implements Visitable {
     actionParams: MethodParams,
     actionReturnValues: ReturnParams,
     postProcessorCallback?: (
-      configurableCorePool: ConfigurableCorePool,
+      configurableCorePool: IConfigurableCorePool,
       transition: Transition
     ) => Promise<void>
   ): Promise<void> {

@@ -6,10 +6,12 @@ import { Snapshot } from "../entity/Snapshot";
 import { FeeAmount } from "../enum/FeeAmount";
 import { SimulatorRoadmapManager } from "../manager/SimulatorRoadmapManager";
 import { SnapshotProfile } from "../entity/SnapshotProfile";
+import { SimulatorRoadmapManager as ISimulatorRoadmapManager } from "../interface/SimulatorRoadmapManager";
+import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/ConfigurableCorePool";
 
 export class SimulatorClient {
   private dbManager: DBManager;
-  readonly simulatorRoadmapManager: SimulatorRoadmapManager;
+  readonly simulatorRoadmapManager: ISimulatorRoadmapManager;
 
   constructor(dbManager: DBManager) {
     this.dbManager = dbManager;
@@ -32,13 +34,13 @@ export class SimulatorClient {
     return new PoolConfig(tickSpacing, token0, token1, fee);
   }
 
-  initCorePoolFromConfig(poolConfig: PoolConfig): ConfigurableCorePool {
+  initCorePoolFromConfig(poolConfig: PoolConfig): IConfigurableCorePool {
     return new ConfigurableCorePool(new PoolState(poolConfig));
   }
 
   recoverCorePoolFromSnapshot(
     snapshotId: string
-  ): Promise<ConfigurableCorePool> {
+  ): Promise<IConfigurableCorePool> {
     return this.getSnapshot(snapshotId).then((snapshot: Snapshot | undefined) =>
       !snapshot
         ? Promise.reject("This snapshot doesn't exist!")
@@ -52,11 +54,6 @@ export class SimulatorClient {
 
   shutdown() : Promise<void>{
     return this.dbManager.close();
-  }
-
-  // TODO
-  clearSnapshotPersistence(snapshotId: string) {
-    throw new Error("not implemented.");
   }
 
   private getSnapshot(snapshotId: string): Promise<Snapshot | undefined> {
