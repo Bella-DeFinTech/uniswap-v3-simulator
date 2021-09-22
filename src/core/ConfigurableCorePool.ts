@@ -57,6 +57,10 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     return this.poolState.id;
   }
 
+  getCorePool(): CorePool {
+    return this.corePool;
+  }
+
   initialize(sqrtPriceX96: JSBI) {
     this.corePool.initialize(sqrtPriceX96);
   }

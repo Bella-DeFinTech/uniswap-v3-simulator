@@ -1,10 +1,15 @@
 import JSBI from "jsbi";
+import { CorePool } from "../core/CorePool";
 import { Transition } from "../model/Transition";
 
 export interface ConfigurableCorePool {
   readonly id: string;
 
   getPoolStateId(): string;
+
+  // This returning CorePool is for inspection use only.
+  // Calling write method on it or its property directly will jeopardize simulator function.
+  getCorePool(): CorePool;
 
   initialize(sqrtPriceX96: JSBI): void;
 
