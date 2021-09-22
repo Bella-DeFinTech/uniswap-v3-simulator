@@ -98,7 +98,7 @@ export class CorePool {
   }
 
   initialize(sqrtPriceX96: JSBI) {
-    // TODO
+    assert(JSBI.equal(this.sqrtPriceX96, ZERO), "Already initialized!");
     this._tickCurrent = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
     this._sqrtPriceX96 = sqrtPriceX96;
   }

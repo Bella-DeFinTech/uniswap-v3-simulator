@@ -52,6 +52,10 @@ export class ConfigurableCorePool implements Visitable {
     this.simulatorRoadmapManager.addRoute(this);
   }
 
+  initialize(sqrtPriceX96: JSBI) {
+    this.corePool.initialize(sqrtPriceX96);
+  }
+
   mint(
     recipient: string,
     tickLower: number,
