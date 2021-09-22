@@ -11,7 +11,7 @@ export interface ConfigurableCorePool {
   // Calling write method on it or its property directly will jeopardize simulator function.
   getCorePool(): CorePool;
 
-  initialize(sqrtPriceX96: JSBI): void;
+  initialize(sqrtPriceX96: JSBI): Promise<void>;
 
   mint(
     recipient: string,

@@ -1,4 +1,5 @@
 export enum ActionType {
+  INITIALIZE = "initialize",
   MINT = "mint",
   BURN = "burn",
   COLLECT = "collect",

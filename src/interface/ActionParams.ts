@@ -2,6 +2,10 @@ import JSBI from "jsbi";
 
 export interface MethodParams {}
 
+export interface InitializeParams extends MethodParams {
+  sqrtPriceX96: JSBI
+}
+
 export interface MintParams extends MethodParams {
   recipient: string;
   tickLower: number;

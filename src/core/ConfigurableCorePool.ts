@@ -18,6 +18,7 @@ import {
   SwapParams,
   CollectParams,
   GeneralReturnParams,
+  InitializeParams,
 } from "../interface/ActionParams";
 import { SimulatorRoadmapManager } from "../manager/SimulatorRoadmapManager";
 import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/ConfigurableCorePool";
@@ -61,8 +62,26 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     return this.corePool;
   }
 
-  initialize(sqrtPriceX96: JSBI) {
-    this.corePool.initialize(sqrtPriceX96);
+  initialize(
+    sqrtPriceX96: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: IConfigurableCorePool,
+      transition: Transition
+    ) => Promise<void>
+  ): Promise<void> {
+    let currentPoolStateId = this.poolState.id;
+    try {
+      let res = this.corePool.initialize(sqrtPriceX96);
+      return this.postProcess(
+        ActionType.INITIALIZE,
+        { sqrtPriceX96 } as InitializeParams,
+        {} as ReturnParams,
+        postProcessorCallback
+      ).then(() => Promise.resolve(res));
+    } catch (error) {
+      this.recover(currentPoolStateId);
+      throw error;
+    }
   }
 
   mint(
