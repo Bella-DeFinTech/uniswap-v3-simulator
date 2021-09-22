@@ -159,28 +159,31 @@ export class CorePool {
   ): { amount0: JSBI; amount1: JSBI } {
     this.checkTicks(tickLower, tickUpper);
 
+    let potisionForCheck = this.positionManager.getPositionReadonly(
+      recipient,
+      tickLower,
+      tickUpper
+    );
+    assert(
+      JSBI.notEqual(potisionForCheck.tokensOwed0, ZERO) ||
+        JSBI.notEqual(potisionForCheck.tokensOwed1, ZERO),
+      "position is not collectable!"
+    );
+
     let position: Position = this.positionManager.getPositionAndInitIfAbsent(
       PositionManager.getKey(recipient, tickLower, tickUpper)
     );
 
-    let amount0 =
-      amount0Requested > position.tokensOwed0
-        ? position.tokensOwed0
-        : amount0Requested;
-    let amount1 =
-      amount1Requested > position.tokensOwed1
-        ? position.tokensOwed1
-        : amount1Requested;
+    let amount0 = JSBI.greaterThan(amount0Requested, position.tokensOwed0)
+      ? position.tokensOwed0
+      : amount0Requested;
+    let amount1 = JSBI.greaterThan(amount1Requested, position.tokensOwed1)
+      ? position.tokensOwed1
+      : amount1Requested;
 
-    if (amount0 > ZERO) {
+    if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
       position.updateBurn(
         JSBI.subtract(position.tokensOwed0, amount0),
-        position.tokensOwed1
-      );
-    }
-    if (amount1 > ZERO) {
-      position.updateBurn(
-        position.tokensOwed1,
         JSBI.subtract(position.tokensOwed1, amount1)
       );
     }
