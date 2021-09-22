@@ -26,7 +26,9 @@ export class SimulatorRoadmapManager
   }
 
   static buildInstance(): SimulatorRoadmapManager {
-    return new SimulatorRoadmapManager();
+    let simulatorRoadmapManager = new SimulatorRoadmapManager();
+    this._instance = simulatorRoadmapManager;
+    return simulatorRoadmapManager;
   }
 
   addPoolState(poolState: PoolState): string {
