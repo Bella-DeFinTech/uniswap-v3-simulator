@@ -157,11 +157,36 @@ export class CorePool {
     amount0Requested: JSBI,
     amount1Requested: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
     this.checkTicks(tickLower, tickUpper);
+
+    let position: Position = this.positionManager.getPositionAndInitIfAbsent(
+      PositionManager.getKey(recipient, tickLower, tickUpper)
+    );
+
+    let amount0 =
+      amount0Requested > position.tokensOwed0
+        ? position.tokensOwed0
+        : amount0Requested;
+    let amount1 =
+      amount1Requested > position.tokensOwed1
+        ? position.tokensOwed1
+        : amount1Requested;
+
+    if (amount0 > ZERO) {
+      position.updateBurn(
+        JSBI.subtract(position.tokensOwed0, amount0),
+        position.tokensOwed1
+      );
+    }
+    if (amount1 > ZERO) {
+      position.updateBurn(
+        position.tokensOwed1,
+        JSBI.subtract(position.tokensOwed1, amount1)
+      );
+    }
     return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
+      amount0,
+      amount1,
     };
   }
 
