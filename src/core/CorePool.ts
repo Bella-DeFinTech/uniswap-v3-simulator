@@ -159,6 +159,15 @@ export class CorePool {
   ): { amount0: JSBI; amount1: JSBI } {
     this.checkTicks(tickLower, tickUpper);
 
+    assert(
+      JSBI.greaterThanOrEqual(amount0Requested, ZERO),
+      "amount0Request should equal or greater than 0"
+    );
+    assert(
+      JSBI.greaterThanOrEqual(amount1Requested, ZERO),
+      "amount1Request should equal or greater than 0 "
+    );
+
     let potisionForCheck = this.positionManager.getPositionReadonly(
       recipient,
       tickLower,
