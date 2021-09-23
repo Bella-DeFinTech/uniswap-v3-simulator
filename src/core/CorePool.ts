@@ -168,15 +168,20 @@ export class CorePool {
       "amount1Request should equal or greater than 0 "
     );
 
-    let potisionForCheck = this.positionManager.getPositionReadonly(
+    let positionForCheck = this.positionManager.getPositionReadonly(
       recipient,
       tickLower,
       tickUpper
     );
     assert(
-      JSBI.notEqual(potisionForCheck.tokensOwed0, ZERO) ||
-        JSBI.notEqual(potisionForCheck.tokensOwed1, ZERO),
+      JSBI.notEqual(positionForCheck.tokensOwed0, ZERO) ||
+        JSBI.notEqual(positionForCheck.tokensOwed1, ZERO),
       "position is not collectable!"
+    );
+
+    assert(
+      JSBI.notEqual(positionForCheck.liquidity, ZERO),
+      "liquidity should NOT be 0"
     );
 
     let position: Position = this.positionManager.getPositionAndInitIfAbsent(
