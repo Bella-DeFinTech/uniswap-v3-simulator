@@ -71,15 +71,13 @@ export class PositionManager {
       )
         ? positionToCollect.tokensOwed1
         : amount1Requested;
-      assert(
-        JSBI.greaterThan(amount0, ZERO) && JSBI.greaterThan(amount1, ZERO),
-        "the amount to collect is invalid"
-      );
-      positionToCollect.updateBurn(
-        JSBI.subtract(positionToCollect.tokensOwed0, amount0),
-        JSBI.subtract(positionToCollect.tokensOwed1, amount1)
-      );
-      if (positionToCollect.isEmpty()) this.clear(key);
+      if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
+        positionToCollect.updateBurn(
+          JSBI.subtract(positionToCollect.tokensOwed0, amount0),
+          JSBI.subtract(positionToCollect.tokensOwed1, amount1)
+        );
+        if (positionToCollect.isEmpty()) this.clear(key);
+      }
       return { amount0: amount0, amount1: amount1 };
     }
     return { amount0: ZERO, amount1: ZERO };
