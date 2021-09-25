@@ -1,6 +1,6 @@
 import { ethers, waffle } from "hardhat";
 import { BigNumber, BigNumberish, constants, Wallet } from "ethers";
-// import { TestERC20 } from "./stubs/TestERC20";
+import { TestERC20 } from "./stubs/TestERC20";
 // import { UniswapV3Factory } from "./stubs/UniswapV3Factory";
 import { MockTimeUniswapV3Pool } from "./stubs/MockTimeUniswapV3Pool";
 // import { TestUniswapV3SwapPay } from "./stubs/TestUniswapV3SwapPay";
@@ -171,560 +171,513 @@ describe("UniswapV3Pool", () => {
     });
   });
 
-  // describe("#increaseObservationCardinalityNext", () => {
-  //   it("can only be called after initialize", async () => {
-  //     await expect(
-  //       pool.increaseObservationCardinalityNext(2)
-  //     ).to.be.revertedWith("LOK");
-  //   });
-  //   it("emits an event including both old and new", async () => {
-  //     await pool.initialize(encodePriceSqrt(1, 1));
-  //     await expect(pool.increaseObservationCardinalityNext(2))
-  //       .to.emit(pool, "IncreaseObservationCardinalityNext")
-  //       .withArgs(1, 2);
-  //   });
-  //   it("does not emit an event for no op call", async () => {
-  //     await pool.initialize(encodePriceSqrt(1, 1));
-  //     await pool.increaseObservationCardinalityNext(3);
-  //     await expect(pool.increaseObservationCardinalityNext(2)).to.not.emit(
-  //       pool,
-  //       "IncreaseObservationCardinalityNext"
-  //     );
-  //   });
-  //   it("does not change cardinality next if less than current", async () => {
-  //     await pool.initialize(encodePriceSqrt(1, 1));
-  //     await pool.increaseObservationCardinalityNext(3);
-  //     await pool.increaseObservationCardinalityNext(2);
-  //     expect((await pool.slot0()).observationCardinalityNext).to.eq(3);
-  //   });
-  //   it("increases cardinality and cardinality next first time", async () => {
-  //     await pool.initialize(encodePriceSqrt(1, 1));
-  //     await pool.increaseObservationCardinalityNext(2);
-  //     const {
-  //       observationCardinality,
-  //       observationCardinalityNext,
-  //     } = await pool.slot0();
-  //     expect(observationCardinality).to.eq(1);
-  //     expect(observationCardinalityNext).to.eq(2);
-  //   });
-  // });
+  describe("#mint", () => {
+    it("fails if not initialized", async () => {
+      await expect(
+        mint(wallet.address, -tickSpacing, tickSpacing, 1)
+      ).to.be.revertedWith("LOK");
+    });
+    describe("after initialization", () => {
+      beforeEach("initialize the pool at price of 10:1", async () => {
+        await pool.initialize(encodePriceSqrt(1, 10));
+        await mint(wallet.address, minTick, maxTick, 3161);
+      });
 
-  // describe("#mint", () => {
-  //   it("fails if not initialized", async () => {
-  //     await expect(
-  //       mint(wallet.address, -tickSpacing, tickSpacing, 1)
-  //     ).to.be.revertedWith("LOK");
-  //   });
-  //   describe("after initialization", () => {
-  //     beforeEach("initialize the pool at price of 10:1", async () => {
-  //       await pool.initialize(encodePriceSqrt(1, 10));
-  //       await mint(wallet.address, minTick, maxTick, 3161);
-  //     });
+      describe("failure cases", () => {
+        it("fails if tickLower greater than tickUpper", async () => {
+          // should be TLU but...hardhat
+          await expect(mint(wallet.address, 1, 0, 1)).to.be.reverted;
+        });
+        it("fails if tickLower less than min tick", async () => {
+          // should be TLM but...hardhat
+          await expect(mint(wallet.address, -887273, 0, 1)).to.be.reverted;
+        });
+        it("fails if tickUpper greater than max tick", async () => {
+          // should be TUM but...hardhat
+          await expect(mint(wallet.address, 0, 887273, 1)).to.be.reverted;
+        });
+        it("fails if amount exceeds the max", async () => {
+          // these should fail with 'LO' but hardhat is bugged
+          const maxLiquidityGross = await pool.maxLiquidityPerTick();
+          await expect(
+            mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              maxLiquidityGross.add(1)
+            )
+          ).to.be.reverted;
+          await expect(
+            mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              maxLiquidityGross
+            )
+          ).to.not.be.reverted;
+        });
+        it("fails if total amount at tick exceeds the max", async () => {
+          // these should fail with 'LO' but hardhat is bugged
+          await mint(
+            wallet.address,
+            minTick + tickSpacing,
+            maxTick - tickSpacing,
+            1000
+          );
 
-  //     describe("failure cases", () => {
-  //       it("fails if tickLower greater than tickUpper", async () => {
-  //         // should be TLU but...hardhat
-  //         await expect(mint(wallet.address, 1, 0, 1)).to.be.reverted;
-  //       });
-  //       it("fails if tickLower less than min tick", async () => {
-  //         // should be TLM but...hardhat
-  //         await expect(mint(wallet.address, -887273, 0, 1)).to.be.reverted;
-  //       });
-  //       it("fails if tickUpper greater than max tick", async () => {
-  //         // should be TUM but...hardhat
-  //         await expect(mint(wallet.address, 0, 887273, 1)).to.be.reverted;
-  //       });
-  //       it("fails if amount exceeds the max", async () => {
-  //         // these should fail with 'LO' but hardhat is bugged
-  //         const maxLiquidityGross = await pool.maxLiquidityPerTick();
-  //         await expect(
-  //           mint(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing,
-  //             maxLiquidityGross.add(1)
-  //           )
-  //         ).to.be.reverted;
-  //         await expect(
-  //           mint(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing,
-  //             maxLiquidityGross
-  //           )
-  //         ).to.not.be.reverted;
-  //       });
-  //       it("fails if total amount at tick exceeds the max", async () => {
-  //         // these should fail with 'LO' but hardhat is bugged
-  //         await mint(
-  //           wallet.address,
-  //           minTick + tickSpacing,
-  //           maxTick - tickSpacing,
-  //           1000
-  //         );
+          const maxLiquidityGross = await pool.maxLiquidityPerTick();
+          await expect(
+            mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              maxLiquidityGross.sub(1000).add(1)
+            )
+          ).to.be.reverted;
+          await expect(
+            mint(
+              wallet.address,
+              minTick + tickSpacing * 2,
+              maxTick - tickSpacing,
+              maxLiquidityGross.sub(1000).add(1)
+            )
+          ).to.be.reverted;
+          await expect(
+            mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing * 2,
+              maxLiquidityGross.sub(1000).add(1)
+            )
+          ).to.be.reverted;
+          await expect(
+            mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              maxLiquidityGross.sub(1000)
+            )
+          ).to.not.be.reverted;
+        });
+        it("fails if amount is 0", async () => {
+          await expect(
+            mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              0
+            )
+          ).to.be.reverted;
+        });
+      });
 
-  //         const maxLiquidityGross = await pool.maxLiquidityPerTick();
-  //         await expect(
-  //           mint(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing,
-  //             maxLiquidityGross.sub(1000).add(1)
-  //           )
-  //         ).to.be.reverted;
-  //         await expect(
-  //           mint(
-  //             wallet.address,
-  //             minTick + tickSpacing * 2,
-  //             maxTick - tickSpacing,
-  //             maxLiquidityGross.sub(1000).add(1)
-  //           )
-  //         ).to.be.reverted;
-  //         await expect(
-  //           mint(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing * 2,
-  //             maxLiquidityGross.sub(1000).add(1)
-  //           )
-  //         ).to.be.reverted;
-  //         await expect(
-  //           mint(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing,
-  //             maxLiquidityGross.sub(1000)
-  //           )
-  //         ).to.not.be.reverted;
-  //       });
-  //       it("fails if amount is 0", async () => {
-  //         await expect(
-  //           mint(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing,
-  //             0
-  //           )
-  //         ).to.be.reverted;
-  //       });
-  //     });
+      describe("success cases", () => {
+        it("initial balances", async () => {
+          expect(await token0.balanceOf(pool.address)).to.eq(9996);
+          expect(await token1.balanceOf(pool.address)).to.eq(1000);
+        });
 
-  //     describe("success cases", () => {
-  //       it("initial balances", async () => {
-  //         expect(await token0.balanceOf(pool.address)).to.eq(9996);
-  //         expect(await token1.balanceOf(pool.address)).to.eq(1000);
-  //       });
+        it("initial tick", async () => {
+          expect((await pool.slot0()).tick).to.eq(-23028);
+        });
 
-  //       it("initial tick", async () => {
-  //         expect((await pool.slot0()).tick).to.eq(-23028);
-  //       });
+        describe("above current price", () => {
+          it("transfers token0 only", async () => {
+            await expect(mint(wallet.address, -22980, 0, 10000))
+              .to.emit(token0, "Transfer")
+              .withArgs(wallet.address, pool.address, 21549)
+              .to.not.emit(token1, "Transfer");
+            expect(await token0.balanceOf(pool.address)).to.eq(9996 + 21549);
+            expect(await token1.balanceOf(pool.address)).to.eq(1000);
+          });
 
-  //       describe("above current price", () => {
-  //         it("transfers token0 only", async () => {
-  //           await expect(mint(wallet.address, -22980, 0, 10000))
-  //             .to.emit(token0, "Transfer")
-  //             .withArgs(wallet.address, pool.address, 21549)
-  //             .to.not.emit(token1, "Transfer");
-  //           expect(await token0.balanceOf(pool.address)).to.eq(9996 + 21549);
-  //           expect(await token1.balanceOf(pool.address)).to.eq(1000);
-  //         });
+          it("max tick with max leverage", async () => {
+            await mint(
+              wallet.address,
+              maxTick - tickSpacing,
+              maxTick,
+              BigNumber.from(2).pow(102)
+            );
+            expect(await token0.balanceOf(pool.address)).to.eq(
+              9996 + 828011525
+            );
+            expect(await token1.balanceOf(pool.address)).to.eq(1000);
+          });
 
-  //         it("max tick with max leverage", async () => {
-  //           await mint(
-  //             wallet.address,
-  //             maxTick - tickSpacing,
-  //             maxTick,
-  //             BigNumber.from(2).pow(102)
-  //           );
-  //           expect(await token0.balanceOf(pool.address)).to.eq(
-  //             9996 + 828011525
-  //           );
-  //           expect(await token1.balanceOf(pool.address)).to.eq(1000);
-  //         });
+          it("works for max tick", async () => {
+            await expect(mint(wallet.address, -22980, maxTick, 10000))
+              .to.emit(token0, "Transfer")
+              .withArgs(wallet.address, pool.address, 31549);
+            expect(await token0.balanceOf(pool.address)).to.eq(9996 + 31549);
+            expect(await token1.balanceOf(pool.address)).to.eq(1000);
+          });
 
-  //         it("works for max tick", async () => {
-  //           await expect(mint(wallet.address, -22980, maxTick, 10000))
-  //             .to.emit(token0, "Transfer")
-  //             .withArgs(wallet.address, pool.address, 31549);
-  //           expect(await token0.balanceOf(pool.address)).to.eq(9996 + 31549);
-  //           expect(await token1.balanceOf(pool.address)).to.eq(1000);
-  //         });
+          it("removing works", async () => {
+            await mint(wallet.address, -240, 0, 10000);
+            await pool.burn(-240, 0, 10000);
+            const { amount0, amount1 } = await pool.collectStatic(
+              wallet.address,
+              -240,
+              0,
+              MaxUint128,
+              MaxUint128
+            );
+            expect(amount0, "amount0").to.eq(120);
+            expect(amount1, "amount1").to.eq(0);
+          });
 
-  //         it("removing works", async () => {
-  //           await mint(wallet.address, -240, 0, 10000);
-  //           await pool.burn(-240, 0, 10000);
-  //           const { amount0, amount1 } = await pool.collectStatic(
-  //             wallet.address,
-  //             -240,
-  //             0,
-  //             MaxUint128,
-  //             MaxUint128
-  //           );
-  //           expect(amount0, "amount0").to.eq(120);
-  //           expect(amount1, "amount1").to.eq(0);
-  //         });
+          it("adds liquidity to liquidityGross", async () => {
+            await mint(wallet.address, -240, 0, 100);
+            expect((await pool.ticks(-240)).liquidityGross).to.eq(100);
+            expect((await pool.ticks(0)).liquidityGross).to.eq(100);
+            expect((await pool.ticks(tickSpacing)).liquidityGross).to.eq(0);
+            expect((await pool.ticks(tickSpacing * 2)).liquidityGross).to.eq(0);
+            await mint(wallet.address, -240, tickSpacing, 150);
+            expect((await pool.ticks(-240)).liquidityGross).to.eq(250);
+            expect((await pool.ticks(0)).liquidityGross).to.eq(100);
+            expect((await pool.ticks(tickSpacing)).liquidityGross).to.eq(150);
+            expect((await pool.ticks(tickSpacing * 2)).liquidityGross).to.eq(0);
+            await mint(wallet.address, 0, tickSpacing * 2, 60);
+            expect((await pool.ticks(-240)).liquidityGross).to.eq(250);
+            expect((await pool.ticks(0)).liquidityGross).to.eq(160);
+            expect((await pool.ticks(tickSpacing)).liquidityGross).to.eq(150);
+            expect((await pool.ticks(tickSpacing * 2)).liquidityGross).to.eq(
+              60
+            );
+          });
 
-  //         it("adds liquidity to liquidityGross", async () => {
-  //           await mint(wallet.address, -240, 0, 100);
-  //           expect((await pool.ticks(-240)).liquidityGross).to.eq(100);
-  //           expect((await pool.ticks(0)).liquidityGross).to.eq(100);
-  //           expect((await pool.ticks(tickSpacing)).liquidityGross).to.eq(0);
-  //           expect((await pool.ticks(tickSpacing * 2)).liquidityGross).to.eq(0);
-  //           await mint(wallet.address, -240, tickSpacing, 150);
-  //           expect((await pool.ticks(-240)).liquidityGross).to.eq(250);
-  //           expect((await pool.ticks(0)).liquidityGross).to.eq(100);
-  //           expect((await pool.ticks(tickSpacing)).liquidityGross).to.eq(150);
-  //           expect((await pool.ticks(tickSpacing * 2)).liquidityGross).to.eq(0);
-  //           await mint(wallet.address, 0, tickSpacing * 2, 60);
-  //           expect((await pool.ticks(-240)).liquidityGross).to.eq(250);
-  //           expect((await pool.ticks(0)).liquidityGross).to.eq(160);
-  //           expect((await pool.ticks(tickSpacing)).liquidityGross).to.eq(150);
-  //           expect((await pool.ticks(tickSpacing * 2)).liquidityGross).to.eq(
-  //             60
-  //           );
-  //         });
+          it("removes liquidity from liquidityGross", async () => {
+            await mint(wallet.address, -240, 0, 100);
+            await mint(wallet.address, -240, 0, 40);
+            await pool.burn(-240, 0, 90);
+            expect((await pool.ticks(-240)).liquidityGross).to.eq(50);
+            expect((await pool.ticks(0)).liquidityGross).to.eq(50);
+          });
 
-  //         it("removes liquidity from liquidityGross", async () => {
-  //           await mint(wallet.address, -240, 0, 100);
-  //           await mint(wallet.address, -240, 0, 40);
-  //           await pool.burn(-240, 0, 90);
-  //           expect((await pool.ticks(-240)).liquidityGross).to.eq(50);
-  //           expect((await pool.ticks(0)).liquidityGross).to.eq(50);
-  //         });
+          it("clears tick lower if last position is removed", async () => {
+            await mint(wallet.address, -240, 0, 100);
+            await pool.burn(-240, 0, 100);
+            const {
+              liquidityGross,
+              feeGrowthOutside0X128,
+              feeGrowthOutside1X128,
+            } = await pool.ticks(-240);
+            expect(liquidityGross).to.eq(0);
+            expect(feeGrowthOutside0X128).to.eq(0);
+            expect(feeGrowthOutside1X128).to.eq(0);
+          });
 
-  //         it("clears tick lower if last position is removed", async () => {
-  //           await mint(wallet.address, -240, 0, 100);
-  //           await pool.burn(-240, 0, 100);
-  //           const {
-  //             liquidityGross,
-  //             feeGrowthOutside0X128,
-  //             feeGrowthOutside1X128,
-  //           } = await pool.ticks(-240);
-  //           expect(liquidityGross).to.eq(0);
-  //           expect(feeGrowthOutside0X128).to.eq(0);
-  //           expect(feeGrowthOutside1X128).to.eq(0);
-  //         });
+          it("clears tick upper if last position is removed", async () => {
+            await mint(wallet.address, -240, 0, 100);
+            await pool.burn(-240, 0, 100);
+            const {
+              liquidityGross,
+              feeGrowthOutside0X128,
+              feeGrowthOutside1X128,
+            } = await pool.ticks(0);
+            expect(liquidityGross).to.eq(0);
+            expect(feeGrowthOutside0X128).to.eq(0);
+            expect(feeGrowthOutside1X128).to.eq(0);
+          });
+          it("only clears the tick that is not used at all", async () => {
+            await mint(wallet.address, -240, 0, 100);
+            await mint(wallet.address, -tickSpacing, 0, 250);
+            await pool.burn(-240, 0, 100);
 
-  //         it("clears tick upper if last position is removed", async () => {
-  //           await mint(wallet.address, -240, 0, 100);
-  //           await pool.burn(-240, 0, 100);
-  //           const {
-  //             liquidityGross,
-  //             feeGrowthOutside0X128,
-  //             feeGrowthOutside1X128,
-  //           } = await pool.ticks(0);
-  //           expect(liquidityGross).to.eq(0);
-  //           expect(feeGrowthOutside0X128).to.eq(0);
-  //           expect(feeGrowthOutside1X128).to.eq(0);
-  //         });
-  //         it("only clears the tick that is not used at all", async () => {
-  //           await mint(wallet.address, -240, 0, 100);
-  //           await mint(wallet.address, -tickSpacing, 0, 250);
-  //           await pool.burn(-240, 0, 100);
+            let {
+              liquidityGross,
+              feeGrowthOutside0X128,
+              feeGrowthOutside1X128,
+            } = await pool.ticks(-240);
+            expect(liquidityGross).to.eq(0);
+            expect(feeGrowthOutside0X128).to.eq(0);
+            expect(feeGrowthOutside1X128).to.eq(0);
+            ({ liquidityGross, feeGrowthOutside0X128, feeGrowthOutside1X128 } =
+              await pool.ticks(-tickSpacing));
+            expect(liquidityGross).to.eq(250);
+            expect(feeGrowthOutside0X128).to.eq(0);
+            expect(feeGrowthOutside1X128).to.eq(0);
+          });
 
-  //           let {
-  //             liquidityGross,
-  //             feeGrowthOutside0X128,
-  //             feeGrowthOutside1X128,
-  //           } = await pool.ticks(-240);
-  //           expect(liquidityGross).to.eq(0);
-  //           expect(feeGrowthOutside0X128).to.eq(0);
-  //           expect(feeGrowthOutside1X128).to.eq(0);
-  //           ({
-  //             liquidityGross,
-  //             feeGrowthOutside0X128,
-  //             feeGrowthOutside1X128,
-  //           } = await pool.ticks(-tickSpacing));
-  //           expect(liquidityGross).to.eq(250);
-  //           expect(feeGrowthOutside0X128).to.eq(0);
-  //           expect(feeGrowthOutside1X128).to.eq(0);
-  //         });
+          it("does not write an observation", async () => {
+            checkObservationEquals(await pool.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_POOL_START_TIME,
+              initialized: true,
+              secondsPerLiquidityCumulativeX128: 0,
+            });
+            await pool.advanceTime(1);
+            await mint(wallet.address, -240, 0, 100);
+            checkObservationEquals(await pool.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_POOL_START_TIME,
+              initialized: true,
+              secondsPerLiquidityCumulativeX128: 0,
+            });
+          });
+        });
 
-  //         it("does not write an observation", async () => {
-  //           checkObservationEquals(await pool.observations(0), {
-  //             tickCumulative: 0,
-  //             blockTimestamp: TEST_POOL_START_TIME,
-  //             initialized: true,
-  //             secondsPerLiquidityCumulativeX128: 0,
-  //           });
-  //           await pool.advanceTime(1);
-  //           await mint(wallet.address, -240, 0, 100);
-  //           checkObservationEquals(await pool.observations(0), {
-  //             tickCumulative: 0,
-  //             blockTimestamp: TEST_POOL_START_TIME,
-  //             initialized: true,
-  //             secondsPerLiquidityCumulativeX128: 0,
-  //           });
-  //         });
-  //       });
+        describe("including current price", () => {
+          it("price within range: transfers current price of both tokens", async () => {
+            await expect(
+              mint(
+                wallet.address,
+                minTick + tickSpacing,
+                maxTick - tickSpacing,
+                100
+              )
+            )
+              .to.emit(token0, "Transfer")
+              .withArgs(wallet.address, pool.address, 317)
+              .to.emit(token1, "Transfer")
+              .withArgs(wallet.address, pool.address, 32);
+            expect(await token0.balanceOf(pool.address)).to.eq(9996 + 317);
+            expect(await token1.balanceOf(pool.address)).to.eq(1000 + 32);
+          });
 
-  //       describe("including current price", () => {
-  //         it("price within range: transfers current price of both tokens", async () => {
-  //           await expect(
-  //             mint(
-  //               wallet.address,
-  //               minTick + tickSpacing,
-  //               maxTick - tickSpacing,
-  //               100
-  //             )
-  //           )
-  //             .to.emit(token0, "Transfer")
-  //             .withArgs(wallet.address, pool.address, 317)
-  //             .to.emit(token1, "Transfer")
-  //             .withArgs(wallet.address, pool.address, 32);
-  //           expect(await token0.balanceOf(pool.address)).to.eq(9996 + 317);
-  //           expect(await token1.balanceOf(pool.address)).to.eq(1000 + 32);
-  //         });
+          it("initializes lower tick", async () => {
+            await mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              100
+            );
+            const { liquidityGross } = await pool.ticks(minTick + tickSpacing);
+            expect(liquidityGross).to.eq(100);
+          });
 
-  //         it("initializes lower tick", async () => {
-  //           await mint(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing,
-  //             100
-  //           );
-  //           const { liquidityGross } = await pool.ticks(minTick + tickSpacing);
-  //           expect(liquidityGross).to.eq(100);
-  //         });
+          it("initializes upper tick", async () => {
+            await mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              100
+            );
+            const { liquidityGross } = await pool.ticks(maxTick - tickSpacing);
+            expect(liquidityGross).to.eq(100);
+          });
 
-  //         it("initializes upper tick", async () => {
-  //           await mint(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing,
-  //             100
-  //           );
-  //           const { liquidityGross } = await pool.ticks(maxTick - tickSpacing);
-  //           expect(liquidityGross).to.eq(100);
-  //         });
+          it("works for min/max tick", async () => {
+            await expect(mint(wallet.address, minTick, maxTick, 10000))
+              .to.emit(token0, "Transfer")
+              .withArgs(wallet.address, pool.address, 31623)
+              .to.emit(token1, "Transfer")
+              .withArgs(wallet.address, pool.address, 3163);
+            expect(await token0.balanceOf(pool.address)).to.eq(9996 + 31623);
+            expect(await token1.balanceOf(pool.address)).to.eq(1000 + 3163);
+          });
 
-  //         it("works for min/max tick", async () => {
-  //           await expect(mint(wallet.address, minTick, maxTick, 10000))
-  //             .to.emit(token0, "Transfer")
-  //             .withArgs(wallet.address, pool.address, 31623)
-  //             .to.emit(token1, "Transfer")
-  //             .withArgs(wallet.address, pool.address, 3163);
-  //           expect(await token0.balanceOf(pool.address)).to.eq(9996 + 31623);
-  //           expect(await token1.balanceOf(pool.address)).to.eq(1000 + 3163);
-  //         });
+          it("removing works", async () => {
+            await mint(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              100
+            );
+            await pool.burn(minTick + tickSpacing, maxTick - tickSpacing, 100);
+            const { amount0, amount1 } = await pool.collectStatic(
+              wallet.address,
+              minTick + tickSpacing,
+              maxTick - tickSpacing,
+              MaxUint128,
+              MaxUint128
+            );
+            expect(amount0, "amount0").to.eq(316);
+            expect(amount1, "amount1").to.eq(31);
+          });
 
-  //         it("removing works", async () => {
-  //           await mint(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing,
-  //             100
-  //           );
-  //           await pool.burn(minTick + tickSpacing, maxTick - tickSpacing, 100);
-  //           const { amount0, amount1 } = await pool.collectStatic(
-  //             wallet.address,
-  //             minTick + tickSpacing,
-  //             maxTick - tickSpacing,
-  //             MaxUint128,
-  //             MaxUint128
-  //           );
-  //           expect(amount0, "amount0").to.eq(316);
-  //           expect(amount1, "amount1").to.eq(31);
-  //         });
+          it("writes an observation", async () => {
+            checkObservationEquals(await pool.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_POOL_START_TIME,
+              initialized: true,
+              secondsPerLiquidityCumulativeX128: 0,
+            });
+            await pool.advanceTime(1);
+            await mint(wallet.address, minTick, maxTick, 100);
+            checkObservationEquals(await pool.observations(0), {
+              tickCumulative: -23028,
+              blockTimestamp: TEST_POOL_START_TIME + 1,
+              initialized: true,
+              secondsPerLiquidityCumulativeX128:
+                "107650226801941937191829992860413859",
+            });
+          });
+        });
 
-  //         it("writes an observation", async () => {
-  //           checkObservationEquals(await pool.observations(0), {
-  //             tickCumulative: 0,
-  //             blockTimestamp: TEST_POOL_START_TIME,
-  //             initialized: true,
-  //             secondsPerLiquidityCumulativeX128: 0,
-  //           });
-  //           await pool.advanceTime(1);
-  //           await mint(wallet.address, minTick, maxTick, 100);
-  //           checkObservationEquals(await pool.observations(0), {
-  //             tickCumulative: -23028,
-  //             blockTimestamp: TEST_POOL_START_TIME + 1,
-  //             initialized: true,
-  //             secondsPerLiquidityCumulativeX128:
-  //               "107650226801941937191829992860413859",
-  //           });
-  //         });
-  //       });
+        describe("below current price", () => {
+          it("transfers token1 only", async () => {
+            await expect(mint(wallet.address, -46080, -23040, 10000))
+              .to.emit(token1, "Transfer")
+              .withArgs(wallet.address, pool.address, 2162)
+              .to.not.emit(token0, "Transfer");
+            expect(await token0.balanceOf(pool.address)).to.eq(9996);
+            expect(await token1.balanceOf(pool.address)).to.eq(1000 + 2162);
+          });
 
-  //       describe("below current price", () => {
-  //         it("transfers token1 only", async () => {
-  //           await expect(mint(wallet.address, -46080, -23040, 10000))
-  //             .to.emit(token1, "Transfer")
-  //             .withArgs(wallet.address, pool.address, 2162)
-  //             .to.not.emit(token0, "Transfer");
-  //           expect(await token0.balanceOf(pool.address)).to.eq(9996);
-  //           expect(await token1.balanceOf(pool.address)).to.eq(1000 + 2162);
-  //         });
+          it("min tick with max leverage", async () => {
+            await mint(
+              wallet.address,
+              minTick,
+              minTick + tickSpacing,
+              BigNumber.from(2).pow(102)
+            );
+            expect(await token0.balanceOf(pool.address)).to.eq(9996);
+            expect(await token1.balanceOf(pool.address)).to.eq(
+              1000 + 828011520
+            );
+          });
 
-  //         it("min tick with max leverage", async () => {
-  //           await mint(
-  //             wallet.address,
-  //             minTick,
-  //             minTick + tickSpacing,
-  //             BigNumber.from(2).pow(102)
-  //           );
-  //           expect(await token0.balanceOf(pool.address)).to.eq(9996);
-  //           expect(await token1.balanceOf(pool.address)).to.eq(
-  //             1000 + 828011520
-  //           );
-  //         });
+          it("works for min tick", async () => {
+            await expect(mint(wallet.address, minTick, -23040, 10000))
+              .to.emit(token1, "Transfer")
+              .withArgs(wallet.address, pool.address, 3161);
+            expect(await token0.balanceOf(pool.address)).to.eq(9996);
+            expect(await token1.balanceOf(pool.address)).to.eq(1000 + 3161);
+          });
 
-  //         it("works for min tick", async () => {
-  //           await expect(mint(wallet.address, minTick, -23040, 10000))
-  //             .to.emit(token1, "Transfer")
-  //             .withArgs(wallet.address, pool.address, 3161);
-  //           expect(await token0.balanceOf(pool.address)).to.eq(9996);
-  //           expect(await token1.balanceOf(pool.address)).to.eq(1000 + 3161);
-  //         });
+          it("removing works", async () => {
+            await mint(wallet.address, -46080, -46020, 10000);
+            await pool.burn(-46080, -46020, 10000);
+            const { amount0, amount1 } = await pool.collectStatic(
+              wallet.address,
+              -46080,
+              -46020,
+              MaxUint128,
+              MaxUint128
+            );
+            expect(amount0, "amount0").to.eq(0);
+            expect(amount1, "amount1").to.eq(3);
+          });
 
-  //         it("removing works", async () => {
-  //           await mint(wallet.address, -46080, -46020, 10000);
-  //           await pool.burn(-46080, -46020, 10000);
-  //           const { amount0, amount1 } = await pool.collectStatic(
-  //             wallet.address,
-  //             -46080,
-  //             -46020,
-  //             MaxUint128,
-  //             MaxUint128
-  //           );
-  //           expect(amount0, "amount0").to.eq(0);
-  //           expect(amount1, "amount1").to.eq(3);
-  //         });
+          it("does not write an observation", async () => {
+            checkObservationEquals(await pool.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_POOL_START_TIME,
+              initialized: true,
+              secondsPerLiquidityCumulativeX128: 0,
+            });
+            await pool.advanceTime(1);
+            await mint(wallet.address, -46080, -23040, 100);
+            checkObservationEquals(await pool.observations(0), {
+              tickCumulative: 0,
+              blockTimestamp: TEST_POOL_START_TIME,
+              initialized: true,
+              secondsPerLiquidityCumulativeX128: 0,
+            });
+          });
+        });
+      });
 
-  //         it("does not write an observation", async () => {
-  //           checkObservationEquals(await pool.observations(0), {
-  //             tickCumulative: 0,
-  //             blockTimestamp: TEST_POOL_START_TIME,
-  //             initialized: true,
-  //             secondsPerLiquidityCumulativeX128: 0,
-  //           });
-  //           await pool.advanceTime(1);
-  //           await mint(wallet.address, -46080, -23040, 100);
-  //           checkObservationEquals(await pool.observations(0), {
-  //             tickCumulative: 0,
-  //             blockTimestamp: TEST_POOL_START_TIME,
-  //             initialized: true,
-  //             secondsPerLiquidityCumulativeX128: 0,
-  //           });
-  //         });
-  //       });
-  //     });
+      it("protocol fees accumulate as expected during swap", async () => {
+        await pool.setFeeProtocol(6, 6);
 
-  //     it("protocol fees accumulate as expected during swap", async () => {
-  //       await pool.setFeeProtocol(6, 6);
+        await mint(
+          wallet.address,
+          minTick + tickSpacing,
+          maxTick - tickSpacing,
+          expandTo18Decimals(1)
+        );
+        await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address);
+        await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address);
 
-  //       await mint(
-  //         wallet.address,
-  //         minTick + tickSpacing,
-  //         maxTick - tickSpacing,
-  //         expandTo18Decimals(1)
-  //       );
-  //       await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address);
-  //       await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address);
+        let { token0: token0ProtocolFees, token1: token1ProtocolFees } =
+          await pool.protocolFees();
+        expect(token0ProtocolFees).to.eq("50000000000000");
+        expect(token1ProtocolFees).to.eq("5000000000000");
+      });
 
-  //       let {
-  //         token0: token0ProtocolFees,
-  //         token1: token1ProtocolFees,
-  //       } = await pool.protocolFees();
-  //       expect(token0ProtocolFees).to.eq("50000000000000");
-  //       expect(token1ProtocolFees).to.eq("5000000000000");
-  //     });
+      it("positions are protected before protocol fee is turned on", async () => {
+        await mint(
+          wallet.address,
+          minTick + tickSpacing,
+          maxTick - tickSpacing,
+          expandTo18Decimals(1)
+        );
+        await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address);
+        await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address);
 
-  //     it("positions are protected before protocol fee is turned on", async () => {
-  //       await mint(
-  //         wallet.address,
-  //         minTick + tickSpacing,
-  //         maxTick - tickSpacing,
-  //         expandTo18Decimals(1)
-  //       );
-  //       await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address);
-  //       await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address);
+        let { token0: token0ProtocolFees, token1: token1ProtocolFees } =
+          await pool.protocolFees();
+        expect(token0ProtocolFees).to.eq(0);
+        expect(token1ProtocolFees).to.eq(0);
 
-  //       let {
-  //         token0: token0ProtocolFees,
-  //         token1: token1ProtocolFees,
-  //       } = await pool.protocolFees();
-  //       expect(token0ProtocolFees).to.eq(0);
-  //       expect(token1ProtocolFees).to.eq(0);
+        await pool.setFeeProtocol(6, 6);
+        ({ token0: token0ProtocolFees, token1: token1ProtocolFees } =
+          await pool.protocolFees());
+        expect(token0ProtocolFees).to.eq(0);
+        expect(token1ProtocolFees).to.eq(0);
+      });
 
-  //       await pool.setFeeProtocol(6, 6);
-  //       ({
-  //         token0: token0ProtocolFees,
-  //         token1: token1ProtocolFees,
-  //       } = await pool.protocolFees());
-  //       expect(token0ProtocolFees).to.eq(0);
-  //       expect(token1ProtocolFees).to.eq(0);
-  //     });
+      it("poke is not allowed on uninitialized position", async () => {
+        await mint(
+          other.address,
+          minTick + tickSpacing,
+          maxTick - tickSpacing,
+          expandTo18Decimals(1)
+        );
+        await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address);
+        await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address);
 
-  //     it("poke is not allowed on uninitialized position", async () => {
-  //       await mint(
-  //         other.address,
-  //         minTick + tickSpacing,
-  //         maxTick - tickSpacing,
-  //         expandTo18Decimals(1)
-  //       );
-  //       await swapExact0For1(expandTo18Decimals(1).div(10), wallet.address);
-  //       await swapExact1For0(expandTo18Decimals(1).div(100), wallet.address);
+        // missing revert reason due to hardhat
+        await expect(pool.burn(minTick + tickSpacing, maxTick - tickSpacing, 0))
+          .to.be.reverted;
 
-  //       // missing revert reason due to hardhat
-  //       await expect(pool.burn(minTick + tickSpacing, maxTick - tickSpacing, 0))
-  //         .to.be.reverted;
+        await mint(
+          wallet.address,
+          minTick + tickSpacing,
+          maxTick - tickSpacing,
+          1
+        );
+        let {
+          liquidity,
+          feeGrowthInside0LastX128,
+          feeGrowthInside1LastX128,
+          tokensOwed1,
+          tokensOwed0,
+        } = await pool.positions(
+          getPositionKey(
+            wallet.address,
+            minTick + tickSpacing,
+            maxTick - tickSpacing
+          )
+        );
+        expect(liquidity).to.eq(1);
+        expect(feeGrowthInside0LastX128).to.eq(
+          "102084710076281216349243831104605583"
+        );
+        expect(feeGrowthInside1LastX128).to.eq(
+          "10208471007628121634924383110460558"
+        );
+        expect(tokensOwed0, "tokens owed 0 before").to.eq(0);
+        expect(tokensOwed1, "tokens owed 1 before").to.eq(0);
 
-  //       await mint(
-  //         wallet.address,
-  //         minTick + tickSpacing,
-  //         maxTick - tickSpacing,
-  //         1
-  //       );
-  //       let {
-  //         liquidity,
-  //         feeGrowthInside0LastX128,
-  //         feeGrowthInside1LastX128,
-  //         tokensOwed1,
-  //         tokensOwed0,
-  //       } = await pool.positions(
-  //         getPositionKey(
-  //           wallet.address,
-  //           minTick + tickSpacing,
-  //           maxTick - tickSpacing
-  //         )
-  //       );
-  //       expect(liquidity).to.eq(1);
-  //       expect(feeGrowthInside0LastX128).to.eq(
-  //         "102084710076281216349243831104605583"
-  //       );
-  //       expect(feeGrowthInside1LastX128).to.eq(
-  //         "10208471007628121634924383110460558"
-  //       );
-  //       expect(tokensOwed0, "tokens owed 0 before").to.eq(0);
-  //       expect(tokensOwed1, "tokens owed 1 before").to.eq(0);
-
-  //       await pool.burn(minTick + tickSpacing, maxTick - tickSpacing, 1);
-  //       ({
-  //         liquidity,
-  //         feeGrowthInside0LastX128,
-  //         feeGrowthInside1LastX128,
-  //         tokensOwed1,
-  //         tokensOwed0,
-  //       } = await pool.positions(
-  //         getPositionKey(
-  //           wallet.address,
-  //           minTick + tickSpacing,
-  //           maxTick - tickSpacing
-  //         )
-  //       ));
-  //       expect(liquidity).to.eq(0);
-  //       expect(feeGrowthInside0LastX128).to.eq(
-  //         "102084710076281216349243831104605583"
-  //       );
-  //       expect(feeGrowthInside1LastX128).to.eq(
-  //         "10208471007628121634924383110460558"
-  //       );
-  //       expect(tokensOwed0, "tokens owed 0 after").to.eq(3);
-  //       expect(tokensOwed1, "tokens owed 1 after").to.eq(0);
-  //     });
-  //   });
-  // });
+        await pool.burn(minTick + tickSpacing, maxTick - tickSpacing, 1);
+        ({
+          liquidity,
+          feeGrowthInside0LastX128,
+          feeGrowthInside1LastX128,
+          tokensOwed1,
+          tokensOwed0,
+        } = await pool.positions(
+          getPositionKey(
+            wallet.address,
+            minTick + tickSpacing,
+            maxTick - tickSpacing
+          )
+        ));
+        expect(liquidity).to.eq(0);
+        expect(feeGrowthInside0LastX128).to.eq(
+          "102084710076281216349243831104605583"
+        );
+        expect(feeGrowthInside1LastX128).to.eq(
+          "10208471007628121634924383110460558"
+        );
+        expect(tokensOwed0, "tokens owed 0 after").to.eq(3);
+        expect(tokensOwed1, "tokens owed 1 after").to.eq(0);
+      });
+    });
+  });
 
   // describe("#burn", () => {
   //   beforeEach("initialize at zero tick", () => initializeAtZeroTick(pool));
@@ -1582,22 +1535,18 @@ describe("UniswapV3Pool", () => {
   //       MaxUint128
   //     );
 
-  //     const {
-  //       token0Fees: token0FeesNext,
-  //       token1Fees: token1FeesNext,
-  //     } = await swapAndGetFeesOwed({
-  //       amount: expandTo18Decimals(1),
-  //       zeroForOne: true,
-  //       poke: false,
-  //     });
+  //     const { token0Fees: token0FeesNext, token1Fees: token1FeesNext } =
+  //       await swapAndGetFeesOwed({
+  //         amount: expandTo18Decimals(1),
+  //         zeroForOne: true,
+  //         poke: false,
+  //       });
 
   //     expect(token0FeesNext).to.eq(0);
   //     expect(token1FeesNext).to.eq(0);
 
-  //     let {
-  //       token0: token0ProtocolFees,
-  //       token1: token1ProtocolFees,
-  //     } = await pool.protocolFees();
+  //     let { token0: token0ProtocolFees, token1: token1ProtocolFees } =
+  //       await pool.protocolFees();
   //     expect(token0ProtocolFees).to.eq("166666666666666");
   //     expect(token1ProtocolFees).to.eq(0);
 
@@ -1607,10 +1556,8 @@ describe("UniswapV3Pool", () => {
   //     )
   //       .to.emit(token0, "Transfer")
   //       .withArgs(pool.address, wallet.address, "416666666666666");
-  //     ({
-  //       token0: token0ProtocolFees,
-  //       token1: token1ProtocolFees,
-  //     } = await pool.protocolFees());
+  //     ({ token0: token0ProtocolFees, token1: token1ProtocolFees } =
+  //       await pool.protocolFees());
   //     expect(token0ProtocolFees).to.eq("166666666666666");
   //     expect(token1ProtocolFees).to.eq(0);
   //   });
@@ -1705,18 +1652,14 @@ describe("UniswapV3Pool", () => {
 
   //   // check the math works out to moving the price down 1, sending no amount out, and having some amount remaining
   //   {
-  //     const {
-  //       feeAmount,
-  //       amountIn,
-  //       amountOut,
-  //       sqrtQ,
-  //     } = await swapMath.computeSwapStep(
-  //       p0,
-  //       p0.sub(1),
-  //       liquidity,
-  //       3,
-  //       FeeAmount.MEDIUM
-  //     );
+  //     const { feeAmount, amountIn, amountOut, sqrtQ } =
+  //       await swapMath.computeSwapStep(
+  //         p0,
+  //         p0.sub(1),
+  //         liquidity,
+  //         3,
+  //         FeeAmount.MEDIUM
+  //       );
   //     expect(sqrtQ, "price moves").to.eq(p0.sub(1));
   //     expect(feeAmount, "fee amount is 1").to.eq(1);
   //     expect(amountIn, "amount in is 1").to.eq(1);
@@ -1739,289 +1682,6 @@ describe("UniswapV3Pool", () => {
   //     await pool.liquidity(),
   //     "pool has run tick transition and liquidity changed"
   //   ).to.eq(liquidity.mul(2));
-  // });
-
-  // describe("#flash", () => {
-  //   it("fails if not initialized", async () => {
-  //     await expect(flash(100, 200, other.address)).to.be.reverted;
-  //     await expect(flash(100, 0, other.address)).to.be.reverted;
-  //     await expect(flash(0, 200, other.address)).to.be.reverted;
-  //   });
-  //   it("fails if no liquidity", async () => {
-  //     await pool.initialize(encodePriceSqrt(1, 1));
-  //     await expect(flash(100, 200, other.address)).to.be.revertedWith("L");
-  //     await expect(flash(100, 0, other.address)).to.be.revertedWith("L");
-  //     await expect(flash(0, 200, other.address)).to.be.revertedWith("L");
-  //   });
-  //   describe("after liquidity added", () => {
-  //     let balance0: BigNumber;
-  //     let balance1: BigNumber;
-  //     beforeEach("add some tokens", async () => {
-  //       await initializeAtZeroTick(pool);
-  //       [balance0, balance1] = await Promise.all([
-  //         token0.balanceOf(pool.address),
-  //         token1.balanceOf(pool.address),
-  //       ]);
-  //     });
-
-  //     describe("fee off", () => {
-  //       it("emits an event", async () => {
-  //         await expect(flash(1001, 2001, other.address))
-  //           .to.emit(pool, "Flash")
-  //           .withArgs(swapTarget.address, other.address, 1001, 2001, 4, 7);
-  //       });
-
-  //       it("transfers the amount0 to the recipient", async () => {
-  //         await expect(flash(100, 200, other.address))
-  //           .to.emit(token0, "Transfer")
-  //           .withArgs(pool.address, other.address, 100);
-  //       });
-  //       it("transfers the amount1 to the recipient", async () => {
-  //         await expect(flash(100, 200, other.address))
-  //           .to.emit(token1, "Transfer")
-  //           .withArgs(pool.address, other.address, 200);
-  //       });
-  //       it("can flash only token0", async () => {
-  //         await expect(flash(101, 0, other.address))
-  //           .to.emit(token0, "Transfer")
-  //           .withArgs(pool.address, other.address, 101)
-  //           .to.not.emit(token1, "Transfer");
-  //       });
-  //       it("can flash only token1", async () => {
-  //         await expect(flash(0, 102, other.address))
-  //           .to.emit(token1, "Transfer")
-  //           .withArgs(pool.address, other.address, 102)
-  //           .to.not.emit(token0, "Transfer");
-  //       });
-  //       it("can flash entire token balance", async () => {
-  //         await expect(flash(balance0, balance1, other.address))
-  //           .to.emit(token0, "Transfer")
-  //           .withArgs(pool.address, other.address, balance0)
-  //           .to.emit(token1, "Transfer")
-  //           .withArgs(pool.address, other.address, balance1);
-  //       });
-  //       it("no-op if both amounts are 0", async () => {
-  //         await expect(flash(0, 0, other.address))
-  //           .to.not.emit(token0, "Transfer")
-  //           .to.not.emit(token1, "Transfer");
-  //       });
-  //       it("fails if flash amount is greater than token balance", async () => {
-  //         await expect(flash(balance0.add(1), balance1, other.address)).to.be
-  //           .reverted;
-  //         await expect(flash(balance0, balance1.add(1), other.address)).to.be
-  //           .reverted;
-  //       });
-  //       it("calls the flash callback on the sender with correct fee amounts", async () => {
-  //         await expect(flash(1001, 2002, other.address))
-  //           .to.emit(swapTarget, "FlashCallback")
-  //           .withArgs(4, 7);
-  //       });
-  //       it("increases the fee growth by the expected amount", async () => {
-  //         await flash(1001, 2002, other.address);
-  //         expect(await pool.feeGrowthGlobal0X128()).to.eq(
-  //           BigNumber.from(4)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //         expect(await pool.feeGrowthGlobal1X128()).to.eq(
-  //           BigNumber.from(7)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //       });
-  //       it("fails if original balance not returned in either token", async () => {
-  //         await expect(flash(1000, 0, other.address, 999, 0)).to.be.reverted;
-  //         await expect(flash(0, 1000, other.address, 0, 999)).to.be.reverted;
-  //       });
-  //       it("fails if underpays either token", async () => {
-  //         await expect(flash(1000, 0, other.address, 1002, 0)).to.be.reverted;
-  //         await expect(flash(0, 1000, other.address, 0, 1002)).to.be.reverted;
-  //       });
-  //       it("allows donating token0", async () => {
-  //         await expect(flash(0, 0, constants.AddressZero, 567, 0))
-  //           .to.emit(token0, "Transfer")
-  //           .withArgs(wallet.address, pool.address, 567)
-  //           .to.not.emit(token1, "Transfer");
-  //         expect(await pool.feeGrowthGlobal0X128()).to.eq(
-  //           BigNumber.from(567)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //       });
-  //       it("allows donating token1", async () => {
-  //         await expect(flash(0, 0, constants.AddressZero, 0, 678))
-  //           .to.emit(token1, "Transfer")
-  //           .withArgs(wallet.address, pool.address, 678)
-  //           .to.not.emit(token0, "Transfer");
-  //         expect(await pool.feeGrowthGlobal1X128()).to.eq(
-  //           BigNumber.from(678)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //       });
-  //       it("allows donating token0 and token1 together", async () => {
-  //         await expect(flash(0, 0, constants.AddressZero, 789, 1234))
-  //           .to.emit(token0, "Transfer")
-  //           .withArgs(wallet.address, pool.address, 789)
-  //           .to.emit(token1, "Transfer")
-  //           .withArgs(wallet.address, pool.address, 1234);
-
-  //         expect(await pool.feeGrowthGlobal0X128()).to.eq(
-  //           BigNumber.from(789)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //         expect(await pool.feeGrowthGlobal1X128()).to.eq(
-  //           BigNumber.from(1234)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //       });
-  //     });
-
-  //     describe("fee on", () => {
-  //       beforeEach("turn protocol fee on", async () => {
-  //         await pool.setFeeProtocol(6, 6);
-  //       });
-
-  //       it("emits an event", async () => {
-  //         await expect(flash(1001, 2001, other.address))
-  //           .to.emit(pool, "Flash")
-  //           .withArgs(swapTarget.address, other.address, 1001, 2001, 4, 7);
-  //       });
-
-  //       it("increases the fee growth by the expected amount", async () => {
-  //         await flash(2002, 4004, other.address);
-
-  //         const {
-  //           token0: token0ProtocolFees,
-  //           token1: token1ProtocolFees,
-  //         } = await pool.protocolFees();
-  //         expect(token0ProtocolFees).to.eq(1);
-  //         expect(token1ProtocolFees).to.eq(2);
-
-  //         expect(await pool.feeGrowthGlobal0X128()).to.eq(
-  //           BigNumber.from(6)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //         expect(await pool.feeGrowthGlobal1X128()).to.eq(
-  //           BigNumber.from(11)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //       });
-  //       it("allows donating token0", async () => {
-  //         await expect(flash(0, 0, constants.AddressZero, 567, 0))
-  //           .to.emit(token0, "Transfer")
-  //           .withArgs(wallet.address, pool.address, 567)
-  //           .to.not.emit(token1, "Transfer");
-
-  //         const { token0: token0ProtocolFees } = await pool.protocolFees();
-  //         expect(token0ProtocolFees).to.eq(94);
-
-  //         expect(await pool.feeGrowthGlobal0X128()).to.eq(
-  //           BigNumber.from(473)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //       });
-  //       it("allows donating token1", async () => {
-  //         await expect(flash(0, 0, constants.AddressZero, 0, 678))
-  //           .to.emit(token1, "Transfer")
-  //           .withArgs(wallet.address, pool.address, 678)
-  //           .to.not.emit(token0, "Transfer");
-
-  //         const { token1: token1ProtocolFees } = await pool.protocolFees();
-  //         expect(token1ProtocolFees).to.eq(113);
-
-  //         expect(await pool.feeGrowthGlobal1X128()).to.eq(
-  //           BigNumber.from(565)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //       });
-  //       it("allows donating token0 and token1 together", async () => {
-  //         await expect(flash(0, 0, constants.AddressZero, 789, 1234))
-  //           .to.emit(token0, "Transfer")
-  //           .withArgs(wallet.address, pool.address, 789)
-  //           .to.emit(token1, "Transfer")
-  //           .withArgs(wallet.address, pool.address, 1234);
-
-  //         const {
-  //           token0: token0ProtocolFees,
-  //           token1: token1ProtocolFees,
-  //         } = await pool.protocolFees();
-  //         expect(token0ProtocolFees).to.eq(131);
-  //         expect(token1ProtocolFees).to.eq(205);
-
-  //         expect(await pool.feeGrowthGlobal0X128()).to.eq(
-  //           BigNumber.from(658)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //         expect(await pool.feeGrowthGlobal1X128()).to.eq(
-  //           BigNumber.from(1029)
-  //             .mul(BigNumber.from(2).pow(128))
-  //             .div(expandTo18Decimals(2))
-  //         );
-  //       });
-  //     });
-  //   });
-  // });
-
-  // describe("#increaseObservationCardinalityNext", () => {
-  //   it("cannot be called before initialization", async () => {
-  //     await expect(pool.increaseObservationCardinalityNext(2)).to.be.reverted;
-  //   });
-  //   describe("after initialization", () => {
-  //     beforeEach("initialize the pool", () =>
-  //       pool.initialize(encodePriceSqrt(1, 1))
-  //     );
-  //     it("oracle starting state after initialization", async () => {
-  //       const {
-  //         observationCardinality,
-  //         observationIndex,
-  //         observationCardinalityNext,
-  //       } = await pool.slot0();
-  //       expect(observationCardinality).to.eq(1);
-  //       expect(observationIndex).to.eq(0);
-  //       expect(observationCardinalityNext).to.eq(1);
-  //       const {
-  //         secondsPerLiquidityCumulativeX128,
-  //         tickCumulative,
-  //         initialized,
-  //         blockTimestamp,
-  //       } = await pool.observations(0);
-  //       expect(secondsPerLiquidityCumulativeX128).to.eq(0);
-  //       expect(tickCumulative).to.eq(0);
-  //       expect(initialized).to.eq(true);
-  //       expect(blockTimestamp).to.eq(TEST_POOL_START_TIME);
-  //     });
-  //     it("increases observation cardinality next", async () => {
-  //       await pool.increaseObservationCardinalityNext(2);
-  //       const {
-  //         observationCardinality,
-  //         observationIndex,
-  //         observationCardinalityNext,
-  //       } = await pool.slot0();
-  //       expect(observationCardinality).to.eq(1);
-  //       expect(observationIndex).to.eq(0);
-  //       expect(observationCardinalityNext).to.eq(2);
-  //     });
-  //     it("is no op if target is already exceeded", async () => {
-  //       await pool.increaseObservationCardinalityNext(5);
-  //       await pool.increaseObservationCardinalityNext(3);
-  //       const {
-  //         observationCardinality,
-  //         observationIndex,
-  //         observationCardinalityNext,
-  //       } = await pool.slot0();
-  //       expect(observationCardinality).to.eq(1);
-  //       expect(observationIndex).to.eq(0);
-  //       expect(observationCardinalityNext).to.eq(5);
-  //     });
-  //   });
   // });
 
   // describe("#setFeeProtocol", () => {
@@ -2082,228 +1742,6 @@ describe("UniswapV3Pool", () => {
   //     await expect(pool.setFeeProtocol(5, 9))
   //       .to.be.emit(pool, "SetFeeProtocol")
   //       .withArgs(5, 9, 5, 9);
-  //   });
-  // });
-
-  // describe("#lock", () => {
-  //   beforeEach("initialize the pool", async () => {
-  //     await pool.initialize(encodePriceSqrt(1, 1));
-  //     await mint(wallet.address, minTick, maxTick, expandTo18Decimals(1));
-  //   });
-
-  //   it("cannot reenter from swap callback", async () => {
-  //     const reentrant = (await (
-  //       await ethers.getContractFactory("TestUniswapV3ReentrantCallee")
-  //     ).deploy()) as TestUniswapV3ReentrantCallee;
-
-  //     // the tests happen in solidity
-  //     await expect(reentrant.swapToReenter(pool.address)).to.be.revertedWith(
-  //       "Unable to reenter"
-  //     );
-  //   });
-  // });
-
-  // describe("#snapshotCumulativesInside", () => {
-  //   const tickLower = -TICK_SPACINGS[FeeAmount.MEDIUM];
-  //   const tickUpper = TICK_SPACINGS[FeeAmount.MEDIUM];
-  //   const tickSpacing = TICK_SPACINGS[FeeAmount.MEDIUM];
-  //   beforeEach(async () => {
-  //     await pool.initialize(encodePriceSqrt(1, 1));
-  //     await mint(wallet.address, tickLower, tickUpper, 10);
-  //   });
-  //   it("throws if ticks are in reverse order", async () => {
-  //     await expect(pool.snapshotCumulativesInside(tickUpper, tickLower)).to.be
-  //       .reverted;
-  //   });
-  //   it("throws if ticks are the same", async () => {
-  //     await expect(pool.snapshotCumulativesInside(tickUpper, tickUpper)).to.be
-  //       .reverted;
-  //   });
-  //   it("throws if tick lower is too low", async () => {
-  //     await expect(
-  //       pool.snapshotCumulativesInside(getMinTick(tickSpacing) - 1, tickUpper)
-  //     ).be.reverted;
-  //   });
-  //   it("throws if tick upper is too high", async () => {
-  //     await expect(
-  //       pool.snapshotCumulativesInside(tickLower, getMaxTick(tickSpacing) + 1)
-  //     ).be.reverted;
-  //   });
-  //   it("throws if tick lower is not initialized", async () => {
-  //     await expect(
-  //       pool.snapshotCumulativesInside(tickLower - tickSpacing, tickUpper)
-  //     ).to.be.reverted;
-  //   });
-  //   it("throws if tick upper is not initialized", async () => {
-  //     await expect(
-  //       pool.snapshotCumulativesInside(tickLower, tickUpper + tickSpacing)
-  //     ).to.be.reverted;
-  //   });
-  //   it("is zero immediately after initialize", async () => {
-  //     const {
-  //       secondsPerLiquidityInsideX128,
-  //       tickCumulativeInside,
-  //       secondsInside,
-  //     } = await pool.snapshotCumulativesInside(tickLower, tickUpper);
-  //     expect(secondsPerLiquidityInsideX128).to.eq(0);
-  //     expect(tickCumulativeInside).to.eq(0);
-  //     expect(secondsInside).to.eq(0);
-  //   });
-  //   it("increases by expected amount when time elapses in the range", async () => {
-  //     await pool.advanceTime(5);
-  //     const {
-  //       secondsPerLiquidityInsideX128,
-  //       tickCumulativeInside,
-  //       secondsInside,
-  //     } = await pool.snapshotCumulativesInside(tickLower, tickUpper);
-  //     expect(secondsPerLiquidityInsideX128).to.eq(
-  //       BigNumber.from(5).shl(128).div(10)
-  //     );
-  //     expect(tickCumulativeInside, "tickCumulativeInside").to.eq(0);
-  //     expect(secondsInside).to.eq(5);
-  //   });
-  //   it("does not account for time increase above range", async () => {
-  //     await pool.advanceTime(5);
-  //     await swapToHigherPrice(encodePriceSqrt(2, 1), wallet.address);
-  //     await pool.advanceTime(7);
-  //     const {
-  //       secondsPerLiquidityInsideX128,
-  //       tickCumulativeInside,
-  //       secondsInside,
-  //     } = await pool.snapshotCumulativesInside(tickLower, tickUpper);
-  //     expect(secondsPerLiquidityInsideX128).to.eq(
-  //       BigNumber.from(5).shl(128).div(10)
-  //     );
-  //     expect(tickCumulativeInside, "tickCumulativeInside").to.eq(0);
-  //     expect(secondsInside).to.eq(5);
-  //   });
-  //   it("does not account for time increase below range", async () => {
-  //     await pool.advanceTime(5);
-  //     await swapToLowerPrice(encodePriceSqrt(1, 2), wallet.address);
-  //     await pool.advanceTime(7);
-  //     const {
-  //       secondsPerLiquidityInsideX128,
-  //       tickCumulativeInside,
-  //       secondsInside,
-  //     } = await pool.snapshotCumulativesInside(tickLower, tickUpper);
-  //     expect(secondsPerLiquidityInsideX128).to.eq(
-  //       BigNumber.from(5).shl(128).div(10)
-  //     );
-  //     // tick is 0 for 5 seconds, then not in range
-  //     expect(tickCumulativeInside, "tickCumulativeInside").to.eq(0);
-  //     expect(secondsInside).to.eq(5);
-  //   });
-  //   it("time increase below range is not counted", async () => {
-  //     await swapToLowerPrice(encodePriceSqrt(1, 2), wallet.address);
-  //     await pool.advanceTime(5);
-  //     await swapToHigherPrice(encodePriceSqrt(1, 1), wallet.address);
-  //     await pool.advanceTime(7);
-  //     const {
-  //       secondsPerLiquidityInsideX128,
-  //       tickCumulativeInside,
-  //       secondsInside,
-  //     } = await pool.snapshotCumulativesInside(tickLower, tickUpper);
-  //     expect(secondsPerLiquidityInsideX128).to.eq(
-  //       BigNumber.from(7).shl(128).div(10)
-  //     );
-  //     // tick is not in range then tick is 0 for 7 seconds
-  //     expect(tickCumulativeInside, "tickCumulativeInside").to.eq(0);
-  //     expect(secondsInside).to.eq(7);
-  //   });
-  //   it("time increase above range is not counted", async () => {
-  //     await swapToHigherPrice(encodePriceSqrt(2, 1), wallet.address);
-  //     await pool.advanceTime(5);
-  //     await swapToLowerPrice(encodePriceSqrt(1, 1), wallet.address);
-  //     await pool.advanceTime(7);
-  //     const {
-  //       secondsPerLiquidityInsideX128,
-  //       tickCumulativeInside,
-  //       secondsInside,
-  //     } = await pool.snapshotCumulativesInside(tickLower, tickUpper);
-  //     expect(secondsPerLiquidityInsideX128).to.eq(
-  //       BigNumber.from(7).shl(128).div(10)
-  //     );
-  //     expect((await pool.slot0()).tick).to.eq(-1); // justify the -7 tick cumulative inside value
-  //     expect(tickCumulativeInside, "tickCumulativeInside").to.eq(-7);
-  //     expect(secondsInside).to.eq(7);
-  //   });
-  //   it("positions minted after time spent", async () => {
-  //     await pool.advanceTime(5);
-  //     await mint(wallet.address, tickUpper, getMaxTick(tickSpacing), 15);
-  //     await swapToHigherPrice(encodePriceSqrt(2, 1), wallet.address);
-  //     await pool.advanceTime(8);
-  //     const {
-  //       secondsPerLiquidityInsideX128,
-  //       tickCumulativeInside,
-  //       secondsInside,
-  //     } = await pool.snapshotCumulativesInside(
-  //       tickUpper,
-  //       getMaxTick(tickSpacing)
-  //     );
-  //     expect(secondsPerLiquidityInsideX128).to.eq(
-  //       BigNumber.from(8).shl(128).div(15)
-  //     );
-  //     // the tick of 2/1 is 6931
-  //     // 8 seconds * 6931 = 55448
-  //     expect(tickCumulativeInside, "tickCumulativeInside").to.eq(55448);
-  //     expect(secondsInside).to.eq(8);
-  //   });
-  //   it("overlapping liquidity is aggregated", async () => {
-  //     await mint(wallet.address, tickLower, getMaxTick(tickSpacing), 15);
-  //     await pool.advanceTime(5);
-  //     await swapToHigherPrice(encodePriceSqrt(2, 1), wallet.address);
-  //     await pool.advanceTime(8);
-  //     const {
-  //       secondsPerLiquidityInsideX128,
-  //       tickCumulativeInside,
-  //       secondsInside,
-  //     } = await pool.snapshotCumulativesInside(tickLower, tickUpper);
-  //     expect(secondsPerLiquidityInsideX128).to.eq(
-  //       BigNumber.from(5).shl(128).div(25)
-  //     );
-  //     expect(tickCumulativeInside, "tickCumulativeInside").to.eq(0);
-  //     expect(secondsInside).to.eq(5);
-  //   });
-  //   it("relative behavior of snapshots", async () => {
-  //     await pool.advanceTime(5);
-  //     await mint(wallet.address, getMinTick(tickSpacing), tickLower, 15);
-  //     const {
-  //       secondsPerLiquidityInsideX128: secondsPerLiquidityInsideX128Start,
-  //       tickCumulativeInside: tickCumulativeInsideStart,
-  //       secondsInside: secondsInsideStart,
-  //     } = await pool.snapshotCumulativesInside(
-  //       getMinTick(tickSpacing),
-  //       tickLower
-  //     );
-  //     await pool.advanceTime(8);
-  //     // 13 seconds in starting range, then 3 seconds in newly minted range
-  //     await swapToLowerPrice(encodePriceSqrt(1, 2), wallet.address);
-  //     await pool.advanceTime(3);
-  //     const {
-  //       secondsPerLiquidityInsideX128,
-  //       tickCumulativeInside,
-  //       secondsInside,
-  //     } = await pool.snapshotCumulativesInside(
-  //       getMinTick(tickSpacing),
-  //       tickLower
-  //     );
-  //     const expectedDiffSecondsPerLiquidity = BigNumber.from(3)
-  //       .shl(128)
-  //       .div(15);
-  //     expect(
-  //       secondsPerLiquidityInsideX128.sub(secondsPerLiquidityInsideX128Start)
-  //     ).to.eq(expectedDiffSecondsPerLiquidity);
-  //     expect(secondsPerLiquidityInsideX128).to.not.eq(
-  //       expectedDiffSecondsPerLiquidity
-  //     );
-  //     // the tick is the one corresponding to the price of 1/2, or log base 1.0001 of 0.5
-  //     // this is -6932, and 3 seconds have passed, so the cumulative computed from the diff equals 6932 * 3
-  //     expect(
-  //       tickCumulativeInside.sub(tickCumulativeInsideStart),
-  //       "tickCumulativeInside"
-  //     ).to.eq(-20796);
-  //     expect(secondsInside - secondsInsideStart).to.eq(3);
-  //     expect(secondsInside).to.not.eq(3);
   //   });
   // });
 
