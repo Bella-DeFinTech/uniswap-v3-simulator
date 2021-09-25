@@ -20,6 +20,14 @@ export class PositionManager {
     this.positions.set(key, position);
   }
 
+  isInitialized(key: string): boolean {
+    return this.positions.has(key);
+  }
+
+  clear(key: string) {
+    if (this.positions.has(key)) this.positions.delete(key);
+  }
+
   getPositionAndInitIfAbsent(key: string): Position {
     if (this.positions.has(key)) return this.positions.get(key)!;
     const newPosition = new Position();
