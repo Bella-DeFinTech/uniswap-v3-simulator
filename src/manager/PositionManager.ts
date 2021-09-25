@@ -1,5 +1,8 @@
 import { Position } from "../model/Position";
 import { jsonMapMember, jsonObject } from "typedjson";
+import JSBI from "jsbi";
+import assert from "assert";
+import { ZERO } from "../enum/InternalConstants";
 
 @jsonObject
 export class PositionManager {
@@ -18,10 +21,6 @@ export class PositionManager {
 
   set(key: string, position: Position) {
     this.positions.set(key, position);
-  }
-
-  isInitialized(key: string): boolean {
-    return this.positions.has(key);
   }
 
   clear(key: string) {
@@ -43,5 +42,46 @@ export class PositionManager {
     const key = PositionManager.getKey(owner, tickLower, tickUpper);
     if (this.positions.has(key)) return this.positions.get(key)!;
     return new Position();
+  }
+
+  collectPosition(
+    owner: string,
+    tickLower: number,
+    tickUpper: number,
+    amount0Requested: JSBI,
+    amount1Requested: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
+    assert(
+      JSBI.greaterThanOrEqual(amount0Requested, ZERO) &&
+        JSBI.greaterThanOrEqual(amount1Requested, ZERO),
+      "amounts requested should be positive"
+    );
+    const key = PositionManager.getKey(owner, tickLower, tickUpper);
+    if (this.positions.has(key)) {
+      const positionToCollect = this.positions.get(key)!;
+      const amount0 = JSBI.greaterThan(
+        amount0Requested,
+        positionToCollect.tokensOwed0
+      )
+        ? positionToCollect.tokensOwed0
+        : amount0Requested;
+      const amount1 = JSBI.greaterThan(
+        amount1Requested,
+        positionToCollect.tokensOwed1
+      )
+        ? positionToCollect.tokensOwed1
+        : amount1Requested;
+      assert(
+        JSBI.greaterThan(amount0, ZERO) && JSBI.greaterThan(amount1, ZERO),
+        "the amount to collect is invalid"
+      );
+      positionToCollect?.updateBurn(
+        JSBI.subtract(positionToCollect.tokensOwed0, amount0),
+        JSBI.subtract(positionToCollect.tokensOwed1, amount1)
+      );
+      if (positionToCollect.isEmpty()) this.clear(key);
+      return { amount0: amount0, amount1: amount1 };
+    }
+    return { amount0: ZERO, amount1: ZERO };
   }
 }
