@@ -75,7 +75,7 @@ export class PositionManager {
         JSBI.greaterThan(amount0, ZERO) && JSBI.greaterThan(amount1, ZERO),
         "the amount to collect is invalid"
       );
-      positionToCollect?.updateBurn(
+      positionToCollect.updateBurn(
         JSBI.subtract(positionToCollect.tokensOwed0, amount0),
         JSBI.subtract(positionToCollect.tokensOwed1, amount1)
       );
