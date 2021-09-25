@@ -167,15 +167,6 @@ export class CorePool {
       amount1Requested
     );
 
-    if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
-      let position: Position = this.positionManager.getPositionAndInitIfAbsent(
-        PositionManager.getKey(recipient, tickLower, tickUpper)
-      );
-      position.updateBurn(
-        JSBI.subtract(position.tokensOwed0, amount0),
-        JSBI.subtract(position.tokensOwed1, amount1)
-      );
-    }
     return {
       amount0,
       amount1,
