@@ -79,4 +79,12 @@ export class Position {
     this._tokensOwed0 = newTokensOwed0;
     this._tokensOwed1 = newTokensOwed1;
   }
+
+  isEmpty(): boolean {
+    return (
+      JSBI.equal(this._liquidity, ZERO) &&
+      JSBI.equal(this._tokensOwed0, ZERO) &&
+      JSBI.equal(this._tokensOwed1, ZERO)
+    );
+  }
 }

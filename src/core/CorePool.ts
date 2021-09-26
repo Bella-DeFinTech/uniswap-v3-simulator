@@ -159,48 +159,14 @@ export class CorePool {
   ): { amount0: JSBI; amount1: JSBI } {
     this.checkTicks(tickLower, tickUpper);
 
-    assert(
-      JSBI.greaterThanOrEqual(amount0Requested, ZERO),
-      "amount0Request should equal or greater than 0"
-    );
-    assert(
-      JSBI.greaterThanOrEqual(amount1Requested, ZERO),
-      "amount1Request should equal or greater than 0 "
-    );
-
-    let positionForCheck = this.positionManager.getPositionReadonly(
+    let { amount0, amount1 } = this.positionManager.collectPosition(
       recipient,
       tickLower,
-      tickUpper
-    );
-    assert(
-      JSBI.notEqual(positionForCheck.tokensOwed0, ZERO) ||
-        JSBI.notEqual(positionForCheck.tokensOwed1, ZERO),
-      "position is not collectable!"
+      tickUpper,
+      amount0Requested,
+      amount1Requested
     );
 
-    assert(
-      JSBI.notEqual(positionForCheck.liquidity, ZERO),
-      "liquidity should NOT be 0"
-    );
-
-    let position: Position = this.positionManager.getPositionAndInitIfAbsent(
-      PositionManager.getKey(recipient, tickLower, tickUpper)
-    );
-
-    let amount0 = JSBI.greaterThan(amount0Requested, position.tokensOwed0)
-      ? position.tokensOwed0
-      : amount0Requested;
-    let amount1 = JSBI.greaterThan(amount1Requested, position.tokensOwed1)
-      ? position.tokensOwed1
-      : amount1Requested;
-
-    if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
-      position.updateBurn(
-        JSBI.subtract(position.tokensOwed0, amount0),
-        JSBI.subtract(position.tokensOwed1, amount1)
-      );
-    }
     return {
       amount0,
       amount1,
