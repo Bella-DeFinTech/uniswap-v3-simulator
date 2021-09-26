@@ -431,8 +431,6 @@ export class CorePool {
       PositionManager.getKey(owner, tickLower, tickUpper)
     );
 
-    let tick = this.tickManager.getTickAndInitIfAbsent(this.tickCurrent);
-
     let flippedLower: boolean = false;
     let flippedUpper: boolean = false;
 
