@@ -157,11 +157,19 @@ export class CorePool {
     amount0Requested: JSBI,
     amount1Requested: JSBI
   ): { amount0: JSBI; amount1: JSBI } {
-    // TODO
     this.checkTicks(tickLower, tickUpper);
+
+    let { amount0, amount1 } = this.positionManager.collectPosition(
+      recipient,
+      tickLower,
+      tickUpper,
+      amount0Requested,
+      amount1Requested
+    );
+
     return {
-      amount0: JSBI.BigInt(0),
-      amount1: JSBI.BigInt(0),
+      amount0,
+      amount1,
     };
   }
 
