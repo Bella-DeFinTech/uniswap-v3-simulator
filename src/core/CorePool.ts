@@ -177,7 +177,8 @@ export class CorePool {
   swap(
     zeroForOne: boolean,
     amountSpecified: JSBI,
-    sqrtPriceLimitX96: JSBI
+    sqrtPriceLimitX96?: JSBI,
+    isStatic: boolean = false
   ): { amount0: JSBI; amount1: JSBI } {
     if (!sqrtPriceLimitX96)
       sqrtPriceLimitX96 = zeroForOne
@@ -222,7 +223,7 @@ export class CorePool {
     // start swap while loop
     while (
       JSBI.notEqual(state.amountSpecifiedRemaining, ZERO) &&
-      state.sqrtPriceX96 != sqrtPriceLimitX96
+      JSBI.notEqual(state.sqrtPriceX96, sqrtPriceLimitX96)
     ) {
       let step: StepComputations = {
         sqrtPriceStartX96: ZERO,
@@ -297,10 +298,16 @@ export class CorePool {
         // if the tick is initialized, run the tick transition
         if (step.initialized) {
           let nextTick = this.tickManager.getTickAndInitIfAbsent(step.tickNext);
-          let liquidityNet = nextTick.cross(
-            zeroForOne ? state.feeGrowthGlobalX128 : this._feeGrowthGlobal0X128,
-            zeroForOne ? this._feeGrowthGlobal1X128 : state.feeGrowthGlobalX128
-          );
+          let liquidityNet = isStatic
+            ? nextTick.liquidityNet
+            : nextTick.cross(
+                zeroForOne
+                  ? state.feeGrowthGlobalX128
+                  : this._feeGrowthGlobal0X128,
+                zeroForOne
+                  ? this._feeGrowthGlobal1X128
+                  : state.feeGrowthGlobalX128
+              );
 
           // if we're moving leftward, we interpret liquidityNet as the opposite sign
           // safe because liquidityNet cannot be type(int128).min
@@ -314,21 +321,24 @@ export class CorePool {
         }
 
         state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
-      } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {
+      } else if (JSBI.notEqual(state.sqrtPriceX96, step.sqrtPriceStartX96)) {
         // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
         state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);
       }
     }
 
-    this._sqrtPriceX96 = state.sqrtPriceX96;
-    if (state.tick != this.tickCurrent) this._tickCurrent = state.tick;
-    if (state.liquidity != this._liquidity) this._liquidity = state.liquidity;
+    if (!isStatic) {
+      this._sqrtPriceX96 = state.sqrtPriceX96;
+      if (state.tick != this.tickCurrent) this._tickCurrent = state.tick;
+      if (JSBI.notEqual(state.liquidity, this._liquidity))
+        this._liquidity = state.liquidity;
 
-    // update fee growth global
-    if (zeroForOne) {
-      this._feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
-    } else {
-      this._feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
+      // update fee growth global
+      if (zeroForOne) {
+        this._feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;
+      } else {
+        this._feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;
+      }
     }
 
     let [amount0, amount1] =
