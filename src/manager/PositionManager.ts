@@ -3,6 +3,7 @@ import { jsonMapMember, jsonObject } from "typedjson";
 import JSBI from "jsbi";
 import assert from "assert";
 import { ZERO } from "../enum/InternalConstants";
+import { PositionView } from "../interface/PositionView";
 
 @jsonObject
 export class PositionManager {
@@ -38,7 +39,7 @@ export class PositionManager {
     owner: string,
     tickLower: number,
     tickUpper: number
-  ): Position {
+  ): PositionView {
     const key = PositionManager.getKey(owner, tickLower, tickUpper);
     if (this.positions.has(key)) return this.positions.get(key)!;
     return new Position();

@@ -3,7 +3,6 @@ import assert from "assert";
 import { TickManager } from "../manager/TickManager";
 import { PositionManager } from "../manager/PositionManager";
 import { Position } from "../model/Position";
-import { Tick } from "../model/Tick";
 import { TickMath } from "../util/TickMath";
 import { SqrtPriceMath } from "../util/SqrtPriceMath";
 import { StepComputations } from "../entity/StepComputations";
@@ -12,6 +11,8 @@ import { SwapMath } from "../util/SwapMath";
 import { LiquidityMath } from "../util/LiquidityMath";
 import { FullMath } from "../util/FullMath";
 import { FeeAmount } from "../enum/FeeAmount";
+import { TickView } from "../interface/TickView";
+import { PositionView } from "../interface/PositionView";
 
 export class CorePool {
   readonly token0: string;
@@ -367,18 +368,27 @@ export class CorePool {
     let amount0: JSBI = ZERO,
       amount1: JSBI = ZERO;
 
-    let position: Position = this.getPosition(owner, tickLower, tickUpper);
+    let positionView: PositionView = this.getPosition(
+      owner,
+      tickLower,
+      tickUpper
+    );
 
     if (JSBI.lessThan(liquidityDelta, ZERO)) {
       const negatedLiquidityDelta = JSBI.multiply(liquidityDelta, NEGATIVE_ONE);
       assert(
-        JSBI.greaterThanOrEqual(position.liquidity, negatedLiquidityDelta),
+        JSBI.greaterThanOrEqual(positionView.liquidity, negatedLiquidityDelta),
         "Liquidity Underflow"
       );
     }
 
     // check ticks pass, update position
-    position = this.updatePosition(owner, tickLower, tickUpper, liquidityDelta);
+    let position = this.updatePosition(
+      owner,
+      tickLower,
+      tickUpper,
+      liquidityDelta
+    );
     // use switch or pattern matching
     // check if liquidity happen add() or remove()
     if (JSBI.notEqual(liquidityDelta, ZERO)) {
@@ -484,11 +494,15 @@ export class CorePool {
     return position;
   }
 
-  getTick(tick: number): Tick {
+  getTick(tick: number): TickView {
     return this.tickManager.getTickReadonly(tick);
   }
 
-  getPosition(owner: string, tickLower: number, tickUpper: number): Position {
+  getPosition(
+    owner: string,
+    tickLower: number,
+    tickUpper: number
+  ): PositionView {
     return this.positionManager.getPositionReadonly(
       owner,
       tickLower,
