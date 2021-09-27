@@ -431,29 +431,31 @@ export class CorePool {
       PositionManager.getKey(owner, tickLower, tickUpper)
     );
 
-    let tick = this.tickManager.getTickAndInitIfAbsent(this.tickCurrent);
-
     let flippedLower: boolean = false;
     let flippedUpper: boolean = false;
 
     if (JSBI.notEqual(liquidityDelta, ZERO)) {
-      flippedLower = tick.update(
-        liquidityDelta,
-        this.tickCurrent,
-        this.feeGrowthGlobal0X128,
-        this.feeGrowthGlobal1X128,
-        false,
-        this.maxLiquidityPerTick
-      );
+      flippedLower = this.tickManager
+        .getTickAndInitIfAbsent(tickLower)
+        .update(
+          liquidityDelta,
+          this.tickCurrent,
+          this.feeGrowthGlobal0X128,
+          this.feeGrowthGlobal1X128,
+          false,
+          this.maxLiquidityPerTick
+        );
 
-      flippedUpper = tick.update(
-        liquidityDelta,
-        this.tickCurrent,
-        this.feeGrowthGlobal0X128,
-        this.feeGrowthGlobal1X128,
-        true,
-        this.maxLiquidityPerTick
-      );
+      flippedUpper = this.tickManager
+        .getTickAndInitIfAbsent(tickUpper)
+        .update(
+          liquidityDelta,
+          this.tickCurrent,
+          this.feeGrowthGlobal0X128,
+          this.feeGrowthGlobal1X128,
+          true,
+          this.maxLiquidityPerTick
+        );
     }
 
     let feeGrowthInsideStep = this.tickManager.getFeeGrowthInside(
