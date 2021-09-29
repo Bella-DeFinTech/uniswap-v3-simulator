@@ -174,11 +174,37 @@ export class CorePool {
     };
   }
 
+  querySwap(
+    zeroForOne: boolean,
+    amountSpecified: JSBI,
+    sqrtPriceLimitX96?: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
+    return this.handleSwap(
+      zeroForOne,
+      amountSpecified,
+      sqrtPriceLimitX96,
+      true
+    );
+  }
+
   swap(
     zeroForOne: boolean,
     amountSpecified: JSBI,
-    sqrtPriceLimitX96?: JSBI,
-    isStatic: boolean = false
+    sqrtPriceLimitX96?: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
+    return this.handleSwap(
+      zeroForOne,
+      amountSpecified,
+      sqrtPriceLimitX96,
+      false
+    );
+  }
+
+  private handleSwap(
+    zeroForOne: boolean,
+    amountSpecified: JSBI,
+    sqrtPriceLimitX96: JSBI | undefined,
+    isStatic: boolean
   ): { amount0: JSBI; amount1: JSBI } {
     if (!sqrtPriceLimitX96)
       sqrtPriceLimitX96 = zeroForOne
