@@ -16,7 +16,7 @@
 > Fast-forward and rewind transactions 
 - this means you can easily repeat a small portion of your test with a different set of parameters without the need to start over.
 > Take or recover from a snapshot(state)
-- this means if you can run continuous regression test as your strategies constantly evolves.
+- this means you can run continuous regression test as your strategies constantly evolves.
 > Branch out and runs in parallel 
 - this means you can run multiple back-tests each with a different set of parameters at the same time and compare the performance.
 > Persist historical data and strategy execution records in a SQLite database
