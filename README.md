@@ -9,7 +9,7 @@
 #### _Tuner_ is fundamentally a state machine, it can:
 > Completely replicate the tick-level calculation
 - this means your strategy will run through the Uniswap V3 implementation logic instead of just the high-level mathematic model.
-> Maintain the identical tick-level percision of prices, fees, and positions 
+> Maintain the identical tick-level percision of prices, fees, and positions of Uniswap V3
 - this means the result of your backtesting is true to the real performance with the minimum margin of deviations.
 > Run fast
 - the EVM is slow, the historical dataset is huge, the Ganache cannot do the job, so use _Tuner_.
