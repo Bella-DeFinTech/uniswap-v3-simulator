@@ -7,8 +7,21 @@ import { ActionType } from "../enum/ActionType";
 import { Serializer } from "./Serializer";
 import { TickManager } from "../manager/TickManager";
 import { PositionManager } from "../manager/PositionManager";
+import { PoolStateView } from "../interface/PoolStateView";
 
 export abstract class PoolStateHelper {
+  static getPoolStateChainCount(poolState: PoolStateView): number {
+    let fromTransition = poolState.getFromTransition();
+    if (
+      !fromTransition ||
+      fromTransition.getRecord().actionType == ActionType.FORK
+    )
+      return 1;
+    return (
+      PoolStateHelper.getPoolStateChainCount(fromTransition.getSource()) + 1
+    );
+  }
+
   static recoverCorePoolByPoolStateChain(poolState: PoolState): CorePool {
     let fromTransition = poolState.fromTransition;
     if (!fromTransition) {
@@ -79,6 +92,8 @@ export abstract class PoolStateHelper {
   }
 
   private static actionParamsToParamsArray(actionParams: any): Array<any> {
-    return Object.keys(actionParams).map((paramKey) => actionParams[paramKey]);
+    let paramKeys = Object.keys(actionParams);
+    paramKeys.splice(paramKeys.indexOf("type"), 1);
+    return paramKeys.map((paramKey) => actionParams[paramKey]);
   }
 }
