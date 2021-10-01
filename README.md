@@ -20,4 +20,4 @@
 > Branch out and runs in parallel 
 - this means you can run multiple back-tests each with a different set of parameters at the same time and compare the performance.
 > Persist historical data and strategy execution records in a SQLite database
-- this means the strategists can use __Tuner__ to do advanced statistical analysis both in real-time and after the testing.
+- this means the strategists can do advanced statistical analysis both in real-time and after the testing.
