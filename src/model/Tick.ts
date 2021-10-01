@@ -5,18 +5,39 @@ import { jsonMember, jsonObject } from "typedjson";
 import { JSBIDeserializer, JSBISerializer } from "../util/Serializer";
 import { LiquidityMath } from "../util/LiquidityMath";
 import { ZERO } from "../enum/InternalConstants";
+import { TickView } from "../interface/TickView";
 
-@jsonObject
+@jsonObject({
+  initializer: (_, rawSourceObject: TickView) => {
+    return new Tick(rawSourceObject.tickIndex);
+  },
+})
 export class Tick {
-  @jsonMember(Number)
+  @jsonMember(Number, { name: "tickIndex" })
   private _tickIndex: number = 0;
-  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
+  @jsonMember({
+    name: "liquidityGross",
+    deserializer: JSBIDeserializer,
+    serializer: JSBISerializer,
+  })
   private _liquidityGross: JSBI = ZERO;
-  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
+  @jsonMember({
+    name: "liquidityNet",
+    deserializer: JSBIDeserializer,
+    serializer: JSBISerializer,
+  })
   private _liquidityNet: JSBI = ZERO;
-  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
+  @jsonMember({
+    name: "feeGrowthOutside0X128",
+    deserializer: JSBIDeserializer,
+    serializer: JSBISerializer,
+  })
   private _feeGrowthOutside0X128: JSBI = ZERO;
-  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
+  @jsonMember({
+    name: "feeGrowthOutside1X128",
+    deserializer: JSBIDeserializer,
+    serializer: JSBISerializer,
+  })
   private _feeGrowthOutside1X128: JSBI = ZERO;
 
   constructor(tickIndex: number) {
