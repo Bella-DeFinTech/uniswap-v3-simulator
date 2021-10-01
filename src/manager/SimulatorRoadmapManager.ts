@@ -1,5 +1,6 @@
 import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
-import { Roadmap } from "../model/Roadmap";
+import { Roadmap, toString as printRoadmap } from "../model/Roadmap";
+import { toString as printPoolConfig } from "../model/PoolConfig";
 import { Snapshot } from "../entity/Snapshot";
 import { PoolStateContainer } from "../interface/PoolStateContainer";
 import { SimulatorRoadmapManager as ISimulatorRoadmapManager } from "../interface/SimulatorRoadmapManager";
@@ -90,19 +91,18 @@ export class SimulatorRoadmapManager
           return Promise.reject(
             new Error("Can't find Roadmap, id: " + roadmapId)
           );
-        console.log(roadmap.toString());
-        return DBManager.instance
-          .getSnapshots(roadmap!.snapshots)
-          .then((snapshots: Snapshot[]) => {
-            if (snapshots.length == 0) return Promise.resolve();
-            console.log(snapshots[0].poolConfig.toString());
-            snapshots.forEach((snapshot: Snapshot) => {
-              let recoveredCorePool =
-                PoolStateHelper.buildCorePoolBySnapshot(snapshot);
-              console.log(recoveredCorePool.toString());
-            });
-            return Promise.resolve();
-          });
+        console.log(printRoadmap(roadmap));
+        return DBManager.instance.getSnapshots(roadmap.snapshots);
+      })
+      .then((snapshots: Snapshot[]) => {
+        if (snapshots.length == 0) return Promise.resolve();
+        console.log(printPoolConfig(snapshots[0].poolConfig));
+        snapshots.forEach((snapshot: Snapshot) => {
+          let recoveredCorePool =
+            PoolStateHelper.buildCorePoolBySnapshot(snapshot);
+          console.log(recoveredCorePool.toString());
+        });
+        return Promise.resolve();
       });
   }
 }

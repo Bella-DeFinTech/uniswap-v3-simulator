@@ -159,32 +159,31 @@ export class DBManager {
     let poolConfigId = poolState.poolConfig.id;
     let snapshot = poolState.snapshot!;
     return this.knex.transaction((trx) =>
-      this.readPoolConfig(poolConfigId, trx).then(
-        (poolConfig: PoolConfigRecord | undefined) =>
-          (!poolConfig
+      this.readPoolConfig(poolConfigId, trx)
+        .then((poolConfig: PoolConfigRecord | undefined) =>
+          !poolConfig
             ? this.insertPoolConfig(poolState.poolConfig, trx)
             : Promise.resolve([])
+        )
+        .then(() =>
+          this.insertSnapshot(
+            snapshot.id,
+            poolConfigId,
+            snapshot.description,
+            snapshot.token0Balance,
+            snapshot.token1Balance,
+            snapshot.sqrtPriceX96,
+            snapshot.liquidity,
+            snapshot.tickCurrent,
+            snapshot.feeGrowthGlobal0X128,
+            snapshot.feeGrowthGlobal1X128,
+            snapshot.tickManager,
+            snapshot.positionManager,
+            snapshot.timestamp,
+            trx
           )
-            .then(() =>
-              this.insertSnapshot(
-                snapshot.id,
-                poolConfigId,
-                snapshot.description,
-                snapshot.token0Balance,
-                snapshot.token1Balance,
-                snapshot.sqrtPriceX96,
-                snapshot.liquidity,
-                snapshot.tickCurrent,
-                snapshot.feeGrowthGlobal0X128,
-                snapshot.feeGrowthGlobal1X128,
-                snapshot.tickManager,
-                snapshot.positionManager,
-                snapshot.timestamp,
-                trx
-              )
-            )
-            .then((ids) => Promise.resolve(ids[0]))
-      )
+        )
+        .then((ids) => Promise.resolve(ids[0]))
     );
   }
 
@@ -203,45 +202,40 @@ export class DBManager {
 
   getSnapshots(snapshotIds: number[]): Promise<Snapshot[]> {
     let snapshotRecords: SnapshotRecord[];
-    return this.readSnapshots(snapshotIds).then(
-      (snapshots: SnapshotRecord[]) => {
+    return this.readSnapshots(snapshotIds)
+      .then((snapshots: SnapshotRecord[]) => {
+        if (snapshots.length === 0) return Promise.reject(undefined);
         snapshotRecords = snapshots;
-        return snapshotRecords.length == 0
-          ? Promise.resolve([])
-          : this.getPoolConfig(snapshots[0].poolConfigId).then(
-              (poolConfig: PoolConfig | undefined) =>
-                !poolConfig
-                  ? Promise.reject(new Error("PoolConfig is of shortage!"))
-                  : Promise.resolve(
-                      snapshotRecords.map((snapshot: SnapshotRecord) =>
-                        this.transferSnapshotRecordToSnapshot(
-                          snapshot,
-                          poolConfig
-                        )
-                      )
-                    )
+        return this.getPoolConfig(snapshots[0].poolConfigId);
+      })
+      .then((poolConfig: PoolConfig | undefined) => {
+        return !poolConfig
+          ? Promise.reject(new Error("PoolConfig is of shortage!"))
+          : Promise.resolve(
+              snapshotRecords.map((snapshot: SnapshotRecord) =>
+                this.transferSnapshotRecordToSnapshot(snapshot, poolConfig)
+              )
             );
-      }
-    );
+      })
+      .catch((err) => (err ? Promise.reject(err) : Promise.resolve([])));
   }
 
   getSnapshot(snapshotId: string): Promise<Snapshot | undefined> {
-    return this.readSnapshot(snapshotId).then(
-      (snapshot: SnapshotRecord | undefined) =>
-        !snapshot
-          ? Promise.resolve(undefined)
-          : this.getPoolConfig(snapshot.poolConfigId).then(
-              (poolConfig: PoolConfig | undefined) =>
-                !poolConfig
-                  ? Promise.reject(new Error("PoolConfig is of shortage!"))
-                  : Promise.resolve(
-                      this.transferSnapshotRecordToSnapshot(
-                        snapshot,
-                        poolConfig
-                      )
-                    )
+    let snapshotRecord: SnapshotRecord;
+    return this.readSnapshot(snapshotId)
+      .then((snapshot: SnapshotRecord | undefined) => {
+        if (!snapshot) return Promise.reject(undefined);
+        snapshotRecord = snapshot;
+        return this.getPoolConfig(snapshot.poolConfigId);
+      })
+      .then((poolConfig: PoolConfig | undefined) =>
+        !poolConfig
+          ? Promise.reject(new Error("PoolConfig is of shortage!"))
+          : Promise.resolve(
+              this.transferSnapshotRecordToSnapshot(snapshotRecord, poolConfig)
             )
-    );
+      )
+      .catch((err) => (err ? Promise.reject(err) : Promise.resolve(undefined)));
   }
 
   getPoolConfig(poolConfigId: string): Promise<PoolConfig | undefined> {
