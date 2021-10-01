@@ -12,7 +12,9 @@ import { PoolStateHelper } from "../util/PoolStateHelper";
 import { CorePool } from "../core/CorePool";
 import { ActionType } from "../enum/ActionType";
 import { Serializer } from "../util/Serializer";
+import { Transition as TransitionView } from "../interface/Transition";
 
+const DEFAULT_SNAPSHOT_DESCRIPTION = "Automated for caching";
 export class PoolState implements Visitable {
   readonly id: string;
   readonly baseSnapshot: Snapshot | undefined;
@@ -94,7 +96,7 @@ export class PoolState implements Visitable {
       : PoolStateHelper.recoverCorePoolByPoolStateChain(this);
     if (takeSnapshot && !this.hasSnapshot()) {
       this.takeSnapshot(
-        "Automated for caching",
+        DEFAULT_SNAPSHOT_DESCRIPTION,
         corePool.token0Balance,
         corePool.token1Balance,
         corePool.sqrtPriceX96,
@@ -107,6 +109,15 @@ export class PoolState implements Visitable {
       );
     }
     return corePool;
+  }
+
+  clearSnapshot(cachingOnly: boolean = false) {
+    if (!this.hasSnapshot()) return;
+    if (
+      !cachingOnly ||
+      this.snapshot!.description === DEFAULT_SNAPSHOT_DESCRIPTION
+    )
+      this._snapshot = undefined;
   }
 
   hasSnapshot(): boolean {
@@ -123,11 +134,19 @@ export class PoolState implements Visitable {
     return transition;
   }
 
+  getFromTransition(): TransitionView | undefined {
+    return this.fromTransition;
+  }
+
+  getTransitions(): TransitionView[] {
+    return this.transitions;
+  }
+
   fork(): PoolState {
     let record: Record = {
       id: IDGenerator.guid(),
       actionType: ActionType.FORK,
-      actionParams: {},
+      actionParams: { type: ActionType.FORK },
       actionReturnValues: {},
       timestamp: new Date(),
     };
