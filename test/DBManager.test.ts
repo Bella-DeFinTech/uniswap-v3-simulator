@@ -20,31 +20,39 @@ describe("Test DBManager", async function () {
     await db.close();
   });
 
-  it("can query when table is blank", async function () {
-    expect(db.getPoolConfig("123")).to.eventually.be.undefined;
-    expect(db.getSnapshot("123")).to.eventually.be.undefined;
+  describe("can query when table is blank", async function () {
+    it("can getPoolConfig", async function () {
+      return expect(db.getPoolConfig("123")).to.eventually.be.undefined;
+    });
+
+    it("can getSnapshot", async function () {
+      return expect(db.getSnapshot("123")).to.eventually.be.undefined;
+    });
 
     // since case here is corner case related to db damage, change DBManager.insertSnapshot to public then toggle below
-    // await db.insertSnapshot(
-    //   "123",
-    //   "12345",
-    //   "for test",
-    //   ONE,
-    //   ONE,
-    //   ONE,
-    //   ONE,
-    //   10,
-    //   ONE,
-    //   ONE,
-    //   new TickManager(),
-    //   new PositionManager(),
-    //   new Date()
-    // );
-    // expect(db.getSnapshot("123")).to.eventually.throw("PoolConfig is of shortage!");
+    // it("will throw error when get snapshot if pool config is missing", async function () {
+    //   await db.insertSnapshot(
+    //     "123",
+    //     "12345",
+    //     "for test",
+    //     ONE,
+    //     ONE,
+    //     ONE,
+    //     ONE,
+    //     10,
+    //     ONE,
+    //     ONE,
+    //     new TickManager(),
+    //     new PositionManager(),
+    //     new Date()
+    //   );
+    //   return expect(db.getSnapshot("123")).to.eventually.throw(
+    //     "PoolConfig is of shortage!"
+    //   );
+    // });
   });
 
-  it("can insert and query", async function () {
-    let snapshotId = "123";
+  describe("can insert and query", async function () {
     let poolConfig = {
       id: "1234",
       tickSpacing: 60,
@@ -53,6 +61,7 @@ describe("Test DBManager", async function () {
       fee: FeeAmount.MEDIUM,
     };
     let poolState = new PoolState(poolConfig);
+    let snapshotId = poolState.id;
     poolState.takeSnapshot(
       "for test",
       ONE,
@@ -65,8 +74,19 @@ describe("Test DBManager", async function () {
       new TickManager(),
       new PositionManager()
     );
-    expect(db.persistSnapshot(poolState)).to.eventually.be.fulfilled;
-    expect(db.getSnapshot(snapshotId)).to.eventually.be.not.undefined;
-    expect(db.getSnapshotProfiles()).to.eventually.have.lengthOf(1);
+
+    it("can persistSnapshot", async function () {
+      return expect(db.persistSnapshot(poolState)).to.eventually.be.fulfilled;
+    });
+
+    it("can getSnapshot", async function () {
+      await db.persistSnapshot(poolState);
+      return expect(db.getSnapshot(snapshotId)).to.eventually.be.not.undefined;
+    });
+
+    it("can getSnapshotProfiles", async function () {
+      await db.persistSnapshot(poolState);
+      return expect(db.getSnapshotProfiles()).to.eventually.have.lengthOf(1);
+    });
   });
 });
