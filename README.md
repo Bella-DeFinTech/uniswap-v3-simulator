@@ -1,6 +1,6 @@
-# Uniswap V3 Simulator, the "_Tuner_"
+# the "_Tuner_", a Uniswap V3 Simulator
 
-> Before an ochestra, every musical instrument has to be _in-tune_, to make an outstanding performance.
+> Before an ochestra, every musical instrument has to be _in-tune_, to ensure an outstanding performance.
 > 
 > Before running a strategy, every parameter has to be _fine tuned_, to maximaze the performance.
 
@@ -16,8 +16,8 @@
 > Fast-forward and rewind transactions 
 - this means you can easily repeat a small portion of your test with a different set of parameters without the need to start over.
 > Take or recover from a snapshot(state)
-- this means if you can run continuous regression test when your strategies constantly evolves.
+- this means if you can run continuous regression test as your strategies constantly evolves.
 > Branch out and runs in parallel 
-- this means you can run multiple tests each with a different set of parameters at the same time and compare the performance.
-> Persist historical data and strategy execution records in SQLite
+- this means you can run multiple back-tests each with a different set of parameters at the same time and compare the performance.
+> Persist historical data and strategy execution records in a SQLite database
 - this means the strategists can use __Tuner__ to do advanced statistical analysis both in real-time and after the testing.
