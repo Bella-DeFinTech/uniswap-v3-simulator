@@ -2,6 +2,7 @@ import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { SimulatorVisitor } from "../interface/SimulatorVisitor";
 import { PoolState } from "../model/PoolState";
 import { Transition } from "../model/Transition";
+import { toString as printPoolConfig } from "../model/PoolConfig";
 
 export class SimulatorConsoleVisitor implements SimulatorVisitor {
   visitOnTransition(
@@ -17,7 +18,6 @@ export class SimulatorConsoleVisitor implements SimulatorVisitor {
     poolState: PoolState,
     callback?: (poolState: PoolState, returnValue: string) => void
   ): Promise<string> {
-    // take snapshot during PoolStates to speed up
     let corePool = poolState.recoverCorePool(true);
     console.log(corePool.toString());
     if (callback) callback(poolState, corePool.toString());
@@ -32,8 +32,8 @@ export class SimulatorConsoleVisitor implements SimulatorVisitor {
     ) => void
   ): Promise<string> {
     let poolConfig = configurableCorePool.poolState.poolConfig;
-    console.log(poolConfig.toString());
-    if (callback) callback(configurableCorePool, poolConfig.toString());
+    console.log(printPoolConfig(poolConfig));
+    if (callback) callback(configurableCorePool, printPoolConfig(poolConfig));
     return Promise.resolve("ok");
   }
 }
