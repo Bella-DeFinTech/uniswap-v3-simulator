@@ -2,8 +2,11 @@ import { PoolState } from "./PoolState";
 import { Record } from "../entity/Record";
 import { Visitable } from "../interface/Visitable";
 import { SimulatorVisitor } from "../interface/SimulatorVisitor";
+import { Transition as TransitionView } from "../interface/Transition";
+import { PoolStateView } from "../interface/PoolStateView";
+import { printParams } from "../interface/ActionParams";
 
-export class Transition implements Visitable {
+export class Transition implements Visitable, TransitionView {
   private _source: PoolState;
   private _target: PoolState | undefined;
   private _record: Record;
@@ -16,16 +19,29 @@ export class Transition implements Visitable {
     return this._target;
   }
 
-  public get record(): Record {
-    return this._record;
-  }
   public set target(value: PoolState | undefined) {
     this._target = value;
+  }
+
+  public get record(): Record {
+    return this._record;
   }
 
   constructor(source: PoolState, record: Record) {
     this._source = source;
     this._record = record;
+  }
+
+  getSource(): PoolStateView {
+    return this.source;
+  }
+
+  getTarget(): PoolStateView {
+    return this.target!;
+  }
+
+  getRecord(): Record {
+    return this.record;
   }
 
   accept(visitor: SimulatorVisitor): Promise<string> {
@@ -34,15 +50,15 @@ export class Transition implements Visitable {
 
   toString(): string {
     return `
-      Transition:
-          sourcePoolStateId: ${this.source.id}
-          targetPoolStateId: ${(this.target as PoolState).id}
-      Record: 
-          id: ${this.record.id}
-          actionType: ${this.record.actionType}
-          actionParams: ${this.record.actionParams}
-          actionReturnValues: ${this.record.actionReturnValues}
-          timestamp: ${this.record.timestamp}
+    Transition:
+        sourcePoolStateId: ${this.source.id}
+        targetPoolStateId: ${this.target!.id}
+    Record: 
+        id: ${this.record.id}
+        actionType: ${this.record.actionType}
+        actionParams: ${printParams(this.record.actionParams)}
+        actionReturnValues: ${printParams(this.record.actionReturnValues)}
+        timestamp: ${this.record.timestamp}
     `;
   }
 }

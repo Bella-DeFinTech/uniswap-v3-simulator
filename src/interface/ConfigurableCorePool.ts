@@ -1,15 +1,14 @@
 import JSBI from "jsbi";
-import { CorePool } from "../core/CorePool";
-import { Transition } from "../model/Transition";
+import { CorePoolView } from "./CorePoolView";
+import { PoolStateView } from "./PoolStateView";
+import { Transition as TransitionView } from "./Transition";
 
 export interface ConfigurableCorePool {
   readonly id: string;
 
-  getPoolStateId(): string;
+  getPoolState(): PoolStateView;
 
-  // This returning CorePool is for inspection use only.
-  // Calling write method on it or its property directly will jeopardize simulator function.
-  getCorePool(): CorePool;
+  getCorePool(): CorePoolView;
 
   initialize(sqrtPriceX96: JSBI): Promise<void>;
 
@@ -20,7 +19,7 @@ export interface ConfigurableCorePool {
     amount: JSBI,
     postProcessorCallback?: (
       configurableCorePool: ConfigurableCorePool,
-      transition: Transition
+      transition: TransitionView
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }>;
 
@@ -31,7 +30,7 @@ export interface ConfigurableCorePool {
     amount: JSBI,
     postProcessorCallback?: (
       configurableCorePool: ConfigurableCorePool,
-      transition: Transition
+      transition: TransitionView
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }>;
 
@@ -43,25 +42,31 @@ export interface ConfigurableCorePool {
     amount1Requested: JSBI,
     postProcessorCallback?: (
       configurableCorePool: ConfigurableCorePool,
-      transition: Transition
+      transition: TransitionView
     ) => Promise<void>
   ): Promise<{ amount0: JSBI; amount1: JSBI }>;
 
   swap(
     zeroForOne: boolean,
     amountSpecified: JSBI,
-    sqrtPriceLimitX96: JSBI,
+    sqrtPriceLimitX96?: JSBI,
     postProcessorCallback?: (
       configurableCorePool: ConfigurableCorePool,
-      transition: Transition
+      transition: TransitionView
     ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }>;
+
+  querySwap(
+    zeroForOne: boolean,
+    amountSpecified: JSBI,
+    sqrtPriceLimitX96?: JSBI
   ): Promise<{ amount0: JSBI; amount1: JSBI }>;
 
   // user custom PostProcessor will be called after pool state transition finishes
   updatePostProcessor(
     callback: (
       configurableCorePool: ConfigurableCorePool,
-      transition: Transition
+      transition: TransitionView
     ) => Promise<void>
   ): void;
 
