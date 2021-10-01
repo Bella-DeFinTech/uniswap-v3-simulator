@@ -1,10 +1,25 @@
 import { ActionType } from "../enum/ActionType";
-import { MethodParams, ReturnParams } from "../interface/ActionParams";
+import {
+  BurnParams,
+  CollectParams,
+  ForkParams,
+  GeneralReturnParams,
+  InitializeParams,
+  MintParams,
+  SwapParams,
+  VoidReturnParams,
+} from "../interface/ActionParams";
 
 export type Record = {
   id: string;
   actionType: ActionType;
-  actionParams: MethodParams;
-  actionReturnValues: ReturnParams;
+  actionParams:
+    | InitializeParams
+    | MintParams
+    | BurnParams
+    | SwapParams
+    | CollectParams
+    | ForkParams;
+  actionReturnValues: GeneralReturnParams | VoidReturnParams;
   timestamp: Date;
 };
