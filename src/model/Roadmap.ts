@@ -12,14 +12,14 @@ export class Roadmap {
     this.snapshots = snapshots;
     this.timestamp = new Date();
   }
+}
 
-  toString(): string {
-    return `
+export function toString(roadmap: Roadmap): string {
+  return `
     Roadmap:
-        id: ${this.id}
-        description: ${this.description}
-        snapshotLength: ${this.snapshots.length}
-        timestamp: ${this.timestamp}
-    `;
-  }
+        id: ${roadmap.id}
+        description: ${roadmap.description}
+        snapshotLength: ${roadmap.snapshots.length}
+        timestamp: ${roadmap.timestamp}
+  `;
 }

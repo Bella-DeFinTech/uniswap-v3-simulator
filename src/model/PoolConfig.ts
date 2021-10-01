@@ -20,15 +20,15 @@ export class PoolConfig {
     this.token1 = token1;
     this.fee = fee;
   }
+}
 
-  toString(): string {
-    return `
+export function toString(poolConfig: PoolConfig): string {
+  return `
     Pool Config:
-        id: ${this.id}
-        tickSpacing: ${this.tickSpacing}
-        token0: ${this.token0}
-        token1: ${this.token1}
-        fee: ${this.fee}
-    `;
-  }
+        id: ${poolConfig.id}
+        tickSpacing: ${poolConfig.tickSpacing}
+        token0: ${poolConfig.token0}
+        token1: ${poolConfig.token1}
+        fee: ${poolConfig.fee}
+  `;
 }
