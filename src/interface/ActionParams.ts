@@ -58,18 +58,3 @@ export interface GeneralReturnParams {
   amount0: JSBI;
   amount1: JSBI;
 }
-
-export function printParams(params: MethodParams | ReturnParams): string {
-  let str = "{";
-  for (let key in params) {
-    let value: any = params[key as keyof (MethodParams | ReturnParams)];
-    str += key + ": " + (isObject(value) ? value.toString() : value) + ", ";
-  }
-  if (str.lastIndexOf(" ") == str.length - 1) str = str.slice(0, -2);
-  str += "}";
-  return str;
-}
-
-function isObject(value: unknown): value is object {
-  return typeof value === "object";
-}

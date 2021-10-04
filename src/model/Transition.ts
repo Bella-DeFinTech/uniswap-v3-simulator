@@ -4,7 +4,7 @@ import { Visitable } from "../interface/Visitable";
 import { SimulatorVisitor } from "../interface/SimulatorVisitor";
 import { Transition as TransitionView } from "../interface/Transition";
 import { PoolStateView } from "../interface/PoolStateView";
-import { printParams } from "../interface/ActionParams";
+import { printParams } from "../util/Serializer";
 
 export class Transition implements Visitable, TransitionView {
   private _source: PoolState;
