@@ -91,7 +91,7 @@ describe("Test SimulatorRoadmapManager", async function () {
         "for test"
       );
       await simulatorRoadmapManager.loadAndPrintRoute(roadmapId);
-      // 5 for 1-roadmap 1-poolConfig 4-poolState
+      // 6 for 1-roadmap 1-poolConfig 4-poolState
       expect(consoleLogSpy.callCount).to.eql(6);
     });
   });

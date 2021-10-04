@@ -44,7 +44,7 @@
   "mocha": {
     "colors": true,
     "recursive": [
-      "test/**/*.test.ts"
+      "test/**/ConfigurableCorePool.test.ts"
     ],
     "reporter": [
       "mochawesome"
