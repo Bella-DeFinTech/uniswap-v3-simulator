@@ -17,7 +17,7 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 const testUser = "0x01";
 
-describe("Test SimulatorRoadmapManager", async function () {
+describe("Test SimulatorRoadmapManager", function () {
   let sandbox: sinon.SinonSandbox;
   let consoleLogSpy: sinon.SinonSpy;
   let dbManager: DBManager;
@@ -55,7 +55,7 @@ describe("Test SimulatorRoadmapManager", async function () {
     await dbManager.close();
   });
 
-  describe("Test route method", async function () {
+  describe("Test route method", function () {
     it("can print route", async function () {
       await simulatorRoadmapManager.printRoute(configurableCorePool.id);
       // 8 for 1-poolConfig 3-transition 4-poolState

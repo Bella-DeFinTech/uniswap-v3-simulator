@@ -9,11 +9,11 @@ import JSBI from "jsbi";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-describe("Test SimulatorClient static method", async function () {
+describe("Test SimulatorClient static method", function () {
   it("can build instance", async function () {
-    let clientInstace = await SimulatorClient.buildInstance();
-    expect(clientInstace).to.be.an.instanceOf(SimulatorClient);
-    return expect(clientInstace.shutdown()).to.eventually.be.fulfilled;
+    let clientInstance = await SimulatorClient.buildInstance();
+    expect(clientInstance).to.be.an.instanceOf(SimulatorClient);
+    return expect(clientInstance.shutdown()).to.eventually.be.fulfilled;
   });
 
   it("can build PoolConfig", async function () {
@@ -23,30 +23,30 @@ describe("Test SimulatorClient static method", async function () {
   });
 });
 
-describe("Test SimulatorClient public method", async function () {
-  let clientInstace: SimulatorClient;
+describe("Test SimulatorClient public method", function () {
+  let clientInstance: SimulatorClient;
 
   beforeEach(async function () {
-    clientInstace = await SimulatorClient.buildInstance();
+    clientInstance = await SimulatorClient.buildInstance();
   });
 
   afterEach(async function () {
-    await clientInstace.shutdown();
+    await clientInstance.shutdown();
   });
 
   it("can build ConfigurableCorePool instance", async function () {
     let configurableCorePool: IConfigurableCorePool =
-      clientInstace.initCorePoolFromConfig(
+      clientInstance.initCorePoolFromConfig(
         SimulatorClient.buildPoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)
       );
     expect(configurableCorePool).to.be.an.instanceOf(ConfigurableCorePool);
   });
 
-  describe("after some use", async function () {
+  describe("after some use", function () {
     let configurableCorePool: IConfigurableCorePool;
     let sqrtPriceX96ForInitialization = JSBI.BigInt("4295128739");
     beforeEach(async function () {
-      configurableCorePool = clientInstace.initCorePoolFromConfig(
+      configurableCorePool = clientInstance.initCorePoolFromConfig(
         SimulatorClient.buildPoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)
       );
       await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
@@ -55,7 +55,7 @@ describe("Test SimulatorClient public method", async function () {
     it("can recover ConfigurableCorePool from a snapshot in persistence", async function () {
       let snapshotId = await configurableCorePool.persistSnapshot();
       let recoveredConfigurableCorePool =
-        await clientInstace.recoverCorePoolFromSnapshot(snapshotId);
+        await clientInstance.recoverCorePoolFromSnapshot(snapshotId);
       expect(recoveredConfigurableCorePool).to.be.an.instanceOf(
         ConfigurableCorePool
       );
@@ -67,7 +67,7 @@ describe("Test SimulatorClient public method", async function () {
     it("can list snapshot profiles", async function () {
       await configurableCorePool.persistSnapshot();
       return expect(
-        clientInstace.listSnapshotProfiles()
+        clientInstance.listSnapshotProfiles()
       ).to.eventually.have.lengthOf(1);
     });
   });

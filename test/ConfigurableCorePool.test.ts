@@ -23,7 +23,7 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 const testUser = "0x01";
 
-describe("Test ConfigurableCorePool", async function () {
+describe("Test ConfigurableCorePool", function () {
   let dbManager: DBManager;
   let configurableCorePool: IConfigurableCorePool;
   let liquidityEventDB: EventDBManager;
@@ -270,7 +270,7 @@ describe("Test ConfigurableCorePool", async function () {
     await swapEventDB.close();
   });
 
-  describe("Test get method", async function () {
+  describe("Test get method", function () {
     it("can get id", async function () {
       expect(IDGenerator.validate(configurableCorePool.id)).to.be.true;
     });
@@ -285,7 +285,7 @@ describe("Test ConfigurableCorePool", async function () {
     });
   });
 
-  describe("Test initialize method", async function () {
+  describe("Test initialize method", function () {
     it("can initialize", async function () {
       await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
       expect(configurableCorePool.getCorePool().tickCurrent).to.eql(
@@ -297,7 +297,7 @@ describe("Test ConfigurableCorePool", async function () {
     });
   });
 
-  describe("Test business interaction method", async function () {
+  describe("Test business interaction method", function () {
     beforeEach(async function () {
       await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
     });
@@ -342,7 +342,7 @@ describe("Test ConfigurableCorePool", async function () {
     });
   });
 
-  describe("Test state machine method", async function () {
+  describe("Test state machine method", function () {
     beforeEach(async function () {
       await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
     });
@@ -476,7 +476,7 @@ describe("Test ConfigurableCorePool", async function () {
     });
   });
 
-  describe("Test tricky method", async function () {
+  describe("Test tricky method", function () {
     beforeEach(async function () {
       await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
     });
@@ -504,7 +504,7 @@ describe("Test ConfigurableCorePool", async function () {
     //   console.log(configurableCorePool.getCorePool().tickCurrent);
     // });
 
-    it.only("can replay events on mainnet exactly as contract do", async function () {
+    it("can replay events on mainnet exactly as contract do", async function () {
       let startDate = getDate(2021, 5, 4);
       let endDate = getDate(2021, 7, 8);
       let currDate = startDate;

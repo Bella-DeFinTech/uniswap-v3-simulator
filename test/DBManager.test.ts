@@ -9,7 +9,7 @@ import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-describe("Test DBManager", async function () {
+describe("Test DBManager", function () {
   let db: DBManager;
 
   beforeEach(async function () {
@@ -20,7 +20,7 @@ describe("Test DBManager", async function () {
     await db.close();
   });
 
-  describe("can query when table is blank", async function () {
+  describe("can query when table is blank", function () {
     it("can getPoolConfig", async function () {
       return expect(db.getPoolConfig("123")).to.eventually.be.undefined;
     });
@@ -52,7 +52,7 @@ describe("Test DBManager", async function () {
     // });
   });
 
-  describe("can insert and query", async function () {
+  describe("can insert and query", function () {
     let poolConfig = {
       id: "1234",
       tickSpacing: 60,
