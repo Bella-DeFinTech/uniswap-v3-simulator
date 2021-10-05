@@ -21,3 +21,151 @@
 - this means you can run multiple back-tests each with a different set of parameters at the same time and compare the performance.
 > Persist historical data and strategy execution records in a SQLite database
 - this means the strategists can do advanced statistical analysis both in real-time and after the testing.
+
+## Using Tuner
+After you've installed Tuner, you can build a client to get access to its functions.
+
+#`SimulatorClient`
+A `SimulatorClient` is the user entry point of the Tuner
+```typescript
+let clientInstace: SimulatorClient = await SimulatorClient.buildInstance("database.db");
+```
+The param there is a file path to persistent running records(By default any change will only exist in memory during a single running period). Later you can load and print them, for comparing results and getting insights, or recovering from any state.
+```typescript
+let recoveredConfigurableCorePool: ConfigurableCorePool = await clientInstace.recoverCorePoolFromSnapshot(snapshotId);
+```
+
+If we forget any snapshotId, we can list and check all snapshots(created by state machine we introduce in next section) by information like description or timestamp
+```typescript
+let snapshotProfiles: SnapshotProfile[] = await clientInstance.listSnapshotProfiles();
+```
+
+For now, let's init a core pool state machine from `PoolConfig`:
+```typescript
+let configurableCorePool: ConfigurableCorePool =
+      clientInstace.initCorePoolFromConfig(
+        SimulatorClient.buildPoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)
+      );
+```
+
+It's recommended to close the client when you finish with Tuner.
+```typescript
+await clientInstance.shutdown();
+```
+#`ConfigurableCorePool`
+First, let's initialize the pool and do some interactions
+```typescript
+let sqrtPriceX96ForInitialization = JSBI.BigInt("4295128739");
+await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
+await configurableCorePool.mint(
+      "0x01",
+      -887272,
+      887272,
+      JSBI.BigInt("10860507277202")
+    );
+await configurableCorePool.swap(true, JSBI.BigInt("1000000"));
+```
+
+Pool state can be viewed on 
+```typescript
+let corePoolView: CorePoolView = configurableCorePool.getCorePool();
+```
+
+You can specify post processor after every interaction like
+```typescript
+configurableCorePool.updatePostProcessor(
+        (pool: IConfigurableCorePool, transition: Transition) => {
+          console.log(pool.getPoolState().id);
+		  console.log(transition.getRecord().id);
+          return Promise.resolve();
+        }
+      );
+```
+
+Or on specific interaction
+```typescript
+await configurableCorePool.mint(
+       "0x01",
+      -887272,
+       887272,
+        JSBI.BigInt("10860507277202"),
+        (pool: IConfigurableCorePool, transition: Transition) => {
+          console.log(pool.getPoolState().id);
+		  console.log(transition.getRecord().id);
+          return Promise.resolve();
+        }
+      );
+```
+Note: If any error happens during interaction or post process, the pool state will recover as state before interaction happens just like contract transaction reverts.
+
+Every interaction corresponds to a `Transition`. A `Record` contains information about the action. Every core pool state corresponds to a `PoolState`. A `Transition` makes a `PoolState` change to next `PoolState` from the `Record`.
+
+With an id of `PoolState`, you can recover the pool to any state it went through(actually as long as the `PoolState` exists in memory)
+```typescript
+configurableCorePool.recover(poolStateId);
+```
+
+Or just step back to last pool state
+```typescript
+configurableCorePool.stepBack();
+```
+
+If a state is important enough for frequently recovering, you can take a snapshot to make the recover process faster.
+```typescript
+configurableCorePool.takeSnapshot("description for snapshot");
+```
+
+Then you can persist it to recover the pool from it next time running Tuner
+```typescript
+let snapshotId = await configurableCorePool.persistSnapshot();
+```
+
+Sometime we want multiple instance to stand for as well as process various of possibilities, or split huge task to process it faster, then we can use
+```typescript
+let forkedConfigurableCorePool = configurableCorePool.fork();
+```
+The forked pool will remain the same state as parent pool and can be manipulated independently.
+
+Note: A pool from a config or a snapshot will be `undefined` with `poolState.fromTransition` while the first pool state of a forked pool will have a `poolState.fromTransition` with `ActionType.FORK` and a source pool state of its parent.
+
+#`SimulatorRoadmapManager`
+If we take every `ConfigurableCorePool` as a state machine, then a `SimulatorRoadmapManager` can be taken as `PoolState` container as well as `ConfigurableCorePool` manager. At this point, every state machine can be expanded as a roadmap of states route.
+
+First let's get instance of `SimulatorRoadmapManager`(singleton) from SimulatorClient
+```typescript
+let simulatorRoadmapManager: SimulatorRoadmapManager = clientInstance.simulatorRoadmapManager;
+```
+
+You can list and check all `ConfigurableCorePool` created by Tuner during this running
+```typescript
+let pools: ConfigurableCorePool[] = await simulatorRoadmapManager.listRoutes();
+```
+
+With a `ConfigurableCorePool` id, Tuner can print route from the first pool state to current pool state of the state machine in pretty format
+```typescript
+await simulatorRoadmapManager.printRoute(configurableCorePool.id);
+```
+
+Also we can persist the route for later statistics use
+```typescript
+let roadmapId = await simulatorRoadmapManager.persistRoute(
+        configurableCorePool.id,
+        "description for roadmap"
+      );
+```
+
+Then load the roadmap and print the route also in pretty format
+```typescript
+await simulatorRoadmapManager.loadAndPrintRoute(roadmapId);
+```
+
+Note: As the storage scale of Uniswap V3 CorePool(especially for Ticks up to 160,000+ and unlimited Positions), frequent persistence of route as well as snapshot is not recommended. Please pay attention to space cost.
+
+## Work To Do
+About CorePool, now math model for interaction(`mint`, `burn`, `collect`, `swap`) is supported. As far as performance of test dataset, the error margin is within +-14 in minimum unit of 18 decimals token.
+Oracle part is on the way.
+
+## Contributing
+
+Please create an issue for any questions.
+Thanks and enjoy!
