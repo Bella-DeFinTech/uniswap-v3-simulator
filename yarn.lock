@@ -2094,7 +2094,7 @@ js-yaml@4.1.0:
   dependencies:
     argparse "^2.0.1"
 
-jsbi@^3.1.6:
+jsbi@3.1.6:
   version "3.1.6"
   resolved "https://registry.yarnpkg.com/jsbi/-/jsbi-3.1.6.tgz#572431b0ff4b9c0f5f4b41e214dba76a734e676b"
   integrity sha512-CGjq13y28FrBA5mAU+rsfHaVKEF9jrw3PhzZpIzTeMiPsT0XRDAS6E7QS8/ZTmFQUtl2MDJsxKQoYJzAhF7B1w==

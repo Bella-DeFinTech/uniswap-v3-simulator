@@ -2,12 +2,13 @@
   "name": "uniswap-v3-simulator",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/cli.js",
-  "types": "dist/cli.d.ts",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "files": [
     "dist/**"
   ],
   "scripts": {
+    "build": "tsc",
     "test": "yarn mocha",
     "lint": "yarn prettier --write ."
   },
@@ -35,7 +36,7 @@
   },
   "dependencies": {
     "dayjs": "^1.10.6",
-    "jsbi": "^3.1.6",
+    "jsbi": "3.1.6",
     "knex": "^0.95.10",
     "reflect-metadata": "^0.1.13",
     "sqlite3": "^5.0.2",
@@ -44,7 +45,7 @@
   "mocha": {
     "colors": true,
     "recursive": [
-      "test/**/ConfigurableCorePool.test.ts"
+      "test/**/*.test.ts"
     ],
     "reporter": [
       "mochawesome"
