@@ -6,11 +6,11 @@
 
 ## What is Tuner
 
-** _Tuner_ is a programmatic Uniswap V3 simulator that allows strategy backtesting on a transaction-to-transaction basis with arbitrary or historical data without the EVM, it runs independently yet completely retains the exact smart-contract behavior of the intricate design and implementation of Uniswap V3.**
+**_Tuner_ is a programmatic Uniswap V3 simulator that allows strategy backtesting on a transaction-to-transaction basis with arbitrary or historical data without the EVM, it runs independently yet completely retains the exact smart-contract behavior of the intricate design and implementation of Uniswap V3.**
 
 ## What Tuner does
 
-** _Tuner_ is fundamentally a state machine, it can:**
+**_Tuner_ is fundamentally a state machine, it can:**
 > Completely replicate the tick-level calculation
 - this means your strategy will run through the Uniswap V3 implementation logic instead of just the high-level mathematic model.
 > Maintain the identical tick-level percision of prices, fees, and positions of Uniswap V3
@@ -47,7 +47,7 @@ The param there is a file path to persist execution records(By default any chang
 let recoveredConfigurableCorePool: ConfigurableCorePool = await clientInstace.recoverCorePoolFromSnapshot(snapshotId);
 ```
 
-If you forget any snapshotId, you can list and check all snapshots(created by state machine we will introduce in next section) by information like description or timestamp
+If you forget any snapshotId, you can list and check all snapshots(created by state machine we will introduce in next section) by information like description or timestamp.
 
 ```typescript
 let snapshotProfiles: SnapshotProfile[] = await clientInstance.listSnapshotProfiles();
