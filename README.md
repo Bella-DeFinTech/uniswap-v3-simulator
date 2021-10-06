@@ -38,13 +38,13 @@ After you've installed Tuner, you must build a client to get access to its funct
 A `SimulatorClient` is the user entry point of the Tuner.
 
 ```typescript
-let clientInstace: SimulatorClient = await SimulatorClient.buildInstance("database.db");
+let clientInstance: SimulatorClient = await SimulatorClient.buildInstance("database.db");
 ```
 
 The param there is a file path to persist execution records(By default any change will only exist in memory during a single run). Later you can load and print them, for comparing results and getting insights, or recovering from any state.
 
 ```typescript
-let recoveredConfigurableCorePool: ConfigurableCorePool = await clientInstace.recoverCorePoolFromSnapshot(snapshotId);
+let recoveredConfigurableCorePool: ConfigurableCorePool = await clientInstance.recoverCorePoolFromSnapshot(snapshotId);
 ```
 
 If you forget any snapshotId, you can list and check all snapshots(created by state machine we will introduce in next section) by information like description or timestamp.
@@ -57,7 +57,7 @@ For now, let's init a core pool state machine from `PoolConfig`.
 
 ```typescript
 let configurableCorePool: ConfigurableCorePool =
-      clientInstace.initCorePoolFromConfig(
+      clientInstance.initCorePoolFromConfig(
         SimulatorClient.buildPoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)
       );
 ```
