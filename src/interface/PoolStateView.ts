@@ -4,10 +4,10 @@ export type PoolStateView = Pick<
   PoolState,
   {
     [K in keyof PoolState]: PoolState[K] extends Function
-      ? K extends "getFromTransition" | "getTransitions"
+      ? K extends "getTransitionSource" | "getTransitionTargets"
         ? K
         : never
-      : K extends "fromTransition" | "transitions"
+      : K extends "transitionSource" | "transitionTargets"
       ? never
       : K;
   }[keyof PoolState]

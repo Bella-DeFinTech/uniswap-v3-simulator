@@ -27,9 +27,12 @@ describe("Test SimulatorRoadmapManager", function () {
     "0x43efef20f018fdc58e7a5cf0416a"
   );
 
-  async function makeConfigurableCorePool(): Promise<IConfigurableCorePool> {
+  async function makeConfigurableCorePool(
+    simulatorRoadmapManager: SimulatorRoadmapManager
+  ): Promise<IConfigurableCorePool> {
     configurableCorePool = new ConfigurableCorePool(
-      new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM))
+      new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
+      simulatorRoadmapManager
     );
     await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
     await configurableCorePool.mint(
@@ -46,8 +49,10 @@ describe("Test SimulatorRoadmapManager", function () {
     sandbox = sinon.createSandbox();
     consoleLogSpy = sandbox.spy(console, "log");
     dbManager = await DBManager.buildInstance(":memory:");
-    simulatorRoadmapManager = await SimulatorRoadmapManager.buildInstance();
-    configurableCorePool = await makeConfigurableCorePool();
+    simulatorRoadmapManager = new SimulatorRoadmapManager();
+    configurableCorePool = await makeConfigurableCorePool(
+      simulatorRoadmapManager as SimulatorRoadmapManager
+    );
   });
 
   afterEach(async function () {
@@ -70,7 +75,7 @@ describe("Test SimulatorRoadmapManager", function () {
       let roadmap = await dbManager.getRoadmap(roadmapId);
       expect(roadmap).to.not.be.undefined;
       expect(roadmap!.snapshots).to.have.lengthOf(
-        PoolStateHelper.getPoolStateChainCount(
+        PoolStateHelper.countHistoricalPoolStateTransitions(
           configurableCorePool.getPoolState()
         )
       );
@@ -78,7 +83,9 @@ describe("Test SimulatorRoadmapManager", function () {
 
     it("can list routes", async function () {
       configurableCorePool.fork();
-      await makeConfigurableCorePool();
+      await makeConfigurableCorePool(
+        simulatorRoadmapManager as SimulatorRoadmapManager
+      );
       let pools = await simulatorRoadmapManager.listRoutes();
       expect(pools).to.have.lengthOf(3);
       expect(pools[0].id).to.be.not.eql(pools[1].id);

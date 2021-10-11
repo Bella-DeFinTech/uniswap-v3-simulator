@@ -12,24 +12,10 @@ export class SimulatorRoadmapManager
   implements ISimulatorRoadmapManager, PoolStateContainer
 {
   private poolStates: Map<string, PoolState>;
-  private static _instance: SimulatorRoadmapManager;
   private configurableCorePools: Map<string, ConfigurableCorePool> = new Map();
 
   constructor() {
     this.poolStates = new Map();
-  }
-
-  public static get instance(): SimulatorRoadmapManager {
-    if (!SimulatorRoadmapManager._instance) {
-      throw new Error("Please build an instance first!");
-    }
-    return SimulatorRoadmapManager._instance;
-  }
-
-  static buildInstance(): SimulatorRoadmapManager {
-    let simulatorRoadmapManager = new SimulatorRoadmapManager();
-    this._instance = simulatorRoadmapManager;
-    return simulatorRoadmapManager;
   }
 
   addPoolState(poolState: PoolState): string {

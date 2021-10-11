@@ -10,20 +10,20 @@ import { PositionManager } from "../manager/PositionManager";
 import { PoolStateView } from "../interface/PoolStateView";
 
 export abstract class PoolStateHelper {
-  static getPoolStateChainCount(poolState: PoolStateView): number {
-    let fromTransition = poolState.getFromTransition();
+  static countHistoricalPoolStateTransitions(poolState: PoolStateView): number {
+    let fromTransition = poolState.getTransitionSource();
     if (
       !fromTransition ||
       fromTransition.getRecord().actionType == ActionType.FORK
     )
       return 1;
     return (
-      PoolStateHelper.getPoolStateChainCount(fromTransition.getSource()) + 1
+      PoolStateHelper.countHistoricalPoolStateTransitions(fromTransition.getSource()) + 1
     );
   }
 
   static recoverCorePoolByPoolStateChain(poolState: PoolState): CorePool {
-    let fromTransition = poolState.fromTransition;
+    let fromTransition = poolState.transitionSource;
     if (!fromTransition) {
       return poolState.hasBaseSnapshot()
         ? PoolStateHelper.buildCorePoolBySnapshot(poolState.baseSnapshot!)

@@ -11,11 +11,15 @@ import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/Conf
 
 export class SimulatorClient {
   private dbManager: DBManager;
-  readonly simulatorRoadmapManager: ISimulatorRoadmapManager;
+  private readonly _simulatorRoadmapManager: SimulatorRoadmapManager;
+
+  public get simulatorRoadmapManager(): ISimulatorRoadmapManager {
+    return this._simulatorRoadmapManager;
+  }
 
   constructor(dbManager: DBManager) {
     this.dbManager = dbManager;
-    this.simulatorRoadmapManager = SimulatorRoadmapManager.buildInstance();
+    this._simulatorRoadmapManager = new SimulatorRoadmapManager();
   }
 
   static buildInstance(dbPath?: string): Promise<SimulatorClient> {
@@ -35,7 +39,10 @@ export class SimulatorClient {
   }
 
   initCorePoolFromConfig(poolConfig: PoolConfig): IConfigurableCorePool {
-    return new ConfigurableCorePool(new PoolState(poolConfig));
+    return new ConfigurableCorePool(
+      new PoolState(poolConfig),
+      this._simulatorRoadmapManager
+    );
   }
 
   recoverCorePoolFromSnapshot(
@@ -44,7 +51,12 @@ export class SimulatorClient {
     return this.getSnapshot(snapshotId).then((snapshot: Snapshot | undefined) =>
       !snapshot
         ? Promise.reject("This snapshot doesn't exist!")
-        : Promise.resolve(new ConfigurableCorePool(PoolState.from(snapshot)))
+        : Promise.resolve(
+            new ConfigurableCorePool(
+              PoolState.from(snapshot),
+              this._simulatorRoadmapManager
+            )
+          )
     );
   }
 
@@ -52,7 +64,7 @@ export class SimulatorClient {
     return this.dbManager.getSnapshotProfiles();
   }
 
-  shutdown() : Promise<void>{
+  shutdown(): Promise<void> {
     return this.dbManager.close();
   }
 

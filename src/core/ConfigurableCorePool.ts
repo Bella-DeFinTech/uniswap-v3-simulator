@@ -36,7 +36,10 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     transition: TransitionView
   ) => Promise<void> = async function () {};
 
-  constructor(poolState: PoolState) {
+  constructor(
+    poolState: PoolState,
+    simulatorRoadmapManager: SimulatorRoadmapManager
+  ) {
     this.id = IdGenerator.guid();
     if (poolState.hasSnapshot()) {
       this.corePool = PoolStateHelper.buildCorePoolBySnapshot(
@@ -52,7 +55,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
       );
     }
     this._poolState = poolState;
-    this.simulatorRoadmapManager = SimulatorRoadmapManager.instance;
+    this.simulatorRoadmapManager = simulatorRoadmapManager;
     this.simulatorRoadmapManager.addPoolState(this.poolState);
     this.simulatorRoadmapManager.addRoute(this);
   }
@@ -280,7 +283,10 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
 
   fork(): IConfigurableCorePool {
     this.takeSnapshot("Automated for forking");
-    return new ConfigurableCorePool(this.poolState.fork());
+    return new ConfigurableCorePool(
+      this.poolState.fork(),
+      this.simulatorRoadmapManager
+    );
   }
 
   persistSnapshot(): Promise<string> {
@@ -294,7 +300,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   }
 
   stepBack() {
-    let fromTransition = this.poolState.fromTransition;
+    let fromTransition = this.poolState.transitionSource;
     if (!fromTransition) {
       throw new Error("This is already initial poolState.");
     }
@@ -385,15 +391,15 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     poolStateVisitCallback?: (poolState: PoolState, returnValue: any) => void
   ): Promise<void> {
     if (
-      !poolState.fromTransition ||
-      poolState.fromTransition.record.actionType == ActionType.FORK ||
+      !poolState.transitionSource ||
+      poolState.transitionSource.record.actionType == ActionType.FORK ||
       poolState.id == fromPoolStateId
     ) {
       return poolState
         .accept(simulatorVisitor, poolStateVisitCallback)
         .then(() => Promise.resolve());
     } else {
-      let fromTransition = poolState.fromTransition!;
+      let fromTransition = poolState.transitionSource!;
       return (
         this.handleSingleStepOnChain(
           fromTransition.source,
@@ -450,7 +456,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
       actionParams,
       actionReturnValues
     );
-    let transition: Transition = this.poolState.addTransition(record);
+    let transition: Transition = this.poolState.addTransitionTarget(record);
     let nextPoolState: PoolState = this.getNextPoolState(transition);
     this.simulatorRoadmapManager.addPoolState(nextPoolState);
     this._poolState = nextPoolState;

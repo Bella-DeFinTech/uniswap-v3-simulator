@@ -20,8 +20,8 @@ export class PoolState implements Visitable {
   readonly baseSnapshot: Snapshot | undefined;
   private _snapshot: Snapshot | undefined;
   readonly poolConfig: PoolConfig;
-  readonly fromTransition: Transition | undefined;
-  readonly transitions: Transition[] = new Array<Transition>();
+  readonly transitionSource: Transition | undefined;
+  readonly transitionTargets: Transition[] = new Array<Transition>();
   readonly timestamp: Date = new Date();
 
   constructor(
@@ -35,7 +35,7 @@ export class PoolState implements Visitable {
     this.poolConfig = baseSnapshot ? baseSnapshot.poolConfig : poolConfig!;
     this.id = baseSnapshot ? baseSnapshot.id : IdGenerator.guid();
     this.baseSnapshot = baseSnapshot;
-    this.fromTransition = fromTransition;
+    this.transitionSource = fromTransition;
   }
 
   public get snapshot(): Snapshot | undefined {
@@ -126,18 +126,18 @@ export class PoolState implements Visitable {
     return this.baseSnapshot !== undefined;
   }
 
-  addTransition(record: Record): Transition {
+  addTransitionTarget(record: Record): Transition {
     const transition = new Transition(this, record);
-    this.transitions.push(transition);
+    this.transitionTargets.push(transition);
     return transition;
   }
 
-  getFromTransition(): TransitionView | undefined {
-    return this.fromTransition;
+  getTransitionSource(): TransitionView | undefined {
+    return this.transitionSource;
   }
 
-  getTransitions(): TransitionView[] {
-    return this.transitions;
+  getTransitionTargets(): TransitionView[] {
+    return this.transitionTargets;
   }
 
   fork(): PoolState {
@@ -148,7 +148,7 @@ export class PoolState implements Visitable {
       actionReturnValues: {},
       timestamp: new Date(),
     };
-    let transition: Transition = this.addTransition(record);
+    let transition: Transition = this.addTransitionTarget(record);
     let forkedPoolState = new PoolState(
       this.poolConfig,
       this.baseSnapshot,

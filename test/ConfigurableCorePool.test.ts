@@ -26,6 +26,7 @@ const testUser = "0x01";
 describe("Test ConfigurableCorePool", function () {
   let dbManager: DBManager;
   let configurableCorePool: IConfigurableCorePool;
+  let simulatorRoadmapManager: SimulatorRoadmapManager;
   let liquidityEventDB: EventDBManager;
   let swapEventDB: EventDBManager;
   let sqrtPriceX96ForInitialization = JSBI.BigInt(
@@ -258,9 +259,10 @@ describe("Test ConfigurableCorePool", function () {
     swapEventDB = await EventDBManager.buildInstance(
       "swap_events_usdc_weth_3000.db"
     );
-    await SimulatorRoadmapManager.buildInstance();
+    simulatorRoadmapManager = new SimulatorRoadmapManager();
     configurableCorePool = new ConfigurableCorePool(
-      new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM))
+      new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
+      simulatorRoadmapManager
     );
   });
 
@@ -446,7 +448,8 @@ describe("Test ConfigurableCorePool", function () {
       expect(configurableCorePool.getPoolState().id).to.eql(snapshot!.id);
 
       let newConfigurableCorePool = new ConfigurableCorePool(
-        new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM))
+        new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
+        simulatorRoadmapManager
       );
       newConfigurableCorePool.recover(snapshot!.id);
       expect(
