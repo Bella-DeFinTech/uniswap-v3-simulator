@@ -1,5 +1,5 @@
 import { FeeAmount } from "../enum/FeeAmount";
-import { IDGenerator } from "../util/IDGenerator";
+import { IdGenerator } from "../util/IdGenerator";
 
 export class PoolConfig {
   readonly id: string;
@@ -14,7 +14,7 @@ export class PoolConfig {
     token1: string,
     fee: FeeAmount
   ) {
-    this.id = IDGenerator.guid();
+    this.id = IdGenerator.guid();
     this.tickSpacing = tickSpacing;
     this.token0 = token0;
     this.token1 = token1;

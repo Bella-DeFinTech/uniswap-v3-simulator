@@ -5,7 +5,7 @@ import { Transition } from "../model/Transition";
 import { toString as printPoolConfig } from "../model/PoolConfig";
 
 export class SimulatorConsoleVisitor implements SimulatorVisitor {
-  visitOnTransition(
+  visitTransition(
     transition: Transition,
     callback?: (transition: Transition, returnValue: string) => void
   ): Promise<string> {
@@ -14,7 +14,7 @@ export class SimulatorConsoleVisitor implements SimulatorVisitor {
     return Promise.resolve("ok");
   }
 
-  visitOnPoolState(
+  visitPoolState(
     poolState: PoolState,
     callback?: (poolState: PoolState, returnValue: string) => void
   ): Promise<string> {
@@ -24,7 +24,7 @@ export class SimulatorConsoleVisitor implements SimulatorVisitor {
     return Promise.resolve("ok");
   }
 
-  visitOnConfigurableCorePool(
+  visitConfigurableCorePool(
     configurableCorePool: ConfigurableCorePool,
     callback?: (
       configurableCorePool: ConfigurableCorePool,

@@ -45,7 +45,7 @@ export class Transition implements Visitable, TransitionView {
   }
 
   accept(visitor: SimulatorVisitor): Promise<string> {
-    return visitor.visitOnTransition(this);
+    return visitor.visitTransition(this);
   }
 
   toString(): string {

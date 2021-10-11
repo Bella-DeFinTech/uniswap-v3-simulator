@@ -210,10 +210,10 @@ export class DBManager {
       })
       .then((poolConfig: PoolConfig | undefined) => {
         return !poolConfig
-          ? Promise.reject(new Error("PoolConfig is of shortage!"))
+          ? Promise.reject(new Error("Pool config record is missing, please check your db file."))
           : Promise.resolve(
               snapshotRecords.map((snapshot: SnapshotRecord) =>
-                this.transferSnapshotRecordToSnapshot(snapshot, poolConfig)
+                this.deserializeSnapshot(snapshot, poolConfig)
               )
             );
       })
@@ -230,9 +230,9 @@ export class DBManager {
       })
       .then((poolConfig: PoolConfig | undefined) =>
         !poolConfig
-          ? Promise.reject(new Error("PoolConfig is of shortage!"))
+          ? Promise.reject(new Error("Pool config record is missing, please check your db file."))
           : Promise.resolve(
-              this.transferSnapshotRecordToSnapshot(snapshotRecord, poolConfig)
+              this.deserializeSnapshot(snapshotRecord, poolConfig)
             )
       )
       .catch((err) => (err ? Promise.reject(err) : Promise.resolve(undefined)));
@@ -379,7 +379,7 @@ export class DBManager {
     ]);
   }
 
-  private transferSnapshotRecordToSnapshot(
+  private deserializeSnapshot(
     snapshot: SnapshotRecord,
     poolConfig: PoolConfig
   ) {

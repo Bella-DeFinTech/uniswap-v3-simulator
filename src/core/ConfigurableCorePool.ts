@@ -5,7 +5,7 @@ import { CorePool } from "./CorePool";
 import { Visitable } from "../interface/Visitable";
 import { ActionType } from "../enum/ActionType";
 import { PoolStateHelper } from "../util/PoolStateHelper";
-import { IDGenerator } from "../util/IDGenerator";
+import { IdGenerator } from "../util/IdGenerator";
 import { Transition } from "../model/Transition";
 import { SimulatorVisitor } from "../interface/SimulatorVisitor";
 import { SimulatorConsoleVisitor } from "../manager/SimulatorConsoleVisitor";
@@ -37,7 +37,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   ) => Promise<void> = async function () {};
 
   constructor(poolState: PoolState) {
-    this.id = IDGenerator.guid();
+    this.id = IdGenerator.guid();
     if (poolState.hasSnapshot()) {
       this.corePool = PoolStateHelper.buildCorePoolBySnapshot(
         poolState.snapshot!
@@ -286,7 +286,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   persistSnapshot(): Promise<string> {
     let simulatorPersistenceVisitor: SimulatorVisitor =
       new SimulatorPersistenceVisitor();
-    return this.traverseOnPoolStateChain(
+    return this.traversePoolStateChain(
       simulatorPersistenceVisitor,
       this.poolState.id,
       this.poolState.id
@@ -316,7 +316,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   }
 
   accept(visitor: SimulatorVisitor): Promise<string> {
-    return visitor.visitOnConfigurableCorePool(this);
+    return visitor.visitConfigurableCorePool(this);
   }
 
   // this will take snapshot during PoolStates to speed up
@@ -326,7 +326,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   ): Promise<void> {
     let simulatorConsoleVisitor: SimulatorVisitor =
       new SimulatorConsoleVisitor();
-    return this.traverseOnPoolStateChain(
+    return this.traversePoolStateChain(
       simulatorConsoleVisitor,
       toPoolStateId ? toPoolStateId : this.poolState.id,
       fromPoolStateId
@@ -343,7 +343,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     let poolStateVisitCallback = (_: PoolState, returnValue: number) => {
       if (returnValue > 0) snapshotIds.push(returnValue);
     };
-    return this.traverseOnPoolStateChain(
+    return this.traversePoolStateChain(
       simulatorPersistenceVisitor,
       toPoolStateId,
       fromPoolStateId,
@@ -351,7 +351,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     ).then(() => Promise.resolve(snapshotIds));
   }
 
-  private traverseOnPoolStateChain(
+  private traversePoolStateChain(
     visitor: SimulatorVisitor,
     toPoolStateId: string,
     fromPoolStateId?: string,
@@ -418,7 +418,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     actionReturnValues: ReturnParams
   ): Record {
     return {
-      id: IDGenerator.guid(),
+      id: IdGenerator.guid(),
       actionType,
       actionParams,
       actionReturnValues,

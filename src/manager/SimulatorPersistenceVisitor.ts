@@ -5,11 +5,11 @@ import { Transition } from "../model/Transition";
 import { DBManager } from "./DBManager";
 
 export class SimulatorPersistenceVisitor implements SimulatorVisitor {
-  visitOnTransition(transition: Transition): Promise<string> {
+  visitTransition(transition: Transition): Promise<string> {
     return Promise.resolve("not implemented.");
   }
 
-  visitOnPoolState(
+  visitPoolState(
     poolState: PoolState,
     callback?: (poolState: PoolState, returnValue: number) => void
   ): Promise<string> {
@@ -20,7 +20,7 @@ export class SimulatorPersistenceVisitor implements SimulatorVisitor {
     });
   }
 
-  visitOnConfigurableCorePool(
+  visitConfigurableCorePool(
     configurableCorePool: ConfigurableCorePool
   ): Promise<string> {
     return Promise.resolve("not implemented.");

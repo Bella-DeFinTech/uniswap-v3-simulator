@@ -42,7 +42,7 @@ describe("Test SimulatorClient public method", function () {
     expect(configurableCorePool).to.be.an.instanceOf(ConfigurableCorePool);
   });
 
-  describe("after some use", function () {
+  describe("during simulation", function () {
     let configurableCorePool: IConfigurableCorePool;
     let sqrtPriceX96ForInitialization = JSBI.BigInt("4295128739");
     beforeEach(async function () {

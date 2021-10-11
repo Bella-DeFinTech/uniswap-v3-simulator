@@ -7,7 +7,7 @@ import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
 import { DBManager } from "../src/manager/DBManager";
 import { PoolState } from "../src/model/PoolState";
 import { SimulatorRoadmapManager } from "../src/manager/SimulatorRoadmapManager";
-import { IDGenerator } from "../src/util/IDGenerator";
+import { IdGenerator } from "../src/util/IdGenerator";
 import { CorePool } from "../src/core/CorePool";
 import { TickMath } from "../src/util/TickMath";
 import JSBI from "jsbi";
@@ -272,11 +272,11 @@ describe("Test ConfigurableCorePool", function () {
 
   describe("Test get method", function () {
     it("can get id", async function () {
-      expect(IDGenerator.validate(configurableCorePool.id)).to.be.true;
+      expect(IdGenerator.validate(configurableCorePool.id)).to.be.true;
     });
 
     it("can get poolStateId", async function () {
-      expect(IDGenerator.validate(configurableCorePool.getPoolState().id)).to.be
+      expect(IdGenerator.validate(configurableCorePool.getPoolState().id)).to.be
         .true;
     });
 

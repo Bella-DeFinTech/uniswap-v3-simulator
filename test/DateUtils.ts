@@ -32,13 +32,13 @@ export function format(date: Date, fmt: string): string {
     S: number;
   };
   var o: template = {
-    "M+": date.getMonth() + 1, //月份
-    "d+": date.getDate(), //日
-    "H+": date.getHours(), //小时
-    "m+": date.getMinutes(), //分
-    "s+": date.getSeconds(), //秒
-    "q+": Math.floor((date.getMonth() + 3) / 3), //季度
-    S: date.getMilliseconds(), //毫秒
+    "M+": date.getMonth() + 1,
+    "d+": date.getDate(),
+    "H+": date.getHours(),
+    "m+": date.getMinutes(),
+    "s+": date.getSeconds(),
+    "q+": Math.floor((date.getMonth() + 3) / 3),
+    S: date.getMilliseconds(),
   };
   if (/(y+)/.test(fmt))
     fmt = fmt.replace(

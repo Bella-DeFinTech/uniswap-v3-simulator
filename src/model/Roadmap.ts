@@ -1,4 +1,4 @@
-import { IDGenerator } from "../util/IDGenerator";
+import { IdGenerator } from "../util/IdGenerator";
 
 export class Roadmap {
   readonly id: string;
@@ -7,7 +7,7 @@ export class Roadmap {
   readonly timestamp: Date;
 
   constructor(description: string, snapshots: number[]) {
-    this.id = IDGenerator.guid();
+    this.id = IdGenerator.guid();
     this.description = description;
     this.snapshots = snapshots;
     this.timestamp = new Date();

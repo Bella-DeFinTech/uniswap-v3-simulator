@@ -71,7 +71,7 @@ export class EventDBManager {
         Promise.resolve(
           rows.map(
             (row: LiquidityEventRecord): LiquidityEvent =>
-              this.transferLiquidityEventRecordToLiquidityEvent(row)
+              this.deserializeLiquidityEvent(row)
           )
         )
     );
@@ -86,7 +86,7 @@ export class EventDBManager {
         Promise.resolve(
           rows.map(
             (row: SwapEventRecord): SwapEvent =>
-              this.transferSwapEventRecordToSwapEvent(row)
+              this.deserializeSwapEvent(row)
           )
         )
     );
@@ -118,7 +118,7 @@ export class EventDBManager {
       .andWhere("date", "<", endDate);
   }
 
-  private transferLiquidityEventRecordToLiquidityEvent(
+  private deserializeLiquidityEvent(
     event: LiquidityEventRecord
   ): LiquidityEvent {
     return {
@@ -136,7 +136,7 @@ export class EventDBManager {
     };
   }
 
-  private transferSwapEventRecordToSwapEvent(
+  private deserializeSwapEvent(
     event: SwapEventRecord
   ): SwapEvent {
     return {

@@ -3,15 +3,15 @@ import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { Transition } from "../model/Transition";
 
 export interface SimulatorVisitor {
-  visitOnTransition(
+  visitTransition(
     transition: Transition,
     callback?: (transition: Transition, returnValue: any) => void
   ): Promise<string>;
-  visitOnPoolState(
+  visitPoolState(
     poolState: PoolState,
     callback?: (poolState: PoolState, returnValue: any) => void
   ): Promise<string>;
-  visitOnConfigurableCorePool(
+  visitConfigurableCorePool(
     configurableCorePool: ConfigurableCorePool,
     callback?: (
       configurableCorePool: ConfigurableCorePool,

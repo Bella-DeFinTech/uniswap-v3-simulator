@@ -4,7 +4,7 @@ import { Transition } from "../model/Transition";
 import { Snapshot } from "../entity/Snapshot";
 import { PositionManager } from "../manager/PositionManager";
 import { TickManager } from "../manager/TickManager";
-import { IDGenerator } from "../util/IDGenerator";
+import { IdGenerator } from "../util/IdGenerator";
 import { Record } from "../entity/Record";
 import { Visitable } from "../interface/Visitable";
 import { SimulatorVisitor } from "../interface/SimulatorVisitor";
@@ -30,12 +30,10 @@ export class PoolState implements Visitable {
     fromTransition?: Transition
   ) {
     if (!poolConfig && !baseSnapshot) {
-      throw new Error(
-        "Please give at least a PoolConfig or a Snapshot from past persistence!"
-      );
+      throw new Error("Please provide a pool config or a base snapshot!");
     }
     this.poolConfig = baseSnapshot ? baseSnapshot.poolConfig : poolConfig!;
-    this.id = baseSnapshot ? baseSnapshot.id : IDGenerator.guid();
+    this.id = baseSnapshot ? baseSnapshot.id : IdGenerator.guid();
     this.baseSnapshot = baseSnapshot;
     this.fromTransition = fromTransition;
   }
@@ -87,7 +85,7 @@ export class PoolState implements Visitable {
     visitor: SimulatorVisitor,
     callback?: (poolState: PoolState, returnValue: any) => void
   ): Promise<string> {
-    return visitor.visitOnPoolState(this, callback);
+    return visitor.visitPoolState(this, callback);
   }
 
   recoverCorePool(takeSnapshot?: boolean): CorePool {
@@ -144,7 +142,7 @@ export class PoolState implements Visitable {
 
   fork(): PoolState {
     let record: Record = {
-      id: IDGenerator.guid(),
+      id: IdGenerator.guid(),
       actionType: ActionType.FORK,
       actionParams: { type: ActionType.FORK },
       actionReturnValues: {},
