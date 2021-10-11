@@ -38,7 +38,7 @@
   "mocha": {
     "colors": true,
     "recursive": [
-      "test/**/DBManager.test.ts"
+      "test/**/*.test.ts"
     ],
     "reporter": [
       "mochawesome"
