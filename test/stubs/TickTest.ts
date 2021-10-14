@@ -18,7 +18,7 @@ export class TickTest {
     feeGrowthGlobal0X128: JSBI,
     feeGrowthGlobal1X128: JSBI
   ): Promise<JSBI> {
-    const tickToCross = this.manager.getTickReadonly(tick);
+    const tickToCross = this.manager.getTickAndInitIfAbsent(tick);
     return Promise.resolve(
       tickToCross.cross(feeGrowthGlobal0X128, feeGrowthGlobal1X128)
     );
@@ -72,7 +72,7 @@ export class TickTest {
   }
 
   ticks(tickIndex: number): Promise<Tick> {
-    return Promise.resolve(this.manager.getTickReadonly(tickIndex));
+    return Promise.resolve(this.manager.getTickAndInitIfAbsent(tickIndex));
   }
 
   update(
@@ -84,7 +84,7 @@ export class TickTest {
     upper: boolean,
     maxLiquidity: JSBI
   ): Promise<boolean> {
-    const tickToUpdate = this.manager.getTickReadonly(tick);
+    const tickToUpdate = this.manager.getTickAndInitIfAbsent(tick);
     return Promise.resolve(
       tickToUpdate.update(
         liquidityDelta,

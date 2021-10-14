@@ -14,16 +14,16 @@
   "author": "",
   "license": "BSL-1.0",
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@types/chai": "^4.2.21",
     "@types/chai-as-promised": "^7.1.4",
     "@types/mocha": "^9.0.0",
     "@types/sqlite3": "^3.1.7",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
+    "ethereum-waffle": "^3.4.0",
     "hardhat": "^2.6.0",
     "mocha": "^9.0.3",
+    "mocha-chai-jest-snapshot": "^1.1.3",
     "mochawesome": "^6.2.2",
     "prettier": "2.3.2",
     "ts-node": "^10.2.0",
@@ -40,7 +40,7 @@
   "mocha": {
     "colors": true,
     "recursive": [
-      "test/**/DBManager.test.ts"
+      "test/**/Tick.spec.ts"
     ],
     "reporter": [
       "mochawesome"
