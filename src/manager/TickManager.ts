@@ -3,6 +3,7 @@ import assert from "assert";
 import { Tick } from "../model/Tick";
 import { jsonMapMember, jsonObject } from "typedjson";
 import { FullMath } from "../util/FullMath";
+import { TickView } from "../interface/TickView";
 
 @jsonObject
 export class TickManager {
@@ -24,7 +25,7 @@ export class TickManager {
     return newTick;
   }
 
-  getTickReadonly(tickIndex: number): Tick {
+  getTickReadonly(tickIndex: number): TickView {
     if (this.sortedTicks.has(tickIndex))
       return this.sortedTicks.get(tickIndex)!;
     return new Tick(tickIndex);
