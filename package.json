@@ -40,7 +40,7 @@
   "mocha": {
     "colors": true,
     "recursive": [
-      "test/**/Tick.spec.ts"
+      "test/**/SwapMath.spec.ts"
     ],
     "reporter": [
       "mochawesome"

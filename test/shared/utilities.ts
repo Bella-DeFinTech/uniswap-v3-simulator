@@ -1,5 +1,13 @@
-// import bn from 'bignumber.js'
-// import { BigNumber, BigNumberish, constants, Contract, ContractTransaction, utils, Wallet } from 'ethers'
+import bn from "bignumber.js";
+// import {
+//   BigNumber,
+//   BigNumberish,
+//   constants,
+//   Contract,
+//   ContractTransaction,
+//   utils,
+//   Wallet,
+// } from "ethers";
 // import { TestUniswapV3Callee } from '../../typechain/TestUniswapV3Callee'
 // import { TestUniswapV3Router } from '../../typechain/TestUniswapV3Router'
 // import { MockTimeUniswapV3Pool } from '../../typechain/MockTimeUniswapV3Pool'
@@ -43,9 +51,12 @@ export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
   [FeeAmount.HIGH]: 200,
 };
 
-// export function expandTo18Decimals(n: number): BigNumber {
-//   return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
-// }
+export function expandTo18Decimals(n: number): JSBI {
+  return JSBI.multiply(
+    JSBI.BigInt(n),
+    JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(18))
+  );
+}
 
 // export function getCreate2Address(
 //   factoryAddress: string,
@@ -72,17 +83,18 @@ export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
 
 // bn.config({ EXPONENTIAL_AT: 999999, DECIMAL_PLACES: 40 })
 
-// // returns the sqrt price as a 64x96
-// export function encodePriceSqrt(reserve1: BigNumberish, reserve0: BigNumberish): BigNumber {
-//   return BigNumber.from(
-//     new bn(reserve1.toString())
-//       .div(reserve0.toString())
-//       .sqrt()
-//       .multipliedBy(new bn(2).pow(96))
-//       .integerValue(3)
-//       .toString()
-//   )
-// }
+// returns the sqrt price as a 64x96
+export function encodePriceSqrt(reserve1: JSBI, reserve0: JSBI): JSBI {
+  bn.config({ EXPONENTIAL_AT: 256 });
+  return JSBI.BigInt(
+    new bn(reserve1.toString())
+      .div(reserve0.toString())
+      .sqrt()
+      .multipliedBy(new bn(2).pow(96))
+      .integerValue(3)
+      .toString()
+  );
+}
 
 // export function getPositionKey(address: string, lowerTick: number, upperTick: number): string {
 //   return utils.keccak256(utils.solidityPack(['address', 'int24', 'int24'], [address, lowerTick, upperTick]))
