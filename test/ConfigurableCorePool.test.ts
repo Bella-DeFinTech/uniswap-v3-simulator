@@ -33,8 +33,6 @@ describe("Test ConfigurableCorePool", function () {
     "0x43efef20f018fdc58e7a5cf0416a"
   );
   let tickCurrentForInitialization = 195285;
-  let allowedAmount0ErrorInMinimumUnit = JSBI.BigInt(1);
-  let allowedAmount1ErrorInMinimumUnit = JSBI.BigInt(14);
 
   async function getAndSortEventByDate(
     startDate: Date,
@@ -68,191 +66,126 @@ describe("Test ConfigurableCorePool", function () {
     return events;
   }
 
-  function isEqualApproximately(a: JSBI, b: JSBI, errorInMinimumUnit: JSBI) {
-    return (
-      JSBI.greaterThanOrEqual(
-        JSBI.subtract(a, b),
-        JSBI.BigInt(
-          JSBI.greaterThan(errorInMinimumUnit, ZERO)
-            ? JSBI.unaryMinus(errorInMinimumUnit)
-            : errorInMinimumUnit
-        )
-      ) &&
-      JSBI.lessThanOrEqual(
-        JSBI.subtract(a, b),
-        JSBI.BigInt(
-          JSBI.greaterThan(errorInMinimumUnit, ZERO)
-            ? errorInMinimumUnit
-            : JSBI.unaryMinus(errorInMinimumUnit)
-        )
-      )
-    );
-  }
-
-  function replayEventsAndAssertReturnValues(
+  async function replayEventsAndAssertReturnValues(
     paramArr: (LiquidityEvent | SwapEvent)[]
   ): Promise<void> {
-    return paramArr.reduce(async (last, param, index) => {
-      if (last) await last;
-      return Promise.resolve().then(() => {
-        switch (param.type) {
-          case EventType.MINT:
-            return configurableCorePool
-              .mint(
-                testUser,
-                param.tick_lower,
-                param.tick_upper,
-                param.liquidity
-              )
-              .then(({ amount0, amount1 }) => {
-                // expect(amount0.toString()).to.eql(param.amount0.toString());
-                // expect(amount1.toString()).to.eql(param.amount1.toString());
-                expect(
-                  isEqualApproximately(
-                    amount0,
-                    param.amount0,
-                    allowedAmount0ErrorInMinimumUnit
-                  ),
-                  `id:${
-                    param.id
-                  }, amount0:${amount0.toString()}, expectedAmount0:${param.amount0.toString()}`
-                ).to.be.true;
-                expect(
-                  isEqualApproximately(
-                    amount1,
-                    param.amount1,
-                    allowedAmount1ErrorInMinimumUnit
-                  ),
-                  `id:${
-                    param.id
-                  }, amount1:${amount1.toString()}, expectedAmount1:${param.amount1.toString()}`
-                ).to.be.true;
-                return Promise.resolve();
-              });
+    for (let index = 0; index < paramArr.length; index++) {
+      // avoid stack overflow
+      if (index % 4000 == 0) {
+        configurableCorePool.takeSnapshot("");
+      }
 
-          case EventType.BURN:
-            return configurableCorePool
-              .burn(
-                testUser,
-                param.tick_lower,
-                param.tick_upper,
-                param.liquidity
-              )
-              .then(({ amount0, amount1 }) => {
-                // expect(amount0.toString()).to.eql(param.amount0.toString());
-                // expect(amount1.toString()).to.eql(param.amount1.toString());
-                expect(
-                  isEqualApproximately(
-                    amount0,
-                    param.amount0,
-                    allowedAmount0ErrorInMinimumUnit
-                  ),
-                  `id:${
-                    param.id
-                  }, amount0:${amount0.toString()}, expectedAmount0:${param.amount0.toString()}`
-                ).to.be.true;
-                expect(
-                  isEqualApproximately(
-                    amount1,
-                    param.amount1,
-                    allowedAmount1ErrorInMinimumUnit
-                  ),
-                  `id:${
-                    param.id
-                  }, amount1:${amount1.toString()}, expectedAmount1:${param.amount1.toString()}`
-                ).to.be.true;
-                return Promise.resolve();
-              });
+      let param = paramArr[index];
+      let amount0: JSBI, amount1: JSBI;
+      switch (param.type) {
+        case EventType.MINT:
+          ({ amount0, amount1 } = await configurableCorePool.mint(
+            testUser,
+            param.tick_lower,
+            param.tick_upper,
+            param.liquidity
+          ));
+          expect(amount0.toString()).to.eql(param.amount0.toString());
+          expect(amount1.toString()).to.eql(param.amount1.toString());
+          break;
+        case EventType.BURN:
+          ({ amount0, amount1 } = await configurableCorePool.burn(
+            testUser,
+            param.tick_lower,
+            param.tick_upper,
+            param.liquidity
+          ));
+          expect(amount0.toString()).to.eql(param.amount0.toString());
+          expect(amount1.toString()).to.eql(param.amount1.toString());
+          break;
+        case EventType.SWAP:
+          let zeroForOne: boolean = JSBI.greaterThan(param.amount0, ZERO)
+            ? true
+            : false;
 
-          case EventType.SWAP:
-            let zeroForOne: boolean = JSBI.greaterThan(param.amount0, ZERO)
-              ? true
-              : false;
-            let tryWithDryRun: (
-              amountSpecified: JSBI
-            ) => Promise<{ amount0: JSBI; amount1: JSBI }> = (
+          let errArr: Error[] = [];
+
+          async function tryWithDryRun(
+            amountSpecified: JSBI
+          ): Promise<boolean> {
+            ({ amount0, amount1 } = await configurableCorePool.querySwap(
+              zeroForOne,
               amountSpecified
-            ) =>
-              configurableCorePool
-                .querySwap(zeroForOne, amountSpecified)
-                .then(({ amount0, amount1 }) => {
-                  // return JSBI.equal(amount0, param.amount0) &&
-                  //   JSBI.equal(amount1, param.amount1)
-                  return isEqualApproximately(
-                    amount0,
-                    param.amount0,
-                    allowedAmount0ErrorInMinimumUnit
-                  ) &&
-                    isEqualApproximately(
-                      amount1,
-                      param.amount1,
-                      allowedAmount1ErrorInMinimumUnit
-                    )
-                    ? Promise.resolve({
-                        amount0,
-                        amount1,
-                      })
-                    : Promise.reject(
-                        new Error(
-                          `Result is not match. amount0: ${amount0}, amount1: ${amount1}`
-                        )
-                      );
-                })
-                .catch((err: Error) => Promise.reject(err));
+            ));
+            let dryRunRes =
+              JSBI.equal(amount0, param.amount0) &&
+              JSBI.equal(amount1, param.amount1);
 
-            let trySwap: (amountSpecified: JSBI) => Promise<void> = (
-              amountSpecified
-            ) =>
-              configurableCorePool
-                .swap(zeroForOne, amountSpecified)
-                .then(({ amount0, amount1 }) => {
-                  // expect(amount0.toString()).to.eql(param.amount0.toString());
-                  // expect(amount1.toString()).to.eql(param.amount1.toString());
-                  expect(
-                    isEqualApproximately(
-                      amount0,
-                      param.amount0,
-                      allowedAmount0ErrorInMinimumUnit
-                    )
-                  ).to.be.true;
-                  expect(
-                    isEqualApproximately(
-                      amount1,
-                      param.amount1,
-                      allowedAmount1ErrorInMinimumUnit
-                    )
-                  ).to.be.true;
-                  return Promise.resolve();
-                });
-            let errArr: Error[] = [];
-            return tryWithDryRun(param.amount0)
-              .then(() => trySwap(param.amount0))
-              .catch((err) => {
-                errArr.push(err);
-                return tryWithDryRun(param.amount1).then(() =>
-                  trySwap(param.amount1)
-                );
-              })
-              .catch((err) => {
-                errArr.push(err);
-                return Promise.reject(
-                  `Swap failed. Event index: ${index}. Event: ${printParams(
-                    param
-                  )}. ${errArr}`
-                );
-              });
+            if (!dryRunRes) {
+              errArr.push(
+                new Error(
+                  `Result is not match. amount0: ${amount0}, amount1: ${amount1}`
+                )
+              );
+            }
+            return Promise.resolve(dryRunRes);
+          }
 
-          default:
-            // @ts-ignore: ExhaustiveCheck
-            const exhaustiveCheck: never = param;
-            return Promise.resolve();
-        }
-      });
-    }, Promise.resolve());
+          async function trySwap(
+            amountSpecified: JSBI,
+            sqrtPriceLimitX96: JSBI
+          ): Promise<boolean> {
+            ({ amount0, amount1 } = await configurableCorePool.swap(
+              zeroForOne,
+              amountSpecified,
+              sqrtPriceLimitX96
+            ));
+
+            let res = JSBI.equal(
+              configurableCorePool.getCorePool().sqrtPriceX96,
+              (param as SwapEvent).sqrt_price_x96
+            );
+
+            if (!res) {
+              errArr.push(
+                new Error(
+                  `Result is not match. actual price: ${
+                    configurableCorePool.getCorePool().sqrtPriceX96
+                  }, expected price: ${
+                    (param as SwapEvent).sqrt_price_x96
+                  }. amount0: ${amount0}, amount1: ${amount1}`
+                )
+              );
+              configurableCorePool.stepBack();
+            }
+            return res;
+          }
+
+          let trySwapRes = await tryWithDryRun(param.amount0);
+          if (trySwapRes) {
+            let swapRes = await trySwap(param.amount0, param.sqrt_price_x96);
+            if (swapRes) break;
+          }
+          trySwapRes = await tryWithDryRun(param.amount1);
+          if (trySwapRes) {
+            errArr = [];
+            let swapRes = await trySwap(param.amount1, param.sqrt_price_x96);
+            if (swapRes) break;
+          }
+
+          if (errArr.length != 0) {
+            console.log(param.id);
+            return Promise.reject(
+              `Swap failed. Event index: ${index}. Event: ${printParams(
+                param
+              )}. ${errArr}`
+            );
+          }
+          break;
+        default:
+          // @ts-ignore: ExhaustiveCheck
+          const exhaustiveCheck: never = param;
+      }
+    }
   }
 
   beforeEach(async function () {
-    dbManager = await DBManager.buildInstance(":memory:");
+    dbManager = await DBManager.buildInstance("./test/database.db");
     liquidityEventDB = await EventDBManager.buildInstance(
       "liquidity_events_usdc_weth_3000.db"
     );
@@ -484,33 +417,33 @@ describe("Test ConfigurableCorePool", function () {
       await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
     });
 
-    // it("can swap exactly as contract do", async function () {
-    //   // TODO
-    //   let liquidityToMint = TickMath.tickSpacingToMaxLiquidityPerTick(60);
-
-    //   let amount0: JSBI, amount1: JSBI;
-    //   ({ amount0, amount1 } = await configurableCorePool.mint(
-    //     testUser,
-    //     TickMath.MIN_TICK,
-    //     TickMath.MAX_TICK,
-    //     liquidityToMint
-    //   ));
-    //   console.log(amount0.toString());
-    //   console.log(amount1.toString());
-    //   ({ amount0, amount1 } = await configurableCorePool.swap(
-    //     false,
-    //     JSBI.unaryMinus(JSBI.subtract(amount0, JSBI.BigInt(10600000000000000)))
-    //   ));
-    //   console.log(amount0.toString());
-    //   console.log(amount1.toString());
-    //   console.log("-----------------------");
-    //   console.log(configurableCorePool.getCorePool().tickCurrent);
-    // });
-
     it("can replay events on mainnet exactly as contract do", async function () {
       let startDate = getDate(2021, 5, 4);
       let endDate = getDate(2021, 7, 8);
       let currDate = startDate;
+
+      // configurableCorePool.updatePostProcessor(
+      //   (
+      //     configurableCorePool: IConfigurableCorePool,
+      //     transition: Transition
+      //   ) => {
+      //     if (
+      //       JSBI.equal(
+      //         configurableCorePool.getCorePool().sqrtPriceX96,
+      //         JSBI.BigInt("xxxxx")
+      //       )
+      //     ) {
+      //       configurableCorePool.takeSnapshot(
+      //         "for check error in event id xxx"
+      //       );
+      //       return configurableCorePool
+      //         .persistSnapshot()
+      //         .then(() => Promise.resolve());
+      //     }
+      //     return Promise.resolve();
+      //   }
+      // );
+
       while (currDate < endDate) {
         let events = await getAndSortEventByDate(
           currDate,
@@ -521,6 +454,26 @@ describe("Test ConfigurableCorePool", function () {
         }
         currDate = getTomorrow(currDate);
       }
+    });
+
+    it("can test any problem", async function () {
+      let snapshot = await dbManager.getSnapshot(
+        "9577f400-5012-4492-8f1f-44c6dcb5980c"
+      );
+      let testPool = new ConfigurableCorePool(
+        PoolState.from(snapshot!),
+        simulatorRoadmapManager
+      );
+      let { amount0, amount1 } = await testPool.swap(
+        false,
+        JSBI.BigInt("500000000000000000000")
+      );
+      console.log("amount0: " + amount0.toString());
+      console.log("amount1: " + amount1.toString());
+      console.log(
+        "sqrtPriceX96: " + testPool.getCorePool().sqrtPriceX96.toString()
+      );
+      console.log("liquidity: " + testPool.getCorePool().liquidity.toString());
     });
   });
 });
