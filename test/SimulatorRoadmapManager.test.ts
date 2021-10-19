@@ -31,6 +31,7 @@ describe("Test SimulatorRoadmapManager", function () {
     simulatorRoadmapManager: SimulatorRoadmapManager
   ): Promise<IConfigurableCorePool> {
     configurableCorePool = new ConfigurableCorePool(
+      dbManager,
       new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
       simulatorRoadmapManager
     );
@@ -48,8 +49,9 @@ describe("Test SimulatorRoadmapManager", function () {
   beforeEach(async function () {
     sandbox = sinon.createSandbox();
     consoleLogSpy = sandbox.spy(console, "log");
-    dbManager = await DBManager.buildInstance(":memory:");
-    simulatorRoadmapManager = new SimulatorRoadmapManager();
+    dbManager = new DBManager(":memory:");
+    await dbManager.initTables()
+    simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
     configurableCorePool = await makeConfigurableCorePool(
       simulatorRoadmapManager as SimulatorRoadmapManager
     );

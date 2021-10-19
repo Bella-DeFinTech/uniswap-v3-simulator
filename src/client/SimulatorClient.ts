@@ -17,16 +17,15 @@ export class SimulatorClient {
     return this._simulatorRoadmapManager;
   }
 
-  constructor(dbManager: DBManager) {
+  private constructor(dbManager: DBManager) {
     this.dbManager = dbManager;
-    this._simulatorRoadmapManager = new SimulatorRoadmapManager();
+    this._simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
   }
 
   static buildInstance(dbPath?: string): Promise<SimulatorClient> {
     const actualDBPath = dbPath ? dbPath : ":memory:";
-    return DBManager.buildInstance(actualDBPath).then(
-      (dbManager: DBManager) => new SimulatorClient(dbManager)
-    );
+    let dbManager: DBManager = new DBManager(actualDBPath);
+    return dbManager.initTables().then(() => new SimulatorClient(dbManager));
   }
 
   static buildPoolConfig(
@@ -40,6 +39,7 @@ export class SimulatorClient {
 
   initCorePoolFromConfig(poolConfig: PoolConfig): IConfigurableCorePool {
     return new ConfigurableCorePool(
+      this.dbManager,
       new PoolState(poolConfig),
       this._simulatorRoadmapManager
     );
@@ -53,6 +53,7 @@ export class SimulatorClient {
         ? Promise.reject("This snapshot doesn't exist!")
         : Promise.resolve(
             new ConfigurableCorePool(
+              this.dbManager,
               PoolState.from(snapshot),
               this._simulatorRoadmapManager
             )

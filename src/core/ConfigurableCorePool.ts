@@ -25,9 +25,11 @@ import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/Conf
 import { CorePoolView } from "../interface/CorePoolView";
 import { PoolStateView } from "../interface/PoolStateView";
 import { Transition as TransitionView } from "../interface/Transition";
+import { DBManager } from "../manager/DBManager";
 
 export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   readonly id: string;
+  private dbManager: DBManager;
   private _poolState: PoolState;
   private simulatorRoadmapManager: SimulatorRoadmapManager;
   private corePool: CorePool;
@@ -37,9 +39,11 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   ) => Promise<void> = async function () {};
 
   constructor(
+    dbManager: DBManager,
     poolState: PoolState,
     simulatorRoadmapManager: SimulatorRoadmapManager
   ) {
+    this.dbManager = dbManager;
     this.id = IdGenerator.guid();
     if (poolState.hasSnapshot()) {
       this.corePool = PoolStateHelper.buildCorePoolBySnapshot(
@@ -284,6 +288,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   fork(): IConfigurableCorePool {
     this.takeSnapshot("Automated for forking");
     return new ConfigurableCorePool(
+      this.dbManager,
       this.poolState.fork(),
       this.simulatorRoadmapManager
     );
@@ -291,7 +296,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
 
   persistSnapshot(): Promise<string> {
     let simulatorPersistenceVisitor: SimulatorVisitor =
-      new SimulatorPersistenceVisitor();
+      new SimulatorPersistenceVisitor(this.dbManager);
     return this.traversePoolStateChain(
       simulatorPersistenceVisitor,
       this.poolState.id,
@@ -344,7 +349,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     fromPoolStateId?: string
   ): Promise<Array<number>> {
     let simulatorPersistenceVisitor: SimulatorVisitor =
-      new SimulatorPersistenceVisitor();
+      new SimulatorPersistenceVisitor(this.dbManager);
     let snapshotIds: Array<number> = [];
     let poolStateVisitCallback = (_: PoolState, returnValue: number) => {
       if (returnValue > 0) snapshotIds.push(returnValue);

@@ -185,15 +185,17 @@ describe("Test ConfigurableCorePool", function () {
   }
 
   beforeEach(async function () {
-    dbManager = await DBManager.buildInstance("./test/database.db");
+    dbManager = new DBManager("./test/database.db");
+    await dbManager.initTables();
     liquidityEventDB = await EventDBManager.buildInstance(
       "liquidity_events_usdc_weth_3000.db"
     );
     swapEventDB = await EventDBManager.buildInstance(
       "swap_events_usdc_weth_3000.db"
     );
-    simulatorRoadmapManager = new SimulatorRoadmapManager();
+    simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
     configurableCorePool = new ConfigurableCorePool(
+      dbManager,
       new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
       simulatorRoadmapManager
     );
@@ -381,6 +383,7 @@ describe("Test ConfigurableCorePool", function () {
       expect(configurableCorePool.getPoolState().id).to.eql(snapshot!.id);
 
       let newConfigurableCorePool = new ConfigurableCorePool(
+        dbManager,
         new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
         simulatorRoadmapManager
       );
@@ -461,6 +464,7 @@ describe("Test ConfigurableCorePool", function () {
         "9577f400-5012-4492-8f1f-44c6dcb5980c"
       );
       let testPool = new ConfigurableCorePool(
+        dbManager,
         PoolState.from(snapshot!),
         simulatorRoadmapManager
       );

@@ -11,11 +11,13 @@ import { PoolStateHelper } from "../util/PoolStateHelper";
 export class SimulatorRoadmapManager
   implements ISimulatorRoadmapManager, PoolStateContainer
 {
+  private dbManager: DBManager;
   private poolStates: Map<string, PoolState>;
   private configurableCorePools: Map<string, ConfigurableCorePool> = new Map();
 
-  constructor() {
+  constructor(dbManager: DBManager) {
     this.poolStates = new Map();
+    this.dbManager = dbManager;
   }
 
   addPoolState(poolState: PoolState): string {
@@ -64,13 +66,13 @@ export class SimulatorRoadmapManager
       .then((snapshotIds) => {
         let roadmap = new Roadmap(description, snapshotIds);
         roadmapId = roadmap.id;
-        return DBManager.instance.persistRoadmap(roadmap);
+        return this.dbManager.persistRoadmap(roadmap);
       })
       .then(() => Promise.resolve(roadmapId));
   }
 
   loadAndPrintRoute(roadmapId: string): Promise<void> {
-    return DBManager.instance
+    return this.dbManager
       .getRoadmap(roadmapId)
       .then((roadmap: Roadmap | undefined) => {
         if (!roadmap)
@@ -78,7 +80,7 @@ export class SimulatorRoadmapManager
             new Error("Can't find Roadmap, id: " + roadmapId)
           );
         console.log(printRoadmap(roadmap));
-        return DBManager.instance.getSnapshots(roadmap.snapshots);
+        return this.dbManager.getSnapshots(roadmap.snapshots);
       })
       .then((snapshots: Snapshot[]) => {
         if (snapshots.length == 0) return Promise.resolve();

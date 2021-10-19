@@ -55,20 +55,8 @@ type PoolConfigRecord = {
 
 export class DBManager {
   private knex: Knex;
-  private static _instance: DBManager;
 
-  constructor(knex: Knex) {
-    this.knex = knex;
-  }
-
-  public static get instance(): DBManager {
-    if (!DBManager._instance) {
-      throw new Error("Please build an instance first!");
-    }
-    return DBManager._instance;
-  }
-
-  static buildInstance(dbPath: string): Promise<DBManager> {
+  constructor(dbPath: string) {
     const config: Knex.Config = {
       client: "sqlite3",
       connection: {
@@ -77,14 +65,10 @@ export class DBManager {
       // sqlite does not support inserting default values. Set the `useNullAsDefault` flag to hide the warning.
       useNullAsDefault: true,
     };
-    let dbManager = new DBManager(knexBuilder(config));
-    return dbManager.initTables().then(() => {
-      this._instance = dbManager;
-      return dbManager;
-    });
+    this.knex = knexBuilder(config);
   }
 
-  private initTables(): Promise<void[]> {
+  initTables(): Promise<void> {
     const knex = this.knex;
     let tasks = [
       knex.schema.hasTable("poolConfig").then((exists: boolean) =>
@@ -138,7 +122,7 @@ export class DBManager {
           : Promise.resolve()
       ),
     ];
-    return Promise.all(tasks);
+    return Promise.all(tasks).then(() => Promise.resolve());
   }
 
   persistRoadmap(roadmap: Roadmap): Promise<number> {
@@ -210,7 +194,11 @@ export class DBManager {
       })
       .then((poolConfig: PoolConfig | undefined) => {
         return !poolConfig
-          ? Promise.reject(new Error("Pool config record is missing, please check your db file."))
+          ? Promise.reject(
+              new Error(
+                "Pool config record is missing, please check your db file."
+              )
+            )
           : Promise.resolve(
               snapshotRecords.map((snapshot: SnapshotRecord) =>
                 this.deserializeSnapshot(snapshot, poolConfig)
@@ -230,7 +218,11 @@ export class DBManager {
       })
       .then((poolConfig: PoolConfig | undefined) =>
         !poolConfig
-          ? Promise.reject(new Error("Pool config record is missing, please check your db file."))
+          ? Promise.reject(
+              new Error(
+                "Pool config record is missing, please check your db file."
+              )
+            )
           : Promise.resolve(
               this.deserializeSnapshot(snapshotRecord, poolConfig)
             )

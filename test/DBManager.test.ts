@@ -13,7 +13,8 @@ describe("Test DBManager", function () {
   let db: DBManager;
 
   beforeEach(async function () {
-    db = await DBManager.buildInstance(":memory:");
+    db = new DBManager(":memory:");
+    await db.initTables()
   });
 
   afterEach(async function () {
