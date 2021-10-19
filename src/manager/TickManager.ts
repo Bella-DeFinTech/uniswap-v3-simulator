@@ -66,8 +66,8 @@ export class TickManager {
     lte: boolean
   ): { nextTick: number; initialized: boolean } {
     const sortedTicks = this.getSortedTicks();
-    const compressed = Math.floor(tick / tickSpacing); // matches rounding in the code
-
+    let compressed = Math.floor(tick / tickSpacing); // matches rounding in the code
+    if (tick < 0 && tick % tickSpacing != 0) compressed--;
     if (lte) {
       const wordPos = compressed >> 8;
       const minimum = (wordPos << 8) * tickSpacing;
@@ -84,7 +84,8 @@ export class TickManager {
       };
     } else {
       const wordPos = (compressed + 1) >> 8;
-      const maximum = ((wordPos + 1) << 8) * tickSpacing - 1;
+      // const maximum = ((wordPos + 1) << 8) * tickSpacing - 1;
+      const maximum = (((wordPos + 1) << 8) - 1) * tickSpacing;
 
       if (this.isAtOrAboveLargest(sortedTicks, tick)) {
         return { nextTick: maximum, initialized: false };
