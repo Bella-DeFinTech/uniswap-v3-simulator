@@ -14,31 +14,31 @@ import { TickView } from "../interface/TickView";
 })
 export class Tick {
   @jsonMember(Number, { name: "tickIndex" })
-  private _tickIndex: number = 0;
+  protected _tickIndex: number = 0;
   @jsonMember({
     name: "liquidityGross",
     deserializer: JSBIDeserializer,
     serializer: JSBISerializer,
   })
-  private _liquidityGross: JSBI = ZERO;
+  protected _liquidityGross: JSBI = ZERO;
   @jsonMember({
     name: "liquidityNet",
     deserializer: JSBIDeserializer,
     serializer: JSBISerializer,
   })
-  private _liquidityNet: JSBI = ZERO;
+  protected _liquidityNet: JSBI = ZERO;
   @jsonMember({
     name: "feeGrowthOutside0X128",
     deserializer: JSBIDeserializer,
     serializer: JSBISerializer,
   })
-  private _feeGrowthOutside0X128: JSBI = ZERO;
+  protected _feeGrowthOutside0X128: JSBI = ZERO;
   @jsonMember({
     name: "feeGrowthOutside1X128",
     deserializer: JSBIDeserializer,
     serializer: JSBISerializer,
   })
-  private _feeGrowthOutside1X128: JSBI = ZERO;
+  protected _feeGrowthOutside1X128: JSBI = ZERO;
 
   constructor(tickIndex: number) {
     assert(
@@ -70,22 +70,6 @@ export class Tick {
 
   public get initialized(): boolean {
     return JSBI.notEqual(this.liquidityGross, ZERO);
-  }
-
-  // [CAUTION] this is for testing only
-  // specifically for easily setting up test cases
-  // DO NOT use this function since it will break the data integrity of the tick
-  updateProperties(
-    liquidityGross: JSBI,
-    liquidityNet: JSBI,
-    feeGrowthOutside0X128: JSBI,
-    feeGrowthOutside1X128: JSBI
-  ): Tick {
-    this._liquidityGross = liquidityGross;
-    this._liquidityNet = liquidityNet;
-    this._feeGrowthOutside0X128 = feeGrowthOutside0X128;
-    this._feeGrowthOutside1X128 = feeGrowthOutside1X128;
-    return this;
   }
 
   update(
