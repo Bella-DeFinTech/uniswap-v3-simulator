@@ -7,7 +7,9 @@ export class SimulatorClient {
     return new ConfigurableCorePool(new PoolState(poolConfig));
   }
 
-  static async recoverCorePoolFromSnapshot(snapshotId: string): Promise<ConfigurableCorePool> {
+  static async recoverCorePoolFromSnapshot(
+    snapshotId: string
+  ): Promise<ConfigurableCorePool> {
     return new ConfigurableCorePool(await PoolState.from(snapshotId));
   }
 
