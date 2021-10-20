@@ -1,7 +1,7 @@
 import { TickManager } from "../../src/manager/TickManager";
 import { TickMath } from "../../src/util/TickMath";
 import JSBI from "jsbi";
-import { MockableTick } from "../../src/model/MockableTick";
+import { MockableTick } from "../shared/MockableTick";
 
 export class TickTest {
   private manager: TickManager;

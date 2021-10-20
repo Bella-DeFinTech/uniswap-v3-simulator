@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { Tick } from "./Tick";
+import { Tick } from "../../src/model/Tick";
 
 export class MockableTick extends Tick {
   // [CAUTION] this is for testing only
