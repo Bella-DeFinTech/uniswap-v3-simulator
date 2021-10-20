@@ -1,7 +1,7 @@
 import { TickManager } from "../../src/manager/TickManager";
 import { TickMath } from "../../src/util/TickMath";
 import JSBI from "jsbi";
-import { Tick } from "../../src/model/Tick";
+import { MockableTick } from "../../src/model/MockableTick";
 
 export class TickTest {
   private manager: TickManager;
@@ -53,8 +53,8 @@ export class TickTest {
       feeGrowthOutside0X128: JSBI;
       feeGrowthOutside1X128: JSBI;
     }
-  ): Promise<Tick> {
-    const newTick = new Tick(tick);
+  ): Promise<MockableTick> {
+    const newTick = new MockableTick(tick);
     newTick.updateProperties(
       info.liquidityGross,
       info.liquidityNet,
@@ -71,8 +71,10 @@ export class TickTest {
     );
   }
 
-  ticks(tickIndex: number): Promise<Tick> {
-    return Promise.resolve(this.manager.getTickAndInitIfAbsent(tickIndex));
+  ticks(tickIndex: number): Promise<MockableTick> {
+    return Promise.resolve(
+      this.manager.getTickAndInitIfAbsent(tickIndex) as MockableTick
+    );
   }
 
   update(
