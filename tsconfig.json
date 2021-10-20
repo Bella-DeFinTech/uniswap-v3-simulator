@@ -12,6 +12,5 @@
     "rootDir": "src",
     "outDir": "dist"
   },
-  "include": ["./src", "./test"],
-  "files": ["./hardhat.config.ts"]
+  "include": ["./src"]
 }
