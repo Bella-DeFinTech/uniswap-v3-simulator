@@ -11,30 +11,33 @@ export abstract class FullMath {
   static mulDivRoundingUp(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
     const product = JSBI.multiply(a, b);
     let result = JSBI.divide(product, denominator);
-    if (JSBI.greaterThan(JSBI.remainder(product, denominator), ZERO)){
+    if (JSBI.greaterThan(JSBI.remainder(product, denominator), ZERO)) {
       assert(JSBI.lessThan(result, MaxUint256), "OVERFLOW");
       result = JSBI.add(result, ONE);
     }
     return result;
   }
 
-  
-  static isEqualApproximately(a: JSBI, b: JSBI, errorInMinimumUnit: JSBI) {
+  static equalsWithTolerance(
+    a: JSBI,
+    b: JSBI,
+    toleranceInMinUnit: JSBI
+  ): boolean {
     return (
       JSBI.greaterThanOrEqual(
         JSBI.subtract(a, b),
         JSBI.BigInt(
-          JSBI.greaterThan(errorInMinimumUnit, ZERO)
-            ? JSBI.unaryMinus(errorInMinimumUnit)
-            : errorInMinimumUnit
+          JSBI.greaterThan(toleranceInMinUnit, ZERO)
+            ? JSBI.unaryMinus(toleranceInMinUnit)
+            : toleranceInMinUnit
         )
       ) &&
       JSBI.lessThanOrEqual(
         JSBI.subtract(a, b),
         JSBI.BigInt(
-          JSBI.greaterThan(errorInMinimumUnit, ZERO)
-            ? errorInMinimumUnit
-            : JSBI.unaryMinus(errorInMinimumUnit)
+          JSBI.greaterThan(toleranceInMinUnit, ZERO)
+            ? toleranceInMinUnit
+            : JSBI.unaryMinus(toleranceInMinUnit)
         )
       )
     );
