@@ -85,8 +85,7 @@ export class EventDBManager {
       (rows: SwapEventRecord[]) =>
         Promise.resolve(
           rows.map(
-            (row: SwapEventRecord): SwapEvent =>
-              this.deserializeSwapEvent(row)
+            (row: SwapEventRecord): SwapEvent => this.deserializeSwapEvent(row)
           )
         )
     );
@@ -136,9 +135,7 @@ export class EventDBManager {
     };
   }
 
-  private deserializeSwapEvent(
-    event: SwapEventRecord
-  ): SwapEvent {
+  private deserializeSwapEvent(event: SwapEventRecord): SwapEvent {
     return {
       id: event.id,
       type: EventType.SWAP,

@@ -36,6 +36,7 @@
     "ethers": "^5.0.0",
     "hardhat": "^2.6.0",
     "mocha": "^9.0.3",
+    "mocha-chai-jest-snapshot": "^1.1.3",
     "mochawesome": "^6.2.2",
     "prettier": "2.3.2",
     "sinon": "^11.1.2",
@@ -56,7 +57,7 @@
   "mocha": {
     "colors": true,
     "spec": [
-      "test/*.test.ts"
+      "test/*.{test,spec}.ts"
     ],
     "reporter": [
       "mochawesome"
