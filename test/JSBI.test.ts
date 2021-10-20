@@ -15,7 +15,7 @@ describe("Test JSBI", function () {
 
   it("notEqual in value can be replaced by !=", function () {
     let a1 = JSBI.BigInt(-5);
-    let b1 = TWO;
+    let b1 = TWO    ;
     assert.ok(JSBI.notEqual(a1, b1));
     assert.ok(a1 != b1);
     assert.ok((a1 != b1) == JSBI.notEqual(a1, b1));
