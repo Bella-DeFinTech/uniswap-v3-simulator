@@ -150,9 +150,7 @@ export class MockTimeUniswapV3Pool {
     return new Promise((resolve) => {});
   }
 
-  observations(
-    arg0: BigNumberish
-  ): Promise<{
+  observations(arg0: BigNumberish): Promise<{
     blockTimestamp: number;
     tickCumulative: BigNumber;
     secondsPerLiquidityCumulativeX128: BigNumber;
@@ -165,9 +163,7 @@ export class MockTimeUniswapV3Pool {
     return new Promise((resolve) => {});
   }
 
-  observe(
-    secondsAgos: BigNumberish[]
-  ): Promise<{
+  observe(secondsAgos: BigNumberish[]): Promise<{
     tickCumulatives: BigNumber[];
     secondsPerLiquidityCumulativeX128s: BigNumber[];
     0: BigNumber[];
@@ -176,9 +172,7 @@ export class MockTimeUniswapV3Pool {
     return new Promise((resolve) => {});
   }
 
-  positions(
-    arg0: BytesLike
-  ): Promise<{
+  positions(arg0: BytesLike): Promise<{
     liquidity: BigNumber;
     feeGrowthInside0LastX128: BigNumber;
     feeGrowthInside1LastX128: BigNumber;
@@ -272,9 +266,7 @@ export class MockTimeUniswapV3Pool {
     return new Promise((resolve) => {});
   }
 
-  ticks(
-    arg0: BigNumberish
-  ): Promise<{
+  ticks(arg0: BigNumberish): Promise<{
     liquidityGross: BigNumber;
     liquidityNet: BigNumber;
     feeGrowthOutside0X128: BigNumber;

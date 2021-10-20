@@ -151,21 +151,15 @@ export class UniswapV3Factory extends Contract {
       0: string;
     }>;
 
-    owner(
-      overrides?: CallOverrides
-    ): Promise<{
+    owner(overrides?: CallOverrides): Promise<{
       0: string;
     }>;
 
-    "owner()"(
-      overrides?: CallOverrides
-    ): Promise<{
+    "owner()"(overrides?: CallOverrides): Promise<{
       0: string;
     }>;
 
-    parameters(
-      overrides?: CallOverrides
-    ): Promise<{
+    parameters(overrides?: CallOverrides): Promise<{
       factory: string;
       token0: string;
       token1: string;
@@ -178,9 +172,7 @@ export class UniswapV3Factory extends Contract {
       4: number;
     }>;
 
-    "parameters()"(
-      overrides?: CallOverrides
-    ): Promise<{
+    "parameters()"(overrides?: CallOverrides): Promise<{
       factory: string;
       token0: string;
       token1: string;
@@ -258,9 +250,7 @@ export class UniswapV3Factory extends Contract {
 
   "owner()"(overrides?: CallOverrides): Promise<string>;
 
-  parameters(
-    overrides?: CallOverrides
-  ): Promise<{
+  parameters(overrides?: CallOverrides): Promise<{
     factory: string;
     token0: string;
     token1: string;
@@ -273,9 +263,7 @@ export class UniswapV3Factory extends Contract {
     4: number;
   }>;
 
-  "parameters()"(
-    overrides?: CallOverrides
-  ): Promise<{
+  "parameters()"(overrides?: CallOverrides): Promise<{
     factory: string;
     token0: string;
     token1: string;
@@ -350,9 +338,7 @@ export class UniswapV3Factory extends Contract {
 
     "owner()"(overrides?: CallOverrides): Promise<string>;
 
-    parameters(
-      overrides?: CallOverrides
-    ): Promise<{
+    parameters(overrides?: CallOverrides): Promise<{
       factory: string;
       token0: string;
       token1: string;
@@ -365,9 +351,7 @@ export class UniswapV3Factory extends Contract {
       4: number;
     }>;
 
-    "parameters()"(
-      overrides?: CallOverrides
-    ): Promise<{
+    "parameters()"(overrides?: CallOverrides): Promise<{
       factory: string;
       token0: string;
       token1: string;
