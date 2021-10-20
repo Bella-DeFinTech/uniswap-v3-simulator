@@ -11,8 +11,10 @@ export abstract class FullMath {
   static mulDivRoundingUp(a: JSBI, b: JSBI, denominator: JSBI): JSBI {
     const product = JSBI.multiply(a, b);
     let result = JSBI.divide(product, denominator);
-    if (JSBI.notEqual(JSBI.remainder(product, denominator), ZERO))
+    if (JSBI.greaterThan(JSBI.remainder(product, denominator), ZERO)) {
+      assert(JSBI.lessThan(result, MaxUint256), "OVERFLOW");
       result = JSBI.add(result, ONE);
+    }
     return result;
   }
 
@@ -26,7 +28,31 @@ export abstract class FullMath {
     );
     return JSBI.remainder(
       JSBI.subtract(JSBI.add(a, JSBI.exponentiate(TWO, JSBI.BigInt(256))), b),
-      JSBI.exponentiate(TWO, JSBI.BigInt(256))
+      JSBI.exponentiate(TWO, JSBI.BigInt(256)))
+  }
+  
+  static equalsWithTolerance(
+    a: JSBI,
+    b: JSBI,
+    toleranceInMinUnit: JSBI
+  ): boolean {
+    return (
+      JSBI.greaterThanOrEqual(
+        JSBI.subtract(a, b),
+        JSBI.BigInt(
+          JSBI.greaterThan(toleranceInMinUnit, ZERO)
+            ? JSBI.unaryMinus(toleranceInMinUnit)
+            : toleranceInMinUnit
+        )
+      ) &&
+      JSBI.lessThanOrEqual(
+        JSBI.subtract(a, b),
+        JSBI.BigInt(
+          JSBI.greaterThan(toleranceInMinUnit, ZERO)
+            ? toleranceInMinUnit
+            : JSBI.unaryMinus(toleranceInMinUnit)
+        )
+      )
     );
   }
 }

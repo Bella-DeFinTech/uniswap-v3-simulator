@@ -1,7 +1,7 @@
 import JSBI from "jsbi";
 import { PositionManager } from "../manager/PositionManager";
 import { TickManager } from "../manager/TickManager";
-import { PoolConfig } from "./PoolConfig";
+import { PoolConfig } from "../model/PoolConfig";
 
 export type Snapshot = {
   id: string;

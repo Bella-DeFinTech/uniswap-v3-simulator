@@ -1,6 +1,8 @@
 export enum ActionType {
-  MINT = 1,
-  BURN,
-  COLLECT,
-  SWAP,
+  INITIALIZE = "initialize",
+  MINT = "mint",
+  BURN = "burn",
+  COLLECT = "collect",
+  SWAP = "swap",
+  FORK = "fork",
 }

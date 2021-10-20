@@ -8,6 +8,8 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "esModuleInterop": true,
+    "declaration": true,
+    "rootDir": "src",
     "outDir": "dist"
   },
   "include": ["./src", "./test"],

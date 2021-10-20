@@ -27,8 +27,8 @@ export class CorePool {
   private _tickCurrent: number;
   private _feeGrowthGlobal0X128: JSBI;
   private _feeGrowthGlobal1X128: JSBI;
-  private tickManager: TickManager;
-  private positionManager: PositionManager;
+  private _tickManager: TickManager;
+  private _positionManager: PositionManager;
 
   constructor(
     token0: string,
@@ -58,8 +58,8 @@ export class CorePool {
     this._tickCurrent = tickCurrent;
     this._feeGrowthGlobal0X128 = feeGrowthGlobal0X128;
     this._feeGrowthGlobal1X128 = feeGrowthGlobal1X128;
-    this.tickManager = tickManager;
-    this.positionManager = positionManager;
+    this._tickManager = tickManager;
+    this._positionManager = positionManager;
   }
 
   public get token0Balance(): JSBI {
@@ -88,6 +88,14 @@ export class CorePool {
 
   public get feeGrowthGlobal1X128(): JSBI {
     return this._feeGrowthGlobal1X128;
+  }
+
+  public get tickManager(): TickManager {
+    return this._tickManager;
+  }
+
+  public get positionManager(): PositionManager {
+    return this._positionManager;
   }
 
   initialize(sqrtPriceX96: JSBI) {
@@ -544,5 +552,18 @@ export class CorePool {
       tickLower,
       tickUpper
     );
+  }
+
+  toString(): string {
+    return `
+    Current State:
+        token0Balance: ${this.token0Balance.toString()}
+        token1Balance: ${this.token1Balance.toString()}
+        sqrtPriceX96: ${this.sqrtPriceX96.toString()}
+        liquidity: ${this.liquidity.toString()}
+        tickCurrent: ${this.tickCurrent}
+        feeGrowthGlobal0X128: ${this.feeGrowthGlobal0X128.toString()}
+        feeGrowthGlobal1X128: ${this.feeGrowthGlobal1X128.toString()}
+    `;
   }
 }
