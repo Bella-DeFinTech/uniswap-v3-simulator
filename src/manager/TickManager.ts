@@ -2,6 +2,7 @@ import JSBI from "jsbi";
 import assert from "assert";
 import { Tick } from "../model/Tick";
 import { jsonMapMember, jsonObject } from "typedjson";
+import { FullMath } from "../util/FullMath";
 import { TickView } from "../interface/TickView";
 
 @jsonObject
@@ -146,11 +147,11 @@ export class TickManager {
     }
     return {
       feeGrowthInside0X128: JSBI.subtract(
-        JSBI.subtract(feeGrowthGlobal0X128, feeGrowthBelow0X128),
+        FullMath.mod256Sub(feeGrowthGlobal0X128, feeGrowthBelow0X128),
         feeGrowthAbove0X128
       ),
       feeGrowthInside1X128: JSBI.subtract(
-        JSBI.subtract(feeGrowthGlobal1X128, feeGrowthBelow1X128),
+        FullMath.mod256Sub(feeGrowthGlobal1X128, feeGrowthBelow1X128),
         feeGrowthAbove1X128
       ),
     };
