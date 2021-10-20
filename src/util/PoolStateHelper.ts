@@ -18,7 +18,9 @@ export abstract class PoolStateHelper {
     )
       return 1;
     return (
-      PoolStateHelper.countHistoricalPoolStateTransitions(fromTransition.getSource()) + 1
+      PoolStateHelper.countHistoricalPoolStateTransitions(
+        fromTransition.getSource()
+      ) + 1
     );
   }
 

@@ -14,7 +14,7 @@ describe("Test DBManager", function () {
 
   beforeEach(async function () {
     db = new DBManager(":memory:");
-    await db.initTables()
+    await db.initTables();
   });
 
   afterEach(async function () {

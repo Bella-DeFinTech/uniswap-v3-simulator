@@ -50,7 +50,7 @@ describe("Test SimulatorRoadmapManager", function () {
     sandbox = sinon.createSandbox();
     consoleLogSpy = sandbox.spy(console, "log");
     dbManager = new DBManager(":memory:");
-    await dbManager.initTables()
+    await dbManager.initTables();
     simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
     configurableCorePool = await makeConfigurableCorePool(
       simulatorRoadmapManager as SimulatorRoadmapManager

@@ -1,0 +1,6 @@
+# Ignore artifacts:
+build
+coverage
+mochawesome-report
+node_modules
+.github
