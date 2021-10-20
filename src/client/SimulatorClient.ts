@@ -1,23 +1,75 @@
 import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { PoolState } from "../model/PoolState";
-import { PoolConfig } from "../entity/PoolConfig";
+import { PoolConfig } from "../model/PoolConfig";
+import { DBManager } from "../manager/DBManager";
+import { Snapshot } from "../entity/Snapshot";
+import { FeeAmount } from "../enum/FeeAmount";
+import { SimulatorRoadmapManager } from "../manager/SimulatorRoadmapManager";
+import { SnapshotProfile } from "../entity/SnapshotProfile";
+import { SimulatorRoadmapManager as ISimulatorRoadmapManager } from "../interface/SimulatorRoadmapManager";
+import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/ConfigurableCorePool";
 
 export class SimulatorClient {
-  static initCorePoolFromConfig(poolConfig: PoolConfig): ConfigurableCorePool {
-    return new ConfigurableCorePool(new PoolState(poolConfig));
+  private dbManager: DBManager;
+  private readonly _simulatorRoadmapManager: SimulatorRoadmapManager;
+
+  public get simulatorRoadmapManager(): ISimulatorRoadmapManager {
+    return this._simulatorRoadmapManager;
   }
 
-  static async recoverCorePoolFromSnapshot(
+  private constructor(dbManager: DBManager) {
+    this.dbManager = dbManager;
+    this._simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
+  }
+
+  static buildInstance(dbPath?: string): Promise<SimulatorClient> {
+    const actualDBPath = dbPath ? dbPath : ":memory:";
+    let dbManager: DBManager = new DBManager(actualDBPath);
+    return dbManager.initTables().then(() => new SimulatorClient(dbManager));
+  }
+
+  static buildPoolConfig(
+    tickSpacing: number,
+    token0: string,
+    token1: string,
+    fee: FeeAmount
+  ) {
+    return new PoolConfig(tickSpacing, token0, token1, fee);
+  }
+
+  initCorePoolFromConfig(poolConfig: PoolConfig): IConfigurableCorePool {
+    return new ConfigurableCorePool(
+      this.dbManager,
+      new PoolState(poolConfig),
+      this._simulatorRoadmapManager
+    );
+  }
+
+  recoverCorePoolFromSnapshot(
     snapshotId: string
-  ): Promise<ConfigurableCorePool> {
-    return new ConfigurableCorePool(await PoolState.from(snapshotId));
+  ): Promise<IConfigurableCorePool> {
+    return this.getSnapshot(snapshotId).then((snapshot: Snapshot | undefined) =>
+      !snapshot
+        ? Promise.reject("This snapshot doesn't exist!")
+        : Promise.resolve(
+            new ConfigurableCorePool(
+              this.dbManager,
+              PoolState.from(snapshot),
+              this._simulatorRoadmapManager
+            )
+          )
+    );
   }
 
-  static staticizeCurrentSnapshotPersistence(poolStates: Array<PoolState>) {
-    // TODO
+  listSnapshotProfiles(): Promise<SnapshotProfile[]> {
+    return this.dbManager.getSnapshotProfiles();
   }
 
-  static clearSnapshotPersistence(snapshotId: string) {
-    // TODO
+  shutdown(): Promise<void> {
+    return this.dbManager.close();
+  }
+
+  private getSnapshot(snapshotId: string): Promise<Snapshot | undefined> {
+    return this.dbManager.getSnapshot(snapshotId);
   }
 }

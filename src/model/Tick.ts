@@ -4,20 +4,41 @@ import { TickMath } from "../util/TickMath";
 import { jsonMember, jsonObject } from "typedjson";
 import { JSBIDeserializer, JSBISerializer } from "../util/Serializer";
 import { LiquidityMath } from "../util/LiquidityMath";
-import { ZERO } from "../enum/InternalConstants";
+import { MaxInt128, MinInt128, ZERO } from "../enum/InternalConstants";
+import { TickView } from "../interface/TickView";
 
-@jsonObject
+@jsonObject({
+  initializer: (_, rawSourceObject: TickView) => {
+    return new Tick(rawSourceObject.tickIndex);
+  },
+})
 export class Tick {
-  @jsonMember(Number)
-  private _tickIndex: number = 0;
-  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
-  private _liquidityGross: JSBI = ZERO;
-  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
-  private _liquidityNet: JSBI = ZERO;
-  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
-  private _feeGrowthOutside0X128: JSBI = ZERO;
-  @jsonMember({ deserializer: JSBIDeserializer, serializer: JSBISerializer })
-  private _feeGrowthOutside1X128: JSBI = ZERO;
+  @jsonMember(Number, { name: "tickIndex" })
+  protected _tickIndex: number = 0;
+  @jsonMember({
+    name: "liquidityGross",
+    deserializer: JSBIDeserializer,
+    serializer: JSBISerializer,
+  })
+  protected _liquidityGross: JSBI = ZERO;
+  @jsonMember({
+    name: "liquidityNet",
+    deserializer: JSBIDeserializer,
+    serializer: JSBISerializer,
+  })
+  protected _liquidityNet: JSBI = ZERO;
+  @jsonMember({
+    name: "feeGrowthOutside0X128",
+    deserializer: JSBIDeserializer,
+    serializer: JSBISerializer,
+  })
+  protected _feeGrowthOutside0X128: JSBI = ZERO;
+  @jsonMember({
+    name: "feeGrowthOutside1X128",
+    deserializer: JSBIDeserializer,
+    serializer: JSBISerializer,
+  })
+  protected _feeGrowthOutside1X128: JSBI = ZERO;
 
   constructor(tickIndex: number) {
     assert(
@@ -78,6 +99,8 @@ export class Tick {
     this._liquidityNet = upper
       ? JSBI.subtract(this._liquidityNet, liquidityDelta)
       : JSBI.add(this._liquidityNet, liquidityDelta);
+    assert(JSBI.lessThanOrEqual(this.liquidityNet, MaxInt128));
+    assert(JSBI.greaterThanOrEqual(this.liquidityNet, MinInt128));
     return flipped;
   }
 

@@ -2,6 +2,7 @@ import JSBI from "jsbi";
 import assert from "assert";
 import { Tick } from "../model/Tick";
 import { jsonMapMember, jsonObject } from "typedjson";
+import { FullMath } from "../util/FullMath";
 import { TickView } from "../interface/TickView";
 
 @jsonObject
@@ -66,8 +67,8 @@ export class TickManager {
     lte: boolean
   ): { nextTick: number; initialized: boolean } {
     const sortedTicks = this.getSortedTicks();
-    const compressed = Math.floor(tick / tickSpacing); // matches rounding in the code
-
+    let compressed = Math.floor(tick / tickSpacing); // matches rounding in the code
+    if (tick < 0 && tick % tickSpacing != 0) compressed--;
     if (lte) {
       const wordPos = compressed >> 8;
       const minimum = (wordPos << 8) * tickSpacing;
@@ -84,7 +85,8 @@ export class TickManager {
       };
     } else {
       const wordPos = (compressed + 1) >> 8;
-      const maximum = ((wordPos + 1) << 8) * tickSpacing - 1;
+      // const maximum = ((wordPos + 1) << 8) * tickSpacing - 1;
+      const maximum = (((wordPos + 1) << 8) - 1) * tickSpacing;
 
       if (this.isAtOrAboveLargest(sortedTicks, tick)) {
         return { nextTick: maximum, initialized: false };
@@ -145,11 +147,11 @@ export class TickManager {
     }
     return {
       feeGrowthInside0X128: JSBI.subtract(
-        JSBI.subtract(feeGrowthGlobal0X128, feeGrowthBelow0X128),
+        FullMath.mod256Sub(feeGrowthGlobal0X128, feeGrowthBelow0X128),
         feeGrowthAbove0X128
       ),
       feeGrowthInside1X128: JSBI.subtract(
-        JSBI.subtract(feeGrowthGlobal1X128, feeGrowthBelow1X128),
+        FullMath.mod256Sub(feeGrowthGlobal1X128, feeGrowthBelow1X128),
         feeGrowthAbove1X128
       ),
     };
