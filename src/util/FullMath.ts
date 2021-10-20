@@ -28,9 +28,10 @@ export abstract class FullMath {
     );
     return JSBI.remainder(
       JSBI.subtract(JSBI.add(a, JSBI.exponentiate(TWO, JSBI.BigInt(256))), b),
-      JSBI.exponentiate(TWO, JSBI.BigInt(256)))
+      JSBI.exponentiate(TWO, JSBI.BigInt(256))
+    );
   }
-  
+
   static equalsWithTolerance(
     a: JSBI,
     b: JSBI,

@@ -44,8 +44,8 @@
   },
   "mocha": {
     "colors": true,
-    "recursive": [
-      "test/**/*.test.ts"
+    "spec": [
+      "test/*.test.ts"
     ],
     "reporter": [
       "mochawesome"
