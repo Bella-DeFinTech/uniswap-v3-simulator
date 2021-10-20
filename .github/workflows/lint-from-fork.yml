@@ -1,8 +1,7 @@
 name: Lint
 
 on:
-  push:
-  pull_request:
+  pull_request_target:
 
 jobs:
   run-linters:
@@ -27,5 +26,4 @@ jobs:
         with:
           github_token: ${{ secrets.github_token }}
           prettier: true
-          auto_fix: true
           prettier_extensions: 'js,json,md,ts,yaml,yml'
