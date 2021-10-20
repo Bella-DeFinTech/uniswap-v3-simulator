@@ -10,11 +10,18 @@
   "scripts": {
     "build": "tsc",
     "test": "yarn mocha",
-    "lint": "yarn prettier --write ."
+    "lint": "yarn prettier --write .",
+    "clean": "hardhat clean",
+    "compile": "hardhat compile",
+    "testcontracts": "hardhat test"
   },
   "author": "",
   "license": "BSL-1.0",
   "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@typechain/ethers-v5": "^7.2.0",
+    "@typechain/hardhat": "^2.3.1",
     "@types/chai": "^4.2.21",
     "@types/chai-as-promised": "^7.1.4",
     "@types/mocha": "^9.0.0",
@@ -22,8 +29,11 @@
     "@types/sinon-chai": "^3.2.5",
     "@types/sqlite3": "^3.1.7",
     "@types/uuid": "^8.3.1",
+    "@uniswap/v3-core": "^1.0.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
+    "ethereum-waffle": "^3.0.0",
+    "ethers": "^5.0.0",
     "hardhat": "^2.6.0",
     "mocha": "^9.0.3",
     "mochawesome": "^6.2.2",
@@ -31,6 +41,7 @@
     "sinon": "^11.1.2",
     "sinon-chai": "^3.7.0",
     "ts-node": "^10.2.0",
+    "typechain": "^5.2.0",
     "typescript": "^4.3.5",
     "uuid": "^8.3.2"
   },
@@ -44,8 +55,8 @@
   },
   "mocha": {
     "colors": true,
-    "recursive": [
-      "test/**/*.test.ts"
+    "spec": [
+      "test/*.test.ts"
     ],
     "reporter": [
       "mochawesome"
