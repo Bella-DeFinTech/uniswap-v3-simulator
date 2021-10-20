@@ -17,8 +17,10 @@ export abstract class Serializer {
 export const JSBISerializer = (jsbi: JSBI): string => jsbi.toString();
 export const JSBIDeserializer = (str: string): JSBI => JSBI.BigInt(str);
 
-export const NumberArraySerializer = (arr: Array<number>): string => JSON.stringify(arr);
-export const NumberArrayDeserializer = (str: string): Array<number> => JSON.parse(str);
+export const NumberArraySerializer = (arr: Array<number>): string =>
+  JSON.stringify(arr);
+export const NumberArrayDeserializer = (str: string): Array<number> =>
+  JSON.parse(str);
 
 export function printParams(params: object): string {
   let str = "{";
