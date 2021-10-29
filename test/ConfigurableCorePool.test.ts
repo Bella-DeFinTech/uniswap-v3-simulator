@@ -128,7 +128,7 @@ describe("Test ConfigurableCorePool", function () {
 
           async function trySwap(
             amountSpecified: JSBI,
-            sqrtPriceLimitX96: JSBI
+            sqrtPriceLimitX96?: JSBI
           ): Promise<boolean> {
             ({ amount0, amount1 } = await configurableCorePool.swap(
               zeroForOne,
@@ -159,13 +159,27 @@ describe("Test ConfigurableCorePool", function () {
           let trySwapRes = await tryWithDryRun(param.amount0);
           if (trySwapRes) {
             let swapRes = await trySwap(param.amount0, param.sqrt_price_x96);
-            if (swapRes) break;
+            if (swapRes) {
+              // add AmountSpecified column to swap event database
+              // await swapEventDB.addAmountSpecified(
+              //   param.id,
+              //   param.amount0.toString()
+              // );
+              break;
+            }
           }
           trySwapRes = await tryWithDryRun(param.amount1);
           if (trySwapRes) {
             errArr = [];
             let swapRes = await trySwap(param.amount1, param.sqrt_price_x96);
-            if (swapRes) break;
+            if (swapRes) {
+              // add AmountSpecified column to swap event database
+              // await swapEventDB.addAmountSpecified(
+              //   param.id,
+              //   param.amount1.toString()
+              // );
+              break;
+            }
           }
 
           if (errArr.length != 0) {

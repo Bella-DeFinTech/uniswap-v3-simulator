@@ -23,6 +23,7 @@ type SwapEventRecord = {
   id: number;
   amount0: string;
   amount1: string;
+  amountSpecified: string;
   sqrt_price_x96: string;
   liquidity: string;
   tick: number;
@@ -85,11 +86,18 @@ export class EventDBManager {
       (rows: SwapEventRecord[]) =>
         Promise.resolve(
           rows.map(
-            (row: SwapEventRecord): SwapEvent =>
-              this.deserializeSwapEvent(row)
+            (row: SwapEventRecord): SwapEvent => this.deserializeSwapEvent(row)
           )
         )
     );
+  }
+
+  addAmountSpecified(id: number, amountSpecified: string): Promise<number> {
+    return this.knex
+      .transaction((trx) =>
+        this.updateAmountSpecified(id, amountSpecified, trx)
+      )
+      .then((ids) => Promise.resolve(ids[0]));
   }
 
   close(): Promise<void> {
@@ -118,6 +126,16 @@ export class EventDBManager {
       .andWhere("date", "<", endDate);
   }
 
+  private updateAmountSpecified(
+    id: number,
+    amountSpecified: string,
+    trx?: Knex.Transaction
+  ): Promise<Array<number>> {
+    return this.getBuilderContext("swap_events_usdc_weth_3000", trx)
+      .update("amountSpecified", amountSpecified)
+      .where("id", id);
+  }
+
   private deserializeLiquidityEvent(
     event: LiquidityEventRecord
   ): LiquidityEvent {
@@ -136,14 +154,13 @@ export class EventDBManager {
     };
   }
 
-  private deserializeSwapEvent(
-    event: SwapEventRecord
-  ): SwapEvent {
+  private deserializeSwapEvent(event: SwapEventRecord): SwapEvent {
     return {
       id: event.id,
       type: EventType.SWAP,
       amount0: JSBIDeserializer(event.amount0),
       amount1: JSBIDeserializer(event.amount1),
+      amountSpecified: JSBIDeserializer(event.amountSpecified),
       sqrt_price_x96: JSBIDeserializer(event.sqrt_price_x96),
       liquidity: JSBIDeserializer(event.liquidity),
       tick: event.tick,
