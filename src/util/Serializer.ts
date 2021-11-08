@@ -1,6 +1,7 @@
 import JSBI from "jsbi";
 import { TypedJSON } from "typedjson";
 import { Constructor } from "typedjson/src/types";
+import { ZERO } from "../enum/InternalConstants";
 
 export abstract class Serializer {
   static serialize<T>(rootConstructor: Constructor<T>, object: T): string {
@@ -15,7 +16,8 @@ export abstract class Serializer {
 }
 
 export const JSBISerializer = (jsbi: JSBI): string => jsbi.toString();
-export const JSBIDeserializer = (str: string): JSBI => JSBI.BigInt(str);
+export const JSBIDeserializer = (str: string): JSBI =>
+  str == undefined ? ZERO : JSBI.BigInt(str);
 
 export const NumberArraySerializer = (arr: Array<number>): string =>
   JSON.stringify(arr);

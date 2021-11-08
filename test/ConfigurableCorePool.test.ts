@@ -59,9 +59,9 @@ describe("Test ConfigurableCorePool", function () {
     events.push(...burnEvents);
     events.push(...swapEvents);
     events.sort(function (a, b) {
-      return a.block_number == b.block_number
-        ? a.log_index - b.log_index
-        : a.block_number - b.block_number;
+      return a.blockNumber == b.blockNumber
+        ? a.logIndex - b.logIndex
+        : a.blockNumber - b.blockNumber;
     });
     return events;
   }
@@ -81,8 +81,8 @@ describe("Test ConfigurableCorePool", function () {
         case EventType.MINT:
           ({ amount0, amount1 } = await configurableCorePool.mint(
             testUser,
-            param.tick_lower,
-            param.tick_upper,
+            param.tickLower,
+            param.tickUpper,
             param.liquidity
           ));
           expect(amount0.toString()).to.eql(param.amount0.toString());
@@ -91,8 +91,8 @@ describe("Test ConfigurableCorePool", function () {
         case EventType.BURN:
           ({ amount0, amount1 } = await configurableCorePool.burn(
             testUser,
-            param.tick_lower,
-            param.tick_upper,
+            param.tickLower,
+            param.tickUpper,
             param.liquidity
           ));
           expect(amount0.toString()).to.eql(param.amount0.toString());
@@ -128,17 +128,29 @@ describe("Test ConfigurableCorePool", function () {
 
           async function trySwap(
             amountSpecified: JSBI,
-            sqrtPriceLimitX96?: JSBI
+            expectedSqrtPriceX96: JSBI
           ): Promise<boolean> {
-            ({ amount0, amount1 } = await configurableCorePool.swap(
-              zeroForOne,
-              amountSpecified,
-              sqrtPriceLimitX96
-            ));
+            if (
+              JSBI.equal(
+                expectedSqrtPriceX96,
+                configurableCorePool.getCorePool().sqrtPriceX96
+              )
+            ) {
+              ({ amount0, amount1 } = await configurableCorePool.swap(
+                zeroForOne,
+                amountSpecified
+              ));
+            } else {
+              ({ amount0, amount1 } = await configurableCorePool.swap(
+                zeroForOne,
+                amountSpecified,
+                expectedSqrtPriceX96
+              ));
+            }
 
             let res = JSBI.equal(
               configurableCorePool.getCorePool().sqrtPriceX96,
-              (param as SwapEvent).sqrt_price_x96
+              (param as SwapEvent).sqrtPriceX96
             );
 
             if (!res) {
@@ -147,7 +159,7 @@ describe("Test ConfigurableCorePool", function () {
                   `Result is not match. actual price: ${
                     configurableCorePool.getCorePool().sqrtPriceX96
                   }, expected price: ${
-                    (param as SwapEvent).sqrt_price_x96
+                    (param as SwapEvent).sqrtPriceX96
                   }. amount0: ${amount0}, amount1: ${amount1}`
                 )
               );
@@ -158,7 +170,7 @@ describe("Test ConfigurableCorePool", function () {
 
           let trySwapRes = await tryWithDryRun(param.amount0);
           if (trySwapRes) {
-            let swapRes = await trySwap(param.amount0, param.sqrt_price_x96);
+            let swapRes = await trySwap(param.amount0, param.sqrtPriceX96);
             if (swapRes) {
               // add AmountSpecified column to swap event database
               // await swapEventDB.addAmountSpecified(
@@ -171,7 +183,7 @@ describe("Test ConfigurableCorePool", function () {
           trySwapRes = await tryWithDryRun(param.amount1);
           if (trySwapRes) {
             errArr = [];
-            let swapRes = await trySwap(param.amount1, param.sqrt_price_x96);
+            let swapRes = await trySwap(param.amount1, param.sqrtPriceX96);
             if (swapRes) {
               // add AmountSpecified column to swap event database
               // await swapEventDB.addAmountSpecified(
@@ -436,7 +448,7 @@ describe("Test ConfigurableCorePool", function () {
 
     it("can replay events on mainnet exactly as contract do", async function () {
       let startDate = getDate(2021, 5, 4);
-      let endDate = getDate(2021, 7, 8);
+      let endDate = getDate(2021, 11, 6);
       let currDate = startDate;
 
       // configurableCorePool.updatePostProcessor(

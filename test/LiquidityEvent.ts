@@ -7,10 +7,10 @@ export interface LiquidityEvent {
   liquidity: JSBI;
   amount0: JSBI;
   amount1: JSBI;
-  tick_lower: number;
-  tick_upper: number;
-  block_number: number;
-  transaction_index: number;
-  log_index: number;
+  tickLower: number;
+  tickUpper: number;
+  blockNumber: number;
+  transactionIndex: number;
+  logIndex: number;
   date: Date;
 }

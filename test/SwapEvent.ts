@@ -7,11 +7,11 @@ export interface SwapEvent {
   amount0: JSBI;
   amount1: JSBI;
   amountSpecified: JSBI;
-  sqrt_price_x96: JSBI;
+  sqrtPriceX96: JSBI;
   liquidity: JSBI;
   tick: number;
-  block_number: number;
-  transaction_index: number;
-  log_index: number;
+  blockNumber: number;
+  transactionIndex: number;
+  logIndex: number;
   date: Date;
 }
