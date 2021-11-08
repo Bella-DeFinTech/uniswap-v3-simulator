@@ -5,6 +5,8 @@ import { SwapEvent } from "./SwapEvent";
 import { DateConverter } from "../src/util/DateConverter";
 import { EventType } from "./EventType";
 
+const DATE_FORMAT: string = "YYYY-MM-DD HH:mm:ss";
+
 type LiquidityEventRecord = {
   id: number;
   type: number;
@@ -89,6 +91,68 @@ export class EventDBManager {
           )
         )
     );
+  }
+
+  insertLiquidityEvent(
+    type: number,
+    liquidity: string,
+    amount0: string,
+    amount1: string,
+    tick_lower: number,
+    tick_upper: number,
+    block_number: number,
+    transaction_index: number,
+    log_index: number,
+    date: Date
+  ): Promise<number> {
+    return this.knex
+      .transaction((trx) =>
+        this.getBuilderContext("liquidity_events_usdc_weth_3000", trx).insert([
+          {
+            type,
+            liquidity,
+            amount0,
+            amount1,
+            tick_lower,
+            tick_upper,
+            block_number,
+            transaction_index,
+            log_index,
+            date: DateConverter.formatDate(date, DATE_FORMAT),
+          },
+        ])
+      )
+      .then((ids) => Promise.resolve(ids[0]));
+  }
+
+  insertSwapEvent(
+    amount0: string,
+    amount1: string,
+    sqrt_price_x96: string,
+    liquidity: string,
+    tick: number,
+    block_number: number,
+    transaction_index: number,
+    log_index: number,
+    date: Date
+  ): Promise<number> {
+    return this.knex
+      .transaction((trx) =>
+        this.getBuilderContext("swap_events_usdc_weth_3000", trx).insert([
+          {
+            amount0,
+            amount1,
+            sqrt_price_x96,
+            liquidity,
+            tick,
+            block_number,
+            transaction_index,
+            log_index,
+            date: DateConverter.formatDate(date, DATE_FORMAT),
+          },
+        ])
+      )
+      .then((ids) => Promise.resolve(ids[0]));
   }
 
   close(): Promise<void> {
