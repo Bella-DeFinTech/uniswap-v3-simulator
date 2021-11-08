@@ -23,6 +23,7 @@ type SwapEventRecord = {
   id: number;
   amount0: string;
   amount1: string;
+  amount_specified: string;
   sqrt_price_x96: string;
   liquidity: string;
   tick: number;
@@ -91,6 +92,14 @@ export class EventDBManager {
     );
   }
 
+  addAmountSpecified(id: number, amountSpecified: string): Promise<number> {
+    return this.knex
+      .transaction((trx) =>
+        this.updateAmountSpecified(id, amountSpecified, trx)
+      )
+      .then((ids) => Promise.resolve(ids[0]));
+  }
+
   close(): Promise<void> {
     return this.knex.destroy();
   }
@@ -117,6 +126,16 @@ export class EventDBManager {
       .andWhere("date", "<", endDate);
   }
 
+  private updateAmountSpecified(
+    id: number,
+    amountSpecified: string,
+    trx?: Knex.Transaction
+  ): Promise<Array<number>> {
+    return this.getBuilderContext("swap_events_usdc_weth_3000", trx)
+      .update("amount_specified", amountSpecified)
+      .where("id", id);
+  }
+
   private deserializeLiquidityEvent(
     event: LiquidityEventRecord
   ): LiquidityEvent {
@@ -126,11 +145,11 @@ export class EventDBManager {
       liquidity: JSBIDeserializer(event.liquidity),
       amount0: JSBIDeserializer(event.amount0),
       amount1: JSBIDeserializer(event.amount1),
-      tick_lower: event.tick_lower,
-      tick_upper: event.tick_upper,
-      block_number: event.block_number,
-      transaction_index: event.transaction_index,
-      log_index: event.log_index,
+      tickLower: event.tick_lower,
+      tickUpper: event.tick_upper,
+      blockNumber: event.block_number,
+      transactionIndex: event.transaction_index,
+      logIndex: event.log_index,
       date: DateConverter.parseDate(event.date),
     };
   }
@@ -141,12 +160,13 @@ export class EventDBManager {
       type: EventType.SWAP,
       amount0: JSBIDeserializer(event.amount0),
       amount1: JSBIDeserializer(event.amount1),
-      sqrt_price_x96: JSBIDeserializer(event.sqrt_price_x96),
+      amountSpecified: JSBIDeserializer(event.amount_specified),
+      sqrtPriceX96: JSBIDeserializer(event.sqrt_price_x96),
       liquidity: JSBIDeserializer(event.liquidity),
       tick: event.tick,
-      block_number: event.block_number,
-      transaction_index: event.transaction_index,
-      log_index: event.log_index,
+      blockNumber: event.block_number,
+      transactionIndex: event.transaction_index,
+      logIndex: event.log_index,
       date: DateConverter.parseDate(event.date),
     };
   }
