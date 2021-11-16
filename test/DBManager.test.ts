@@ -1,4 +1,3 @@
-import { DBManager } from "../src/manager/DBManager";
 import { PoolState } from "../src/model/PoolState";
 import { FeeAmount } from "../src/enum/FeeAmount";
 import { ONE } from "../src/enum/InternalConstants";
@@ -6,6 +5,8 @@ import { TickManager } from "../src/manager/TickManager";
 import { PositionManager } from "../src/manager/PositionManager";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { SQLiteDBManager } from "../src/manager/SQLiteDBManager";
+import { DBManager } from "../src/interface/DBManager";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
@@ -13,8 +14,7 @@ describe("Test DBManager", function () {
   let db: DBManager;
 
   beforeEach(async function () {
-    db = new DBManager(":memory:");
-    await db.initTables();
+    db = await SQLiteDBManager.buildInstance();
   });
 
   afterEach(async function () {

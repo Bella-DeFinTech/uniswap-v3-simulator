@@ -5,8 +5,8 @@ import { Snapshot } from "../entity/Snapshot";
 import { PoolStateContainer } from "../interface/PoolStateContainer";
 import { SimulatorRoadmapManager as ISimulatorRoadmapManager } from "../interface/SimulatorRoadmapManager";
 import { PoolState } from "../model/PoolState";
-import { DBManager } from "./DBManager";
 import { PoolStateHelper } from "../util/PoolStateHelper";
+import { DBManager } from "../interface/DBManager";
 
 export class SimulatorRoadmapManager
   implements ISimulatorRoadmapManager, PoolStateContainer
