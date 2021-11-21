@@ -102,100 +102,25 @@ describe("Test ConfigurableCorePool", function () {
           expect(amount1.toString()).to.eql(param.amount1.toString());
           break;
         case EventType.SWAP:
-          let zeroForOne: boolean = JSBI.greaterThan(param.amount0, ZERO)
-            ? true
-            : false;
-
+          // try-error to find `amountSpecified` and `sqrtPriceLimitX96` to resolve to the same result as swap event records
           let errArr: Error[] = [];
-
-          async function tryWithDryRun(
-            amountSpecified: JSBI
-          ): Promise<boolean> {
-            ({ amount0, amount1 } = await configurableCorePool.querySwap(
-              zeroForOne,
-              amountSpecified
-            ));
-            let dryRunRes =
-              JSBI.equal(amount0, param.amount0) &&
-              JSBI.equal(amount1, param.amount1);
-
-            if (!dryRunRes) {
-              errArr.push(
-                new Error(
-                  `Result is not match. amount0: ${amount0}, amount1: ${amount1}`
-                )
-              );
-            }
-            return Promise.resolve(dryRunRes);
-          }
-
-          async function trySwap(
-            amountSpecified: JSBI,
-            expectedSqrtPriceX96: JSBI
-          ): Promise<boolean> {
+          if (
+            !JSBI.equal(
+              param.sqrtPriceX96,
+              configurableCorePool.getCorePool().sqrtPriceX96
+            )
+          ) {
             if (
-              JSBI.equal(
-                expectedSqrtPriceX96,
-                configurableCorePool.getCorePool().sqrtPriceX96
-              )
-            ) {
-              ({ amount0, amount1 } = await configurableCorePool.swap(
-                zeroForOne,
-                amountSpecified
-              ));
-            } else {
-              ({ amount0, amount1 } = await configurableCorePool.swap(
-                zeroForOne,
-                amountSpecified,
-                expectedSqrtPriceX96
-              ));
-            }
-
-            let res = JSBI.equal(
-              configurableCorePool.getCorePool().sqrtPriceX96,
-              (param as SwapEvent).sqrtPriceX96
-            );
-
-            if (!res) {
-              errArr.push(
-                new Error(
-                  `Result is not match. actual price: ${
-                    configurableCorePool.getCorePool().sqrtPriceX96
-                  }, expected price: ${
-                    (param as SwapEvent).sqrtPriceX96
-                  }. amount0: ${amount0}, amount1: ${amount1}`
-                )
-              );
-              configurableCorePool.stepBack();
-            }
-            return res;
-          }
-
-          let trySwapRes = await tryWithDryRun(param.amount0);
-          if (trySwapRes) {
-            let swapRes = await trySwap(param.amount0, param.sqrtPriceX96);
-            if (swapRes) {
-              // add AmountSpecified column to swap event database
-              // await swapEventDB.addAmountSpecified(
-              //   param.id,
-              //   param.amount0.toString()
-              // );
+              await tryAndSwap(errArr, param, param.amount0, param.sqrtPriceX96)
+            )
               break;
-            }
-          }
-          trySwapRes = await tryWithDryRun(param.amount1);
-          if (trySwapRes) {
-            errArr = [];
-            let swapRes = await trySwap(param.amount1, param.sqrtPriceX96);
-            if (swapRes) {
-              // add AmountSpecified column to swap event database
-              // await swapEventDB.addAmountSpecified(
-              //   param.id,
-              //   param.amount1.toString()
-              // );
+            else if (
+              await tryAndSwap(errArr, param, param.amount1, param.sqrtPriceX96)
+            )
               break;
-            }
           }
+          if (await tryAndSwap(errArr, param, param.amount0)) break;
+          else if (await tryAndSwap(errArr, param, param.amount1)) break;
 
           if (errArr.length != 0) {
             console.log(param.id);
@@ -210,6 +135,67 @@ describe("Test ConfigurableCorePool", function () {
           // @ts-ignore: ExhaustiveCheck
           const exhaustiveCheck: never = param;
       }
+    }
+
+    async function swapWithDryRun(
+      errArr: Error[],
+      param: SwapEvent,
+      amountSpecified: JSBI,
+      sqrtPriceLimitX96?: JSBI
+    ): Promise<boolean> {
+      let zeroForOne: boolean = JSBI.greaterThan(param.amount0, ZERO)
+        ? true
+        : false;
+      let { amount0, amount1, sqrtPriceX96 } =
+        await configurableCorePool.querySwap(
+          zeroForOne,
+          amountSpecified,
+          sqrtPriceLimitX96
+        );
+      let dryRunRes =
+        JSBI.equal(amount0, param.amount0) &&
+        JSBI.equal(amount1, param.amount1) &&
+        JSBI.equal(sqrtPriceX96, param.sqrtPriceX96);
+
+      if (!dryRunRes) {
+        errArr.push(
+          new Error(
+            `Result is not match. amount0: ${amount0}, amount1: ${amount1}, actual sqrtPriceX96: ${sqrtPriceX96}`
+          )
+        );
+      }
+      return Promise.resolve(dryRunRes);
+    }
+
+    async function tryAndSwap(
+      errArr: Error[],
+      param: SwapEvent,
+      amountSpecified: JSBI,
+      sqrtPriceLimitX96?: JSBI
+    ): Promise<boolean> {
+      let zeroForOne: boolean = JSBI.greaterThan(param.amount0, ZERO)
+        ? true
+        : false;
+      let trySwapRes = await swapWithDryRun(
+        errArr,
+        param,
+        amountSpecified,
+        sqrtPriceLimitX96
+      );
+      if (trySwapRes) {
+        await configurableCorePool.swap(
+          zeroForOne,
+          amountSpecified,
+          sqrtPriceLimitX96
+        );
+
+        // add AmountSpecified column to swap event database
+        // await swapEventDB.addAmountSpecified(
+        //   param.id,
+        //   amountSpecified.toString()
+        // );
+      }
+      return trySwapRes;
     }
   }
 

@@ -254,7 +254,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     zeroForOne: boolean,
     amountSpecified: JSBI,
     sqrtPriceLimitX96?: JSBI
-  ): Promise<{ amount0: JSBI; amount1: JSBI }> {
+  ): Promise<{ amount0: JSBI; amount1: JSBI; sqrtPriceX96: JSBI }> {
     return Promise.resolve(
       this.corePool.querySwap(zeroForOne, amountSpecified, sqrtPriceLimitX96)
     );
