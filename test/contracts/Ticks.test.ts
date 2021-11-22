@@ -1,15 +1,19 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { ConfigurableCorePool } from "../../src/core/ConfigurableCorePool";
-import { DBManager } from "../../src/manager/DBManager";
+import { SQLiteDBManager } from "../../src/manager/SQLiteDBManager";
 import { SimulatorRoadmapManager } from "../../src/manager/SimulatorRoadmapManager";
 import { PoolState } from "../../src/model/PoolState";
 import type { UniswapV3Pool2 } from "../../typechain";
+import { DBManager } from "../../src/interface/DBManager";
+import { SimulatorConsoleVisitor } from "../../src/manager/SimulatorConsoleVisitor";
+import { SimulatorPersistenceVisitor } from "../../src/manager/SimulatorPersistenceVisitor";
 
 describe("Test Ticks", function () {
   it("should be identical between state of simulator implementation and mainnet state at certain block number", async function () {
-    let dbManager: DBManager = new DBManager("./test/database.db");
-    await dbManager.initTables();
+    let dbManager: DBManager = await SQLiteDBManager.buildInstance(
+      "./test/database.db"
+    );
     let simulatorRoadmapManager: SimulatorRoadmapManager =
       new SimulatorRoadmapManager(dbManager);
     let snapshot = await dbManager.getSnapshot(
@@ -17,9 +21,10 @@ describe("Test Ticks", function () {
       // "f5d54d99-3148-4b9b-9661-73f3f229dce8"
     );
     let testPool = new ConfigurableCorePool(
-      dbManager,
       PoolState.from(snapshot!),
-      simulatorRoadmapManager
+      simulatorRoadmapManager,
+      new SimulatorConsoleVisitor(),
+      new SimulatorPersistenceVisitor(dbManager)
     );
 
     let blockNum: number = 12464951;

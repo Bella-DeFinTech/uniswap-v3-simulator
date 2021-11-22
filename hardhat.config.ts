@@ -3,22 +3,22 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 
 export default {
-  defaultNetwork: "mainnet",
+  defaultNetwork: "hardhat",
   networks: {
     mainnet: {
       url: process.env.MAINNET_PROVIDER_URL,
     },
-    // hardhat: {
-    //   forking: {
-    //     url: process.env.FORKING_PROVIDER_URL,
-    //     // blockNumber: 12464951,
-    //   },
-    //   mining: {
-    //     auto: true,
-    //     interval: 0,
-    //   },
-    //   allowUnlimitedContractSize: false,
-    // },
+    hardhat: {
+      forking: {
+        url: process.env.FORKING_PROVIDER_URL,
+        blockNumber: 12464951,
+      },
+      mining: {
+        auto: true,
+        interval: 0,
+      },
+      allowUnlimitedContractSize: false,
+    },
   },
   paths: {
     sources: "./test/contracts/src",
