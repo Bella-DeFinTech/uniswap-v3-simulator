@@ -142,3 +142,8 @@ mochawesome-report/
 
 #prettier ignore
 .prettierignore
+
+#hardhat
+artifacts/
+cache/
+typechain/
