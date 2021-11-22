@@ -32,7 +32,7 @@ async function main() {
       fromBlock + batchSize > toBlock ? toBlock : fromBlock + batchSize;
     await saveEvents(EventType.MINT, fromBlock, endBlock);
     await saveEvents(EventType.BURN, fromBlock, endBlock);
-    // await saveEvents(EventType.SWAP, fromBlock, endBlock);
+    await saveEvents(EventType.SWAP, fromBlock, endBlock);
     fromBlock += batchSize + 1;
   }
 
