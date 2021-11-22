@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import JSBI from "jsbi";
-import { ONE, MaxUint256 } from "../src/enum/InternalConstants";
+import { ONE, MaxUint256, TWO } from "../src/enum/InternalConstants";
 import { TickMath } from "../src/util/TickMath";
 
 describe("TickMath", () => {
@@ -71,14 +71,14 @@ describe("TickMath", () => {
     });
     it("correct value for every power of 2", () => {
       for (let i = 1; i < 256; i++) {
-        const x = JSBI.exponentiate(JSBI.BigInt(2), JSBI.BigInt(i));
+        const x = JSBI.exponentiate(TWO, JSBI.BigInt(i));
         expect(TickMath.mostSignificantBit(x)).equal(i);
       }
     });
     it("correct value for every power of 2 - 1", () => {
       for (let i = 2; i < 256; i++) {
         const x = JSBI.subtract(
-          JSBI.exponentiate(JSBI.BigInt(2), JSBI.BigInt(i)),
+          JSBI.exponentiate(TWO, JSBI.BigInt(i)),
           JSBI.BigInt(1)
         );
         expect(TickMath.mostSignificantBit(x)).equal(i - 1);
