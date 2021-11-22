@@ -2,7 +2,7 @@ import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { SimulatorVisitor } from "../interface/SimulatorVisitor";
 import { PoolState } from "../model/PoolState";
 import { Transition } from "../model/Transition";
-import { DBManager } from "./DBManager";
+import { DBManager } from "../interface/DBManager";
 
 export class SimulatorPersistenceVisitor implements SimulatorVisitor {
   private dbManager: DBManager;

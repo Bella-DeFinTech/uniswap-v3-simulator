@@ -4,7 +4,7 @@ import { FeeAmount } from "../src/enum/FeeAmount";
 import { PoolConfig } from "../src/model/PoolConfig";
 import { ConfigurableCorePool as IConfigurableCorePool } from "../src/interface/ConfigurableCorePool";
 import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
-import { DBManager } from "../src/manager/DBManager";
+import { SQLiteDBManager } from "../src/manager/SQLiteDBManager";
 import { PoolState } from "../src/model/PoolState";
 import { SimulatorRoadmapManager } from "../src/manager/SimulatorRoadmapManager";
 import { IdGenerator } from "../src/util/IdGenerator";
@@ -19,6 +19,9 @@ import { EventType } from "./EventType";
 import { LiquidityEvent } from "./LiquidityEvent";
 import { SwapEvent } from "./SwapEvent";
 import { printParams } from "../src/util/Serializer";
+import { SimulatorConsoleVisitor } from "../src/manager/SimulatorConsoleVisitor";
+import { SimulatorPersistenceVisitor } from "../src/manager/SimulatorPersistenceVisitor";
+import { DBManager } from "../src/interface/DBManager";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 const testUser = "0x01";
@@ -211,8 +214,7 @@ describe("Test ConfigurableCorePool", function () {
   }
 
   beforeEach(async function () {
-    dbManager = new DBManager("./test/database.db");
-    await dbManager.initTables();
+    dbManager = await SQLiteDBManager.buildInstance("./test/database.db");
     liquidityEventDB = await EventDBManager.buildInstance(
       "liquidity_events_usdc_weth_3000.db"
     );
@@ -221,9 +223,10 @@ describe("Test ConfigurableCorePool", function () {
     );
     simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
     configurableCorePool = new ConfigurableCorePool(
-      dbManager,
       new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
-      simulatorRoadmapManager
+      simulatorRoadmapManager,
+      new SimulatorConsoleVisitor(),
+      new SimulatorPersistenceVisitor(dbManager)
     );
   });
 
@@ -409,9 +412,10 @@ describe("Test ConfigurableCorePool", function () {
       expect(configurableCorePool.getPoolState().id).to.eql(snapshot!.id);
 
       let newConfigurableCorePool = new ConfigurableCorePool(
-        dbManager,
         new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
-        simulatorRoadmapManager
+        simulatorRoadmapManager,
+        new SimulatorConsoleVisitor(),
+        new SimulatorPersistenceVisitor(dbManager)
       );
       newConfigurableCorePool.recover(snapshot!.id);
       expect(
@@ -490,9 +494,10 @@ describe("Test ConfigurableCorePool", function () {
         "9577f400-5012-4492-8f1f-44c6dcb5980c"
       );
       let testPool = new ConfigurableCorePool(
-        dbManager,
         PoolState.from(snapshot!),
-        simulatorRoadmapManager
+        simulatorRoadmapManager,
+        new SimulatorConsoleVisitor(),
+        new SimulatorPersistenceVisitor(dbManager)
       );
       let { amount0, amount1 } = await testPool.swap(
         false,

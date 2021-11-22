@@ -1,13 +1,15 @@
 import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { PoolState } from "../model/PoolState";
 import { PoolConfig } from "../model/PoolConfig";
-import { DBManager } from "../manager/DBManager";
+import { DBManager } from "../interface/DBManager";
 import { Snapshot } from "../entity/Snapshot";
 import { FeeAmount } from "../enum/FeeAmount";
 import { SimulatorRoadmapManager } from "../manager/SimulatorRoadmapManager";
 import { SnapshotProfile } from "../entity/SnapshotProfile";
 import { SimulatorRoadmapManager as ISimulatorRoadmapManager } from "../interface/SimulatorRoadmapManager";
 import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/ConfigurableCorePool";
+import { SimulatorConsoleVisitor } from "../manager/SimulatorConsoleVisitor";
+import { SimulatorPersistenceVisitor } from "../manager/SimulatorPersistenceVisitor";
 
 export class SimulatorClient {
   private dbManager: DBManager;
@@ -17,15 +19,9 @@ export class SimulatorClient {
     return this._simulatorRoadmapManager;
   }
 
-  private constructor(dbManager: DBManager) {
+  constructor(dbManager: DBManager) {
     this.dbManager = dbManager;
     this._simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
-  }
-
-  static buildInstance(dbPath?: string): Promise<SimulatorClient> {
-    const actualDBPath = dbPath ? dbPath : ":memory:";
-    let dbManager: DBManager = new DBManager(actualDBPath);
-    return dbManager.initTables().then(() => new SimulatorClient(dbManager));
   }
 
   static buildPoolConfig(
@@ -39,9 +35,10 @@ export class SimulatorClient {
 
   initCorePoolFromConfig(poolConfig: PoolConfig): IConfigurableCorePool {
     return new ConfigurableCorePool(
-      this.dbManager,
       new PoolState(poolConfig),
-      this._simulatorRoadmapManager
+      this._simulatorRoadmapManager,
+      new SimulatorConsoleVisitor(),
+      new SimulatorPersistenceVisitor(this.dbManager)
     );
   }
 
@@ -53,9 +50,10 @@ export class SimulatorClient {
         ? Promise.reject("This snapshot doesn't exist!")
         : Promise.resolve(
             new ConfigurableCorePool(
-              this.dbManager,
               PoolState.from(snapshot),
-              this._simulatorRoadmapManager
+              this._simulatorRoadmapManager,
+              new SimulatorConsoleVisitor(),
+              new SimulatorPersistenceVisitor(this.dbManager)
             )
           )
     );

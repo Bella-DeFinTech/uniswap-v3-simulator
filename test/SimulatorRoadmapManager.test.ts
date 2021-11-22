@@ -4,7 +4,6 @@ import { FeeAmount } from "../src/enum/FeeAmount";
 import { PoolConfig } from "../src/model/PoolConfig";
 import { ConfigurableCorePool as IConfigurableCorePool } from "../src/interface/ConfigurableCorePool";
 import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
-import { DBManager } from "../src/manager/DBManager";
 import { PoolState } from "../src/model/PoolState";
 import { SimulatorRoadmapManager } from "../src/manager/SimulatorRoadmapManager";
 import { SimulatorRoadmapManager as ISimulatorRoadmapManager } from "../src/interface/SimulatorRoadmapManager";
@@ -12,6 +11,10 @@ import JSBI from "jsbi";
 import { TickMath } from "../src/util/TickMath";
 import { PoolStateHelper } from "../src/util/PoolStateHelper";
 import * as sinon from "sinon";
+import { SQLiteDBManager } from "../src/manager/SQLiteDBManager";
+import { SimulatorConsoleVisitor } from "../src/manager/SimulatorConsoleVisitor";
+import { SimulatorPersistenceVisitor } from "../src/manager/SimulatorPersistenceVisitor";
+import { DBManager } from "../src/interface/DBManager";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -31,9 +34,10 @@ describe("Test SimulatorRoadmapManager", function () {
     simulatorRoadmapManager: SimulatorRoadmapManager
   ): Promise<IConfigurableCorePool> {
     configurableCorePool = new ConfigurableCorePool(
-      dbManager,
       new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
-      simulatorRoadmapManager
+      simulatorRoadmapManager,
+      new SimulatorConsoleVisitor(),
+      new SimulatorPersistenceVisitor(dbManager)
     );
     await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
     await configurableCorePool.mint(
@@ -49,8 +53,7 @@ describe("Test SimulatorRoadmapManager", function () {
   beforeEach(async function () {
     sandbox = sinon.createSandbox();
     consoleLogSpy = sandbox.spy(console, "log");
-    dbManager = new DBManager(":memory:");
-    await dbManager.initTables();
+    dbManager = await SQLiteDBManager.buildInstance();
     simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
     configurableCorePool = await makeConfigurableCorePool(
       simulatorRoadmapManager as SimulatorRoadmapManager

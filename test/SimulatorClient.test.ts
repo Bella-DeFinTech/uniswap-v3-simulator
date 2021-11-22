@@ -6,12 +6,15 @@ import { PoolConfig } from "../src/model/PoolConfig";
 import { ConfigurableCorePool as IConfigurableCorePool } from "../src/interface/ConfigurableCorePool";
 import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
 import JSBI from "jsbi";
+import { SQLiteDBManager } from "../src/manager/SQLiteDBManager";
+import { DBManager } from "../src/interface/DBManager";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
 describe("Test SimulatorClient static method", function () {
   it("can build instance", async function () {
-    let clientInstance = await SimulatorClient.buildInstance();
+    let dbManager: DBManager = await SQLiteDBManager.buildInstance();
+    let clientInstance = new SimulatorClient(dbManager);
     expect(clientInstance).to.be.an.instanceOf(SimulatorClient);
     return expect(clientInstance.shutdown()).to.eventually.be.fulfilled;
   });
@@ -27,7 +30,8 @@ describe("Test SimulatorClient public method", function () {
   let clientInstance: SimulatorClient;
 
   beforeEach(async function () {
-    clientInstance = await SimulatorClient.buildInstance();
+    let dbManager: DBManager = await SQLiteDBManager.buildInstance();
+    clientInstance = new SimulatorClient(dbManager);
   });
 
   afterEach(async function () {
