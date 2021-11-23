@@ -60,7 +60,7 @@ export interface ConfigurableCorePool {
     zeroForOne: boolean,
     amountSpecified: JSBI,
     sqrtPriceLimitX96?: JSBI
-  ): Promise<{ amount0: JSBI; amount1: JSBI }>;
+  ): Promise<{ amount0: JSBI; amount1: JSBI; sqrtPriceX96: JSBI }>;
 
   // user custom PostProcessor will be called after pool state transition finishes
   updatePostProcessor(

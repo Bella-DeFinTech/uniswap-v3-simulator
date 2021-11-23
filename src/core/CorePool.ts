@@ -186,7 +186,7 @@ export class CorePool {
     zeroForOne: boolean,
     amountSpecified: JSBI,
     sqrtPriceLimitX96?: JSBI
-  ): { amount0: JSBI; amount1: JSBI } {
+  ): { amount0: JSBI; amount1: JSBI; sqrtPriceX96: JSBI } {
     return this.handleSwap(
       zeroForOne,
       amountSpecified,
@@ -213,7 +213,7 @@ export class CorePool {
     amountSpecified: JSBI,
     sqrtPriceLimitX96: JSBI | undefined,
     isStatic: boolean
-  ): { amount0: JSBI; amount1: JSBI } {
+  ): { amount0: JSBI; amount1: JSBI; sqrtPriceX96: JSBI } {
     if (!sqrtPriceLimitX96)
       sqrtPriceLimitX96 = zeroForOne
         ? JSBI.add(TickMath.MIN_SQRT_RATIO, ONE)
@@ -386,7 +386,7 @@ export class CorePool {
             JSBI.subtract(amountSpecified, state.amountSpecifiedRemaining),
           ];
 
-    return { amount0, amount1 };
+    return { amount0, amount1, sqrtPriceX96: state.sqrtPriceX96 };
   }
 
   private checkTicks(tickLower: number, tickUpper: number) {
