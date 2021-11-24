@@ -1,6 +1,6 @@
 import { ethers, waffle } from "hardhat";
 import { Wallet } from "ethers";
-import type { UniswapV3Factory2, UniswapV3Pool2 } from "../../typechain";
+import type { UniswapV3Factory2, UniswapV3Pool2 } from "../../src/typechain";
 import { FeeAmount } from "../../src/enum/FeeAmount";
 
 describe("Test Uniswap v3 CorePool", function () {

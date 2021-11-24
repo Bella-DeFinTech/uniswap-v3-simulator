@@ -4,7 +4,7 @@ import { ConfigurableCorePool } from "../../src/core/ConfigurableCorePool";
 import { SQLiteDBManager } from "../../src/manager/SQLiteDBManager";
 import { SimulatorRoadmapManager } from "../../src/manager/SimulatorRoadmapManager";
 import { PoolState } from "../../src/model/PoolState";
-import type { UniswapV3Pool2 } from "../../typechain";
+import type { UniswapV3Pool2 } from "../../src/typechain";
 import { DBManager } from "../../src/interface/DBManager";
 import { SimulatorConsoleVisitor } from "../../src/manager/SimulatorConsoleVisitor";
 import { SimulatorPersistenceVisitor } from "../../src/manager/SimulatorPersistenceVisitor";

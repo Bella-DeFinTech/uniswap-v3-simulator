@@ -9,22 +9,22 @@ export default {
       url: process.env.MAINNET_PROVIDER_URL,
     },
     hardhat: {
-      forking: {
-        url: process.env.FORKING_PROVIDER_URL,
-        blockNumber: 12464951,
-      },
-      mining: {
-        auto: true,
-        interval: 0,
-      },
-      allowUnlimitedContractSize: false,
+      // forking: {
+      //   url: process.env.FORKING_PROVIDER_URL,
+      //   blockNumber: 12464951,
+      // },
+      // mining: {
+      //   auto: true,
+      //   interval: 0,
+      // },
+      // allowUnlimitedContractSize: false,
     },
   },
   paths: {
-    sources: "./test/contracts/src",
+    sources: "./src/contracts",
     tests: "./test/contracts",
-    cache: "./test/contracts/cache",
-    artifacts: "./test/contracts/artifacts",
+    cache: "./cache",
+    artifacts: "./artifacts",
   },
   solidity: {
     version: "0.7.6",
@@ -42,7 +42,7 @@ export default {
     timeout: 3600000,
   },
   typechain: {
-    outDir: "typechain",
+    outDir: "src/typechain",
     target: "ethers-v5",
     alwaysGenerateOverloads: false,
   },
