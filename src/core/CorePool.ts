@@ -538,6 +538,10 @@ export class CorePool {
     return position;
   }
 
+  getTickMap(): Map<number, TickView> {
+    return this.tickManager.sortedTicks;
+  }
+
   getTick(tick: number): TickView {
     return this.tickManager.getTickReadonly(tick);
   }
