@@ -1,12 +1,7 @@
-import { EventDBManager } from "../test/EventDBManager";
+import { EventDBManager } from "../src/manager/EventDBManager";
+import { EventType } from "../src/enum/EventType";
 import { ethers } from "hardhat";
-import type { UniswapV3Pool2 } from "../typechain";
-
-enum EventType {
-  MINT = 1,
-  BURN = 2,
-  SWAP = 3,
-}
+import type { UniswapV3Pool2 } from "../src/typechain";
 
 let liquidityEventDB: EventDBManager;
 let swapEventDB: EventDBManager;

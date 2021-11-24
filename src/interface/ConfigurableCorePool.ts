@@ -1,4 +1,5 @@
 import JSBI from "jsbi";
+import { SwapEvent } from "../entity/SwapEvent";
 import { CorePoolView } from "./CorePoolView";
 import { PoolStateView } from "./PoolStateView";
 import { Transition as TransitionView } from "./Transition";
@@ -61,6 +62,10 @@ export interface ConfigurableCorePool {
     amountSpecified: JSBI,
     sqrtPriceLimitX96?: JSBI
   ): Promise<{ amount0: JSBI; amount1: JSBI; sqrtPriceX96: JSBI }>;
+
+  resolveInputFromSwapResultEvent(
+    swapEvent: SwapEvent
+  ): Promise<{ amountSpecified: JSBI; sqrtPriceX96?: JSBI }>;
 
   // user custom PostProcessor will be called after pool state transition finishes
   updatePostProcessor(

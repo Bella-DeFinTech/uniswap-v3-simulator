@@ -8,11 +8,14 @@ import { TickView } from "../interface/TickView";
 @jsonObject
 export class TickManager {
   @jsonMapMember(Number, Tick, { name: "ticks_json" })
-  // key = Tick.tickIndex
-  private sortedTicks: Map<number, Tick>;
+  private _sortedTicks: Map<number, Tick>;
+
+  public get sortedTicks(): Map<number, Tick> {
+    return this._sortedTicks;
+  }
 
   constructor(ticks: Map<number, Tick> = new Map()) {
-    this.sortedTicks = ticks;
+    this._sortedTicks = ticks;
     this.sortTicks();
   }
 
@@ -166,7 +169,7 @@ export class TickManager {
     const sortedTicks = new Map(
       [...this.sortedTicks.entries()].sort((a, b) => a[0] - b[0])
     );
-    this.sortedTicks = sortedTicks;
+    this._sortedTicks = sortedTicks;
   }
 
   private getSortedTicks(): Tick[] {
