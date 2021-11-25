@@ -3,7 +3,7 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 
 export default {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "mainnet",
   networks: {
     mainnet: {
       url: process.env.MAINNET_PROVIDER_URL,

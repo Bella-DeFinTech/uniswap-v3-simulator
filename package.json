@@ -5,9 +5,12 @@
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
-    "dist/**"
+    "dist/**",
+    "abi/**",
+    "tuner.config.js"
   ],
   "scripts": {
+    "generate-types": "typechain --target=ethers-v5 --out-dir src/typechain 'abi/*.json'",
     "build": "tsc",
     "test": "yarn mocha",
     "lint": "yarn prettier --write .",

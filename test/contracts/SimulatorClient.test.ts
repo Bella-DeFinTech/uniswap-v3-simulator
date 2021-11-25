@@ -12,7 +12,7 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 
 describe("Test SimulatorClient v2", function () {
-  it("can download or update events and build the core pool at any block tag", async function () {
+  it.only("can download or update events and build the core pool at any block tag", async function () {
     let dbManager: DBManager = await SQLiteDBManager.buildInstance();
     let clientInstance = new SimulatorClient(dbManager);
 
@@ -25,7 +25,8 @@ describe("Test SimulatorClient v2", function () {
     // 13578943
     let poolAddress = "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8";
     let endBlock = 12374077;
-    let RPCProviderUrl: string = "Your customed RPCProviderUrl";
+    // Your customed RPCProviderUrl
+    let RPCProviderUrl: string | undefined = undefined;
 
     await clientInstance.initCorePoolFromMainnetPool(
       poolName,
@@ -41,6 +42,7 @@ describe("Test SimulatorClient v2", function () {
         RPCProviderUrl
       );
     console.log(configurableCorePool.getCorePool().sqrtPriceX96.toString());
+    await clientInstance.shutdown();
   });
 });
 

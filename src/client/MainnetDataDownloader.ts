@@ -1,10 +1,10 @@
 import { EventType } from "../enum/EventType";
 import { EventDBManager } from "../manager/EventDBManager";
-import { ethers } from "hardhat";
 import { providers } from "ethers";
 import { accessSync, constants } from "fs";
 import { basename } from "path";
-import type { UniswapV3Pool2 as UniswapV3Pool } from "../typechain";
+import { UniswapV3Pool2__factory as UniswapV3PoolFactory } from "../typechain/factories/UniswapV3Pool2__factory";
+import { UniswapV3Pool2 as UniswapV3Pool } from "../typechain/UniswapV3Pool2";
 import { ConfigurableCorePool, PoolConfig } from "..";
 import { LiquidityEvent } from "../entity/LiquidityEvent";
 import { SwapEvent } from "../entity/SwapEvent";
@@ -22,15 +22,17 @@ import {
   EndBlockTypeWhenInit,
   EndBlockTypeWhenRecover,
 } from "../entity/EndBlockType";
+import { loadConfig } from "../config/TunerConfig";
 
 export class MainnetDataDownloader {
   private RPCProvider: providers.JsonRpcProvider;
 
-  constructor(RPCProviderUrl: string = "") {
-    this.RPCProvider =
-      "" == RPCProviderUrl
-        ? ethers.provider
-        : new providers.JsonRpcProvider(RPCProviderUrl);
+  constructor(RPCProviderUrl?: string) {
+    if (RPCProviderUrl == undefined) {
+      let tunerConfig = loadConfig(undefined);
+      RPCProviderUrl = tunerConfig.RPCProviderUrl;
+    }
+    this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
   }
 
   async queryDeploymentBlockNumber(poolAddress: string): Promise<number> {
@@ -414,6 +416,7 @@ export class MainnetDataDownloader {
       configurableCorePool,
       await eventDB.getLatestEventBlockNumber()
     );
+    await simulatorDBManager.close();
   }
 
   private nextBatch(currBlock: number) {
@@ -424,13 +427,7 @@ export class MainnetDataDownloader {
   private async getCorePoolContarct(
     poolAddress: string
   ): Promise<UniswapV3Pool> {
-    let myContract = await ethers.getContractFactory("UniswapV3Pool2");
-    const uniswapV3Pool = new ethers.Contract(
-      poolAddress,
-      myContract.interface,
-      this.RPCProvider
-    ) as UniswapV3Pool;
-    return uniswapV3Pool;
+    return UniswapV3PoolFactory.connect(poolAddress, this.RPCProvider);
   }
 
   private async getAndSortEventByBlock(
