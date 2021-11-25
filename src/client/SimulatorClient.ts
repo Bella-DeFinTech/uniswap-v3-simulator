@@ -31,7 +31,7 @@ export class SimulatorClient {
     );
   }
 
-  async initCorePoolFromMainnetPool(
+  async initCorePoolFromMainnet(
     poolName: string = "",
     poolAddress: string,
     endBlock: EndBlockTypeWhenInit,

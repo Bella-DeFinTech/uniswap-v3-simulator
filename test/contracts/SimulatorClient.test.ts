@@ -28,7 +28,7 @@ describe("Test SimulatorClient v2", function () {
     // Your customed RPCProviderUrl
     let RPCProviderUrl: string | undefined = undefined;
 
-    await clientInstance.initCorePoolFromMainnetPool(
+    await clientInstance.initCorePoolFromMainnet(
       poolName,
       poolAddress,
       "afterDeployment",

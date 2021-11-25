@@ -118,7 +118,9 @@ export class MainnetDataDownloader {
       poolAddress
     );
     if (toBlockAsNumber < deploymentBlockNumber)
-      throw new Error("toBlock is too small, the pool hasn't been deployed.");
+      throw new Error(
+        `The pool does not exist at block height: ${toBlockAsNumber}, it was deployed at block height: ${deploymentBlockNumber}`
+      );
 
     let initializeTopic = uniswapV3Pool.filters.Initialize();
     let initializationEvent = await uniswapV3Pool.queryFilter(initializeTopic);
@@ -133,7 +135,9 @@ export class MainnetDataDownloader {
       dbExists = true;
     } catch (err) {}
     if (dbExists)
-      throw new Error("DB file exists. Please update or delete it.");
+      throw new Error(
+        `The database file: ${filePath} already exists. You can either try to update or delete the database file.`
+      );
 
     let eventDB = await EventDBManager.buildInstance(filePath);
     try {
@@ -190,7 +194,9 @@ export class MainnetDataDownloader {
       dbExists = true;
     } catch (err) {}
     if (!dbExists)
-      throw new Error("DB file doesn't exist. Please download it.");
+      throw new Error(
+        `The database file: ${mainnetEventDBFilePath} does not exist. Please download the data first.`
+      );
 
     // check toBlock then
     let deploymentBlockNumber = await this.queryDeploymentBlockNumber(
