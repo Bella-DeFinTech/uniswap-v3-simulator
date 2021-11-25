@@ -2,13 +2,15 @@ name: Unit Tests
 
 on:
   push:
-  pull_request:
+  pull_request_target:
 
 jobs:
   tests:
     name: Unit tests
 
     runs-on: ubuntu-latest
+
+    environment: test-env
 
     steps:
       - name: Checkout
@@ -23,5 +25,10 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Generate typechain files from abi
+        run: yarn generate-types
+
       - name: Run tests
+        env:
+          MAINNET_PROVIDER_URL: ${{ secrets.MAINNET_PROVIDER_URL }}
         run: yarn test
