@@ -1,18 +1,18 @@
-import { SimulatorClient } from "../../src/client/SimulatorClient";
+import { SimulatorClient } from "../src/client/SimulatorClient";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { SimulationDataManager } from "../../src/interface/SimulationDataManager";
-import { SQLiteSimulationDataManager } from "../../src/manager/SQLiteSimulationDataManager";
-import { FeeAmount } from "../../src/enum/FeeAmount";
-import { PoolConfig } from "../../src/model/PoolConfig";
-import { ConfigurableCorePool as IConfigurableCorePool } from "../../src/interface/ConfigurableCorePool";
-import { ConfigurableCorePool } from "../../src/core/ConfigurableCorePool";
+import { SimulationDataManager } from "../src/interface/SimulationDataManager";
+import { SQLiteSimulationDataManager } from "../src/manager/SQLiteSimulationDataManager";
+import { FeeAmount } from "../src/enum/FeeAmount";
+import { PoolConfig } from "../src/model/PoolConfig";
+import { ConfigurableCorePool as IConfigurableCorePool } from "../src/interface/ConfigurableCorePool";
+import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
 import JSBI from "jsbi";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
 describe("Test SimulatorClient v2", function () {
-  it.only("can download or update events and build the core pool at any block tag", async function () {
+  it("can download or update events and build the core pool at any block tag", async function () {
     let simulationDataManager: SimulationDataManager =
       await SQLiteSimulationDataManager.buildInstance();
     let clientInstance = new SimulatorClient(simulationDataManager);

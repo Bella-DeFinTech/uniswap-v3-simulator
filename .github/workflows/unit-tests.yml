@@ -24,4 +24,6 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Run tests
+        env:
+          MAINNET_PROVIDER_URL: ${{ secrets.MAINNET_PROVIDER_URL }}
         run: yarn test
