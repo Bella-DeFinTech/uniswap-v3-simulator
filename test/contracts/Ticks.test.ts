@@ -1,10 +1,10 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { ConfigurableCorePool } from "../../src/core/ConfigurableCorePool";
-import { SQLiteDBManager } from "../../src/manager/SQLiteDBManager";
+import { SQLiteSimulationDataManager } from "../../src/manager/SQLiteSimulationDataManager";
 import { SimulatorRoadmapManager } from "../../src/manager/SimulatorRoadmapManager";
 import { PoolState } from "../../src/model/PoolState";
-import type { UniswapV3Pool2 } from "../../src/typechain";
+import type { UniswapV3Pool2 } from "../typechain";
 import { SimulationDataManager } from "../../src/interface/SimulationDataManager";
 import { SimulatorConsoleVisitor } from "../../src/manager/SimulatorConsoleVisitor";
 import { SimulatorPersistenceVisitor } from "../../src/manager/SimulatorPersistenceVisitor";
@@ -12,7 +12,7 @@ import { SimulatorPersistenceVisitor } from "../../src/manager/SimulatorPersiste
 describe("Test Ticks", function () {
   it("should be identical between state of simulator implementation and mainnet state at certain block number", async function () {
     let simulationDataManager: SimulationDataManager =
-      await SQLiteDBManager.buildInstance("./test/database.db");
+      await SQLiteSimulationDataManager.buildInstance("./test/database.db");
     let simulatorRoadmapManager: SimulatorRoadmapManager =
       new SimulatorRoadmapManager(simulationDataManager);
     let snapshot = await simulationDataManager.getSnapshot(
