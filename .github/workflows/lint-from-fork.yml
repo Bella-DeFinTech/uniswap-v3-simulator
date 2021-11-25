@@ -1,4 +1,4 @@
-name: Lint From Fork
+name: Lint On PR
 
 on:
   pull_request_target:
