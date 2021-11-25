@@ -23,8 +23,8 @@ export default {
   paths: {
     sources: "./test/contracts/src",
     tests: "./test/contracts",
-    cache: "./test/contracts/cache",
-    artifacts: "./test/contracts/artifacts",
+    cache: "./test/cache",
+    artifacts: "./test/artifacts",
   },
   solidity: {
     version: "0.7.6",
@@ -42,7 +42,7 @@ export default {
     timeout: 3600000,
   },
   typechain: {
-    outDir: "typechain",
+    outDir: "test/typechain",
     target: "ethers-v5",
     alwaysGenerateOverloads: false,
   },

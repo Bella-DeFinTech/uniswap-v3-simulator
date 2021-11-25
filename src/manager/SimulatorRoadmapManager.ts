@@ -6,18 +6,18 @@ import { PoolStateContainer } from "../interface/PoolStateContainer";
 import { SimulatorRoadmapManager as ISimulatorRoadmapManager } from "../interface/SimulatorRoadmapManager";
 import { PoolState } from "../model/PoolState";
 import { PoolStateHelper } from "../util/PoolStateHelper";
-import { DBManager } from "../interface/DBManager";
+import { SimulationDataManager } from "../interface/SimulationDataManager";
 
 export class SimulatorRoadmapManager
   implements ISimulatorRoadmapManager, PoolStateContainer
 {
-  private dbManager: DBManager;
+  private simulationDataManager: SimulationDataManager;
   private poolStates: Map<string, PoolState>;
   private configurableCorePools: Map<string, ConfigurableCorePool> = new Map();
 
-  constructor(dbManager: DBManager) {
+  constructor(dbManager: SimulationDataManager) {
     this.poolStates = new Map();
-    this.dbManager = dbManager;
+    this.simulationDataManager = dbManager;
   }
 
   addPoolState(poolState: PoolState): string {
@@ -66,13 +66,13 @@ export class SimulatorRoadmapManager
       .then((snapshotIds) => {
         let roadmap = new Roadmap(description, snapshotIds);
         roadmapId = roadmap.id;
-        return this.dbManager.persistRoadmap(roadmap);
+        return this.simulationDataManager.persistRoadmap(roadmap);
       })
       .then(() => Promise.resolve(roadmapId));
   }
 
   loadAndPrintRoute(roadmapId: string): Promise<void> {
-    return this.dbManager
+    return this.simulationDataManager
       .getRoadmap(roadmapId)
       .then((roadmap: Roadmap | undefined) => {
         if (!roadmap)
@@ -80,7 +80,7 @@ export class SimulatorRoadmapManager
             new Error("Can't find Roadmap, id: " + roadmapId)
           );
         console.log(printRoadmap(roadmap));
-        return this.dbManager.getSnapshots(roadmap.snapshots);
+        return this.simulationDataManager.getSnapshots(roadmap.snapshots);
       })
       .then((snapshots: Snapshot[]) => {
         if (snapshots.length == 0) return Promise.resolve();

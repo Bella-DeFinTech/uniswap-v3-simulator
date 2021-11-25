@@ -2,13 +2,13 @@ import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { SimulatorVisitor } from "../interface/SimulatorVisitor";
 import { PoolState } from "../model/PoolState";
 import { Transition } from "../model/Transition";
-import { DBManager } from "../interface/DBManager";
+import { SimulationDataManager } from "../interface/SimulationDataManager";
 
 export class SimulatorPersistenceVisitor implements SimulatorVisitor {
-  private dbManager: DBManager;
+  private simulationDataManager: SimulationDataManager;
 
-  constructor(dbManager: DBManager) {
-    this.dbManager = dbManager;
+  constructor(dbManager: SimulationDataManager) {
+    this.simulationDataManager = dbManager;
   }
 
   visitTransition(transition: Transition): Promise<string> {
@@ -20,10 +20,12 @@ export class SimulatorPersistenceVisitor implements SimulatorVisitor {
     callback?: (poolState: PoolState, returnValue: number) => void
   ): Promise<string> {
     poolState.recoverCorePool(true);
-    return this.dbManager.persistSnapshot(poolState).then((returnValue) => {
-      if (callback) callback(poolState, returnValue);
-      return Promise.resolve("ok");
-    });
+    return this.simulationDataManager
+      .persistSnapshot(poolState)
+      .then((returnValue) => {
+        if (callback) callback(poolState, returnValue);
+        return Promise.resolve("ok");
+      });
   }
 
   visitConfigurableCorePool(

@@ -4,7 +4,7 @@ import { FeeAmount } from "../src/enum/FeeAmount";
 import { PoolConfig } from "../src/model/PoolConfig";
 import { ConfigurableCorePool as IConfigurableCorePool } from "../src/interface/ConfigurableCorePool";
 import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
-import { SQLiteDBManager } from "../src/manager/SQLiteDBManager";
+import { SQLiteSimulationDataManager } from "../src/manager/SQLiteSimulationDataManager";
 import { PoolState } from "../src/model/PoolState";
 import { SimulatorRoadmapManager } from "../src/manager/SimulatorRoadmapManager";
 import { IdGenerator } from "../src/util/IdGenerator";
@@ -13,21 +13,21 @@ import { TickMath } from "../src/util/TickMath";
 import JSBI from "jsbi";
 import { ZERO } from "../src/enum/InternalConstants";
 import { Transition } from "../src/interface/Transition";
-import { getDate, getTomorrow, format } from "./DateUtils";
-import { EventDBManager } from "./EventDBManager";
-import { EventType } from "./EventType";
-import { LiquidityEvent } from "./LiquidityEvent";
-import { SwapEvent } from "./SwapEvent";
+import { getDate, getTomorrow, format } from "../src/util/DateUtils";
+import { EventDBManager } from "../src/manager/EventDBManager";
+import { EventType } from "../src/enum/EventType";
+import { LiquidityEvent } from "../src/entity/LiquidityEvent";
+import { SwapEvent } from "../src/entity/SwapEvent";
 import { printParams } from "../src/util/Serializer";
 import { SimulatorConsoleVisitor } from "../src/manager/SimulatorConsoleVisitor";
 import { SimulatorPersistenceVisitor } from "../src/manager/SimulatorPersistenceVisitor";
-import { DBManager } from "../src/interface/DBManager";
+import { SimulationDataManager } from "../src/interface/SimulationDataManager";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 const testUser = "0x01";
 
 describe("Test ConfigurableCorePool", function () {
-  let dbManager: DBManager;
+  let simulationDataManager: SimulationDataManager;
   let configurableCorePool: IConfigurableCorePool;
   let simulatorRoadmapManager: SimulatorRoadmapManager;
   let liquidityEventDB: EventDBManager;
@@ -200,24 +200,28 @@ describe("Test ConfigurableCorePool", function () {
   }
 
   beforeEach(async function () {
-    dbManager = await SQLiteDBManager.buildInstance("./test/database.db");
+    simulationDataManager = await SQLiteSimulationDataManager.buildInstance(
+      "./test/database.db"
+    );
     liquidityEventDB = await EventDBManager.buildInstance(
       "liquidity_events_usdc_weth_3000.db"
     );
     swapEventDB = await EventDBManager.buildInstance(
       "swap_events_usdc_weth_3000.db"
     );
-    simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
+    simulatorRoadmapManager = new SimulatorRoadmapManager(
+      simulationDataManager
+    );
     configurableCorePool = new ConfigurableCorePool(
       new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
       simulatorRoadmapManager,
       new SimulatorConsoleVisitor(),
-      new SimulatorPersistenceVisitor(dbManager)
+      new SimulatorPersistenceVisitor(simulationDataManager)
     );
   });
 
   afterEach(async function () {
-    await dbManager.close();
+    await simulationDataManager.close();
     await liquidityEventDB.close();
     await swapEventDB.close();
   });
@@ -401,7 +405,7 @@ describe("Test ConfigurableCorePool", function () {
         new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
         simulatorRoadmapManager,
         new SimulatorConsoleVisitor(),
-        new SimulatorPersistenceVisitor(dbManager)
+        new SimulatorPersistenceVisitor(simulationDataManager)
       );
       newConfigurableCorePool.recover(snapshot!.id);
       expect(
@@ -422,7 +426,9 @@ describe("Test ConfigurableCorePool", function () {
       );
       configurableCorePool.takeSnapshot("for test");
       let snapshotId = await configurableCorePool.persistSnapshot();
-      let snapshotInPersistence = await dbManager.getSnapshot(snapshotId);
+      let snapshotInPersistence = await simulationDataManager.getSnapshot(
+        snapshotId
+      );
       expect(snapshotInPersistence).to.not.be.undefined;
       expect(snapshotInPersistence!.id).to.eql(snapshotId);
       expect(snapshotInPersistence!.description).to.eql("for test");
@@ -476,14 +482,14 @@ describe("Test ConfigurableCorePool", function () {
     });
 
     it("can test any problem", async function () {
-      let snapshot = await dbManager.getSnapshot(
+      let snapshot = await simulationDataManager.getSnapshot(
         "9577f400-5012-4492-8f1f-44c6dcb5980c"
       );
       let testPool = new ConfigurableCorePool(
         PoolState.from(snapshot!),
         simulatorRoadmapManager,
         new SimulatorConsoleVisitor(),
-        new SimulatorPersistenceVisitor(dbManager)
+        new SimulatorPersistenceVisitor(simulationDataManager)
       );
       let { amount0, amount1 } = await testPool.swap(
         false,

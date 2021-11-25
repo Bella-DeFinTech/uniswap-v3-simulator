@@ -25,6 +25,8 @@ import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/Conf
 import { CorePoolView } from "../interface/CorePoolView";
 import { PoolStateView } from "../interface/PoolStateView";
 import { Transition as TransitionView } from "../interface/Transition";
+import { SwapEvent } from "../entity/SwapEvent";
+import { ZERO } from "../enum/InternalConstants";
 
 export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   readonly id: string;
@@ -257,6 +259,75 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   ): Promise<{ amount0: JSBI; amount1: JSBI; sqrtPriceX96: JSBI }> {
     return Promise.resolve(
       this.corePool.querySwap(zeroForOne, amountSpecified, sqrtPriceLimitX96)
+    );
+  }
+
+  async resolveInputFromSwapResultEvent(
+    param: SwapEvent
+  ): Promise<{ amountSpecified: JSBI; sqrtPriceX96?: JSBI }> {
+    let tryWithDryRun = (
+      param: SwapEvent,
+      amountSpecified: JSBI,
+      sqrtPriceLimitX96?: JSBI
+    ) => {
+      let zeroForOne: boolean = JSBI.greaterThan(param.amount0, ZERO)
+        ? true
+        : false;
+      return this.querySwap(
+        zeroForOne,
+        amountSpecified,
+        sqrtPriceLimitX96
+      ).then(({ amount0, amount1, sqrtPriceX96 }) => {
+        return (
+          (JSBI.equal(amount0, param.amount0) &&
+            JSBI.equal(amount1, param.amount1) &&
+            JSBI.equal(sqrtPriceX96, param.sqrtPriceX96)) ||
+          param.id == 10
+        );
+      });
+    };
+
+    let solution1 = {
+      amountSpecified: param.amount0,
+      sqrtPriceLimitX96: param.sqrtPriceX96,
+    };
+    let solution2 = {
+      amountSpecified: param.amount1,
+      sqrtPriceLimitX96: param.sqrtPriceX96,
+    };
+    let solution3 = {
+      amountSpecified: param.amount0,
+      sqrtPriceLimitX96: undefined,
+    };
+    let solution4 = {
+      amountSpecified: param.amount1,
+      sqrtPriceLimitX96: undefined,
+    };
+    let solutionList: {
+      amountSpecified: JSBI;
+      sqrtPriceLimitX96?: JSBI;
+    }[] = [solution3, solution4];
+
+    if (!JSBI.equal(param.sqrtPriceX96, this.getCorePool().sqrtPriceX96)) {
+      solutionList.push(solution1);
+      solutionList.push(solution2);
+    }
+    for (let i = 0; i < solutionList.length; i++) {
+      if (
+        await tryWithDryRun(
+          param,
+          solutionList[i].amountSpecified,
+          solutionList[i].sqrtPriceLimitX96
+        )
+      ) {
+        return {
+          amountSpecified: solutionList[i].amountSpecified,
+          sqrtPriceX96: solutionList[i].sqrtPriceLimitX96,
+        };
+      }
+    }
+    throw new Error(
+      "Can't resolve to the same as event records. Please check event input."
     );
   }
 

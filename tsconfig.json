@@ -9,9 +9,11 @@
     "noUnusedLocals": true,
     "esModuleInterop": true,
     "declaration": true,
-    "rootDir": "src",
-    "outDir": "dist",
-    "resolveJsonModule": true
+    "rootDirs": ["./src"],
+    "outDir": "./dist",
+    "resolveJsonModule": true,
+    "allowJs": true
   },
+  "exclude": ["dist", "node_modules"],
   "include": ["./src"]
 }

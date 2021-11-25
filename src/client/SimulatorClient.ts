@@ -1,36 +1,105 @@
 import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { PoolState } from "../model/PoolState";
 import { PoolConfig } from "../model/PoolConfig";
-import { DBManager } from "../interface/DBManager";
+import { SimulationDataManager } from "../interface/SimulationDataManager";
 import { Snapshot } from "../entity/Snapshot";
-import { FeeAmount } from "../enum/FeeAmount";
 import { SimulatorRoadmapManager } from "../manager/SimulatorRoadmapManager";
 import { SnapshotProfile } from "../entity/SnapshotProfile";
 import { SimulatorRoadmapManager as ISimulatorRoadmapManager } from "../interface/SimulatorRoadmapManager";
 import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/ConfigurableCorePool";
 import { SimulatorConsoleVisitor } from "../manager/SimulatorConsoleVisitor";
 import { SimulatorPersistenceVisitor } from "../manager/SimulatorPersistenceVisitor";
+import { EventDBManager } from "../manager/EventDBManager";
+import { MainnetDataDownloader } from "./MainnetDataDownloader";
+import {
+  EndBlockTypeWhenInit,
+  EndBlockTypeWhenRecover,
+} from "../entity/EndBlockType";
 
 export class SimulatorClient {
-  private dbManager: DBManager;
+  private simulatorDBManager: SimulationDataManager;
   private readonly _simulatorRoadmapManager: SimulatorRoadmapManager;
 
   public get simulatorRoadmapManager(): ISimulatorRoadmapManager {
     return this._simulatorRoadmapManager;
   }
 
-  constructor(dbManager: DBManager) {
-    this.dbManager = dbManager;
-    this._simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
+  constructor(simulatorDBManager: SimulationDataManager) {
+    this.simulatorDBManager = simulatorDBManager;
+    this._simulatorRoadmapManager = new SimulatorRoadmapManager(
+      simulatorDBManager
+    );
   }
 
-  static buildPoolConfig(
-    tickSpacing: number,
-    token0: string,
-    token1: string,
-    fee: FeeAmount
-  ) {
-    return new PoolConfig(tickSpacing, token0, token1, fee);
+  async initCorePoolFromMainnet(
+    poolName: string = "",
+    poolAddress: string,
+    endBlock: EndBlockTypeWhenInit,
+    RPCProviderUrl?: string
+  ): Promise<IConfigurableCorePool> {
+    let mainnetDataDownloader: MainnetDataDownloader =
+      new MainnetDataDownloader(RPCProviderUrl);
+    await mainnetDataDownloader.download(poolName, poolAddress, endBlock);
+    let endBlockInNumber =
+      await mainnetDataDownloader.parseEndBlockTypeWhenInit(
+        endBlock,
+        poolAddress
+      );
+    let eventDBFilePath = mainnetDataDownloader.generateMainnetEventDBFilePath(
+      poolName,
+      poolAddress
+    );
+    let eventDB = await EventDBManager.buildInstance(eventDBFilePath);
+    try {
+      let poolConfig = await eventDB.getPoolConfig();
+      let configurableCorePool: IConfigurableCorePool =
+        this.initCorePoolFromConfig(poolConfig!);
+
+      if (endBlock == "afterDeployment") return configurableCorePool;
+      await mainnetDataDownloader.initializeAndReplayEvents(
+        eventDB,
+        configurableCorePool,
+        endBlockInNumber,
+        endBlock == "afterInitialization"
+      );
+      return configurableCorePool;
+    } finally {
+      await eventDB.close();
+    }
+  }
+
+  async recoverFromMainnetEventDBFile(
+    mainnetEventDBFilePath: string,
+    endBlock: EndBlockTypeWhenRecover,
+    RPCProviderUrl?: string
+  ): Promise<IConfigurableCorePool> {
+    let mainnetDataDownloader: MainnetDataDownloader =
+      new MainnetDataDownloader(RPCProviderUrl);
+    await mainnetDataDownloader.update(mainnetEventDBFilePath, endBlock);
+    let { poolAddress } = mainnetDataDownloader.parseFromMainnetEventDBFilePath(
+      mainnetEventDBFilePath
+    );
+    let endBlockInNumber =
+      await mainnetDataDownloader.parseEndBlockTypeWhenRecover(
+        endBlock,
+        poolAddress
+      );
+    let eventDB = await EventDBManager.buildInstance(mainnetEventDBFilePath);
+    try {
+      let poolConfig = await eventDB.getPoolConfig();
+      let configurableCorePool: IConfigurableCorePool =
+        this.initCorePoolFromConfig(poolConfig!);
+      if (endBlock == "afterDeployment") return configurableCorePool;
+      await mainnetDataDownloader.initializeAndReplayEvents(
+        eventDB,
+        configurableCorePool,
+        endBlockInNumber,
+        endBlock == "afterInitialization"
+      );
+      return configurableCorePool;
+    } finally {
+      await eventDB.close();
+    }
   }
 
   initCorePoolFromConfig(poolConfig: PoolConfig): IConfigurableCorePool {
@@ -38,7 +107,7 @@ export class SimulatorClient {
       new PoolState(poolConfig),
       this._simulatorRoadmapManager,
       new SimulatorConsoleVisitor(),
-      new SimulatorPersistenceVisitor(this.dbManager)
+      new SimulatorPersistenceVisitor(this.simulatorDBManager)
     );
   }
 
@@ -53,21 +122,21 @@ export class SimulatorClient {
               PoolState.from(snapshot),
               this._simulatorRoadmapManager,
               new SimulatorConsoleVisitor(),
-              new SimulatorPersistenceVisitor(this.dbManager)
+              new SimulatorPersistenceVisitor(this.simulatorDBManager)
             )
           )
     );
   }
 
   listSnapshotProfiles(): Promise<SnapshotProfile[]> {
-    return this.dbManager.getSnapshotProfiles();
+    return this.simulatorDBManager.getSnapshotProfiles();
   }
 
   shutdown(): Promise<void> {
-    return this.dbManager.close();
+    return this.simulatorDBManager.close();
   }
 
   private getSnapshot(snapshotId: string): Promise<Snapshot | undefined> {
-    return this.dbManager.getSnapshot(snapshotId);
+    return this.simulatorDBManager.getSnapshot(snapshotId);
   }
 }
