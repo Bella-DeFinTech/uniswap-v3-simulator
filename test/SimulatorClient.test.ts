@@ -26,7 +26,7 @@ describe("Test SimulatorClient v2", function () {
     // 13578943
     let poolAddress = "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8";
     let endBlock = 12374077;
-    // Your customed RPCProviderUrl
+    // Your customed RPCProviderUrl, or use config in tuner.config.js
     let RPCProviderUrl: string | undefined = undefined;
 
     await clientInstance.initCorePoolFromMainnet(
