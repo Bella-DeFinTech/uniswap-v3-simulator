@@ -1,18 +1,33 @@
-name: Lint From Fork
+name: Unit Tests On PR
 
 on:
   pull_request_target:
 
 jobs:
-  run-linters:
-    name: Run linters
+  approve:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v2
+      - name: Approve
+        run: echo For security reasons, all pull requests need to be approved first before running any automated CI.
 
-      - name: Set up node
+  tests:
+    name: Unit tests
+
+    runs-on: ubuntu-latest
+
+    needs: [approve]
+
+    environment: test-env
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+
+      - name: Setup node
         uses: actions/setup-node@v2
         with:
           node-version: 16
@@ -21,9 +36,10 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Run linters
-        uses: wearerequired/lint-action@v1
-        with:
-          github_token: ${{ secrets.github_token }}
-          prettier: true
-          prettier_extensions: 'js,json,md,ts,yaml,yml'
+      - name: Generate typechain files from abi
+        run: yarn generate-types
+
+      - name: Run tests
+        env:
+          MAINNET_PROVIDER_URL: ${{ secrets.MAINNET_PROVIDER_URL }}
+        run: yarn test
