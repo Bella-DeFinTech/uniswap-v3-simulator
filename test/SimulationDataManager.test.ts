@@ -5,29 +5,31 @@ import { TickManager } from "../src/manager/TickManager";
 import { PositionManager } from "../src/manager/PositionManager";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { SQLiteDBManager } from "../src/manager/SQLiteDBManager";
-import { DBManager } from "../src/interface/DBManager";
+import { SQLiteSimulationDataManager } from "../src/manager/SQLiteSimulationDataManager";
+import { SimulationDataManager } from "../src/interface/SimulationDataManager";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
 describe("Test DBManager", function () {
-  let db: DBManager;
+  let simulationDataManager: SimulationDataManager;
 
   beforeEach(async function () {
-    db = await SQLiteDBManager.buildInstance();
+    simulationDataManager = await SQLiteSimulationDataManager.buildInstance();
   });
 
   afterEach(async function () {
-    await db.close();
+    await simulationDataManager.close();
   });
 
   describe("can query when table is blank", function () {
     it("can getPoolConfig", async function () {
-      return expect(db.getPoolConfig("123")).to.eventually.be.undefined;
+      return expect(simulationDataManager.getPoolConfig("123")).to.eventually.be
+        .undefined;
     });
 
     it("can getSnapshot", async function () {
-      return expect(db.getSnapshot("123")).to.eventually.be.undefined;
+      return expect(simulationDataManager.getSnapshot("123")).to.eventually.be
+        .undefined;
     });
 
     // since case here is corner case related to db damage, change DBManager.insertSnapshot to public then toggle below
@@ -77,17 +79,21 @@ describe("Test DBManager", function () {
     );
 
     it("can persistSnapshot", async function () {
-      return expect(db.persistSnapshot(poolState)).to.eventually.be.fulfilled;
+      return expect(simulationDataManager.persistSnapshot(poolState)).to
+        .eventually.be.fulfilled;
     });
 
     it("can getSnapshot", async function () {
-      await db.persistSnapshot(poolState);
-      return expect(db.getSnapshot(snapshotId)).to.eventually.be.not.undefined;
+      await simulationDataManager.persistSnapshot(poolState);
+      return expect(simulationDataManager.getSnapshot(snapshotId)).to.eventually
+        .be.not.undefined;
     });
 
     it("can getSnapshotProfiles", async function () {
-      await db.persistSnapshot(poolState);
-      return expect(db.getSnapshotProfiles()).to.eventually.have.lengthOf(1);
+      await simulationDataManager.persistSnapshot(poolState);
+      return expect(
+        simulationDataManager.getSnapshotProfiles()
+      ).to.eventually.have.lengthOf(1);
     });
   });
 });

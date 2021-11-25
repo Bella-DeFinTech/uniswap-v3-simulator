@@ -4,7 +4,7 @@ import { Roadmap } from "../model/Roadmap";
 import { SnapshotProfile } from "../entity/SnapshotProfile";
 import { PoolConfig } from "../model/PoolConfig";
 
-export interface DBManager {
+export interface SimulationDataManager {
   persistRoadmap(roadmap: Roadmap): Promise<number>;
 
   persistSnapshot(poolState: PoolState): Promise<number>;

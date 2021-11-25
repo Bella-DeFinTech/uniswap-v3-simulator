@@ -8,8 +8,8 @@ import { UniswapV3Pool2 as UniswapV3Pool } from "../typechain/UniswapV3Pool2";
 import { ConfigurableCorePool, PoolConfig } from "..";
 import { LiquidityEvent } from "../entity/LiquidityEvent";
 import { SwapEvent } from "../entity/SwapEvent";
-import { SQLiteDBManager } from "../manager/SQLiteDBManager";
-import { DBManager } from "../interface/DBManager";
+import { SQLiteSimulationDataManager } from "../manager/SQLiteSimulationDataManager";
+import { SimulationDataManager } from "../interface/SimulationDataManager";
 import { printParams } from "../util/Serializer";
 import JSBI from "jsbi";
 import { ZERO } from "../enum/InternalConstants";
@@ -408,7 +408,8 @@ export class MainnetDataDownloader {
 
   private async preProcessSwapEvent(eventDB: EventDBManager) {
     // initialize configurableCorePool
-    let simulatorDBManager: DBManager = await SQLiteDBManager.buildInstance();
+    let simulatorDBManager: SimulationDataManager =
+      await SQLiteSimulationDataManager.buildInstance();
     let poolConfig = await eventDB.getPoolConfig();
     let configurableCorePool: ConfigurableCorePool =
       new ConfigurableCorePoolImpl(

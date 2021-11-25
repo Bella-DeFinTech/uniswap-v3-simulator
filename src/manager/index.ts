@@ -1,2 +1,2 @@
-export * from "./SQLiteDBManager";
+export * from "./SQLiteSimulationDataManager";
 export * from "./EventDBManager";

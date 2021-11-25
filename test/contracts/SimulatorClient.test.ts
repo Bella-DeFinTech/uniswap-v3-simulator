@@ -1,8 +1,8 @@
 import { SimulatorClient } from "../../src/client/SimulatorClient";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { DBManager } from "../../src/interface/DBManager";
-import { SQLiteDBManager } from "../../src/manager/SQLiteDBManager";
+import { SimulationDataManager } from "../../src/interface/SimulationDataManager";
+import { SQLiteSimulationDataManager } from "../../src/manager/SQLiteSimulationDataManager";
 import { FeeAmount } from "../../src/enum/FeeAmount";
 import { PoolConfig } from "../../src/model/PoolConfig";
 import { ConfigurableCorePool as IConfigurableCorePool } from "../../src/interface/ConfigurableCorePool";
@@ -13,8 +13,9 @@ const expect = chai.expect;
 
 describe("Test SimulatorClient v2", function () {
   it.only("can download or update events and build the core pool at any block tag", async function () {
-    let dbManager: DBManager = await SQLiteDBManager.buildInstance();
-    let clientInstance = new SimulatorClient(dbManager);
+    let simulationDataManager: SimulationDataManager =
+      await SQLiteSimulationDataManager.buildInstance();
+    let clientInstance = new SimulatorClient(simulationDataManager);
 
     let poolName = "test";
     // case 1
@@ -48,8 +49,9 @@ describe("Test SimulatorClient v2", function () {
 
 describe("Test SimulatorClient static method", function () {
   it("can build instance", async function () {
-    let dbManager: DBManager = await SQLiteDBManager.buildInstance();
-    let clientInstance = new SimulatorClient(dbManager);
+    let simulationDataManager: SimulationDataManager =
+      await SQLiteSimulationDataManager.buildInstance();
+    let clientInstance = new SimulatorClient(simulationDataManager);
     expect(clientInstance).to.be.an.instanceOf(SimulatorClient);
     return expect(clientInstance.shutdown()).to.eventually.be.fulfilled;
   });
@@ -65,8 +67,9 @@ describe("Test SimulatorClient public method", function () {
   let clientInstance: SimulatorClient;
 
   beforeEach(async function () {
-    let dbManager: DBManager = await SQLiteDBManager.buildInstance();
-    clientInstance = new SimulatorClient(dbManager);
+    let simulationDataManager: SimulationDataManager =
+      await SQLiteSimulationDataManager.buildInstance();
+    clientInstance = new SimulatorClient(simulationDataManager);
   });
 
   afterEach(async function () {

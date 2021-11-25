@@ -5,18 +5,17 @@ import { SQLiteDBManager } from "../../src/manager/SQLiteDBManager";
 import { SimulatorRoadmapManager } from "../../src/manager/SimulatorRoadmapManager";
 import { PoolState } from "../../src/model/PoolState";
 import type { UniswapV3Pool2 } from "../../src/typechain";
-import { DBManager } from "../../src/interface/DBManager";
+import { SimulationDataManager } from "../../src/interface/SimulationDataManager";
 import { SimulatorConsoleVisitor } from "../../src/manager/SimulatorConsoleVisitor";
 import { SimulatorPersistenceVisitor } from "../../src/manager/SimulatorPersistenceVisitor";
 
 describe("Test Ticks", function () {
   it("should be identical between state of simulator implementation and mainnet state at certain block number", async function () {
-    let dbManager: DBManager = await SQLiteDBManager.buildInstance(
-      "./test/database.db"
-    );
+    let simulationDataManager: SimulationDataManager =
+      await SQLiteDBManager.buildInstance("./test/database.db");
     let simulatorRoadmapManager: SimulatorRoadmapManager =
-      new SimulatorRoadmapManager(dbManager);
-    let snapshot = await dbManager.getSnapshot(
+      new SimulatorRoadmapManager(simulationDataManager);
+    let snapshot = await simulationDataManager.getSnapshot(
       "9577f400-5012-4492-8f1f-44c6dcb5980c"
       // "f5d54d99-3148-4b9b-9661-73f3f229dce8"
     );
@@ -24,7 +23,7 @@ describe("Test Ticks", function () {
       PoolState.from(snapshot!),
       simulatorRoadmapManager,
       new SimulatorConsoleVisitor(),
-      new SimulatorPersistenceVisitor(dbManager)
+      new SimulatorPersistenceVisitor(simulationDataManager)
     );
 
     let blockNum: number = 12464951;
@@ -91,6 +90,6 @@ describe("Test Ticks", function () {
         tickInTuner.feeGrowthOutside1X128.toString()
       );
     }
-    await dbManager.close();
+    await simulationDataManager.close();
   });
 });

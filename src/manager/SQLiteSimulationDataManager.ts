@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { DBManager } from "../interface/DBManager";
+import { SimulationDataManager } from "../interface/SimulationDataManager";
 import { PoolState } from "../model/PoolState";
 import { TickManager } from "./TickManager";
 import { PositionManager } from "./PositionManager";
@@ -54,7 +54,7 @@ type PoolConfigRecord = {
   timestamp: string;
 };
 
-export class SQLiteDBManager implements DBManager {
+export class SQLiteSimulationDataManager implements SimulationDataManager {
   private knex: Knex;
 
   private constructor(dbPath: string) {
@@ -69,8 +69,10 @@ export class SQLiteDBManager implements DBManager {
     this.knex = knexBuilder(config);
   }
 
-  static async buildInstance(dbPath: string = ":memory:"): Promise<DBManager> {
-    let dbManager = new SQLiteDBManager(dbPath);
+  static async buildInstance(
+    dbPath: string = ":memory:"
+  ): Promise<SimulationDataManager> {
+    let dbManager = new SQLiteSimulationDataManager(dbPath);
     await dbManager.initTables();
     return dbManager;
   }

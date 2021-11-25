@@ -11,10 +11,10 @@ import JSBI from "jsbi";
 import { TickMath } from "../src/util/TickMath";
 import { PoolStateHelper } from "../src/util/PoolStateHelper";
 import * as sinon from "sinon";
-import { SQLiteDBManager } from "../src/manager/SQLiteDBManager";
+import { SQLiteSimulationDataManager } from "../src/manager/SQLiteSimulationDataManager";
 import { SimulatorConsoleVisitor } from "../src/manager/SimulatorConsoleVisitor";
 import { SimulatorPersistenceVisitor } from "../src/manager/SimulatorPersistenceVisitor";
-import { DBManager } from "../src/interface/DBManager";
+import { SimulationDataManager } from "../src/interface/SimulationDataManager";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -23,7 +23,7 @@ const testUser = "0x01";
 describe("Test SimulatorRoadmapManager", function () {
   let sandbox: sinon.SinonSandbox;
   let consoleLogSpy: sinon.SinonSpy;
-  let dbManager: DBManager;
+  let simulationDataManager: SimulationDataManager;
   let configurableCorePool: IConfigurableCorePool;
   let simulatorRoadmapManager: ISimulatorRoadmapManager;
   let sqrtPriceX96ForInitialization = JSBI.BigInt(
@@ -37,7 +37,7 @@ describe("Test SimulatorRoadmapManager", function () {
       new PoolState(new PoolConfig(60, "USDC", "ETH", FeeAmount.MEDIUM)),
       simulatorRoadmapManager,
       new SimulatorConsoleVisitor(),
-      new SimulatorPersistenceVisitor(dbManager)
+      new SimulatorPersistenceVisitor(simulationDataManager)
     );
     await configurableCorePool.initialize(sqrtPriceX96ForInitialization);
     await configurableCorePool.mint(
@@ -53,8 +53,10 @@ describe("Test SimulatorRoadmapManager", function () {
   beforeEach(async function () {
     sandbox = sinon.createSandbox();
     consoleLogSpy = sandbox.spy(console, "log");
-    dbManager = await SQLiteDBManager.buildInstance();
-    simulatorRoadmapManager = new SimulatorRoadmapManager(dbManager);
+    simulationDataManager = await SQLiteSimulationDataManager.buildInstance();
+    simulatorRoadmapManager = new SimulatorRoadmapManager(
+      simulationDataManager
+    );
     configurableCorePool = await makeConfigurableCorePool(
       simulatorRoadmapManager as SimulatorRoadmapManager
     );
@@ -62,7 +64,7 @@ describe("Test SimulatorRoadmapManager", function () {
 
   afterEach(async function () {
     sandbox.restore();
-    await dbManager.close();
+    await simulationDataManager.close();
   });
 
   describe("Test route method", function () {
@@ -77,7 +79,7 @@ describe("Test SimulatorRoadmapManager", function () {
         configurableCorePool.id,
         "for test"
       );
-      let roadmap = await dbManager.getRoadmap(roadmapId);
+      let roadmap = await simulationDataManager.getRoadmap(roadmapId);
       expect(roadmap).to.not.be.undefined;
       expect(roadmap!.snapshots).to.have.lengthOf(
         PoolStateHelper.countHistoricalPoolStateTransitions(

@@ -6,4 +6,4 @@ export * from "./PositionView";
 export * from "./TickView";
 export * from "./SimulatorRoadmapManager";
 export * from "./Transition";
-export * from "./DBManager";
+export * from "./SimulationDataManager";

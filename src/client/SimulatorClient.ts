@@ -1,7 +1,7 @@
 import { ConfigurableCorePool } from "../core/ConfigurableCorePool";
 import { PoolState } from "../model/PoolState";
 import { PoolConfig } from "../model/PoolConfig";
-import { DBManager } from "../interface/DBManager";
+import { SimulationDataManager } from "../interface/SimulationDataManager";
 import { Snapshot } from "../entity/Snapshot";
 import { SimulatorRoadmapManager } from "../manager/SimulatorRoadmapManager";
 import { SnapshotProfile } from "../entity/SnapshotProfile";
@@ -17,14 +17,14 @@ import {
 } from "../entity/EndBlockType";
 
 export class SimulatorClient {
-  private simulatorDBManager: DBManager;
+  private simulatorDBManager: SimulationDataManager;
   private readonly _simulatorRoadmapManager: SimulatorRoadmapManager;
 
   public get simulatorRoadmapManager(): ISimulatorRoadmapManager {
     return this._simulatorRoadmapManager;
   }
 
-  constructor(simulatorDBManager: DBManager) {
+  constructor(simulatorDBManager: SimulationDataManager) {
     this.simulatorDBManager = simulatorDBManager;
     this._simulatorRoadmapManager = new SimulatorRoadmapManager(
       simulatorDBManager
