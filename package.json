@@ -1,7 +1,7 @@
 {
-  "name": "uniswap-v3-simulator",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@bella-defintech/uniswap-v3-simulator",
+  "version": "0.1.0",
+  "description": "the 'Tuner', a Uniswap V3 Simulator",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
@@ -18,8 +18,7 @@
     "compile": "hardhat compile && yarn generate-types",
     "testcontracts": "hardhat test"
   },
-  "author": "",
-  "license": "BSL-1.0",
+  "license": "BUSL-1.1",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
