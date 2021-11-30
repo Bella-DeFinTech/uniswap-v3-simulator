@@ -15,7 +15,7 @@
     "test": "yarn mocha",
     "lint": "yarn prettier --write .",
     "clean": "hardhat clean",
-    "compile": "hardhat compile",
+    "compile": "hardhat compile && yarn generate-types",
     "testcontracts": "hardhat test"
   },
   "author": "",

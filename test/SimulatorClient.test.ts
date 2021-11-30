@@ -8,6 +8,7 @@ import { PoolConfig } from "../src/model/PoolConfig";
 import { ConfigurableCorePool as IConfigurableCorePool } from "../src/interface/ConfigurableCorePool";
 import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
 import JSBI from "jsbi";
+import { EndBlockTypeWhenRecover } from "../src/entity/EndBlockType";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
@@ -24,8 +25,8 @@ describe("Test SimulatorClient v2", function () {
     // case 2
     // 0x92560C178cE069CC014138eD3C2F5221Ba71f58a
     // 13578943
-    let poolAddress = "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8";
-    let endBlock = 12374077;
+    let poolAddress = "0x92560C178cE069CC014138eD3C2F5221Ba71f58a";
+    let endBlock: EndBlockTypeWhenRecover = 13579000;
     // Your customed RPCProviderUrl, or use config in tuner.config.js
     let RPCProviderUrl: string | undefined = undefined;
 
@@ -42,7 +43,12 @@ describe("Test SimulatorClient v2", function () {
         endBlock,
         RPCProviderUrl
       );
-    console.log(configurableCorePool.getCorePool().sqrtPriceX96.toString());
+    console.log(`tick: ${configurableCorePool.getCorePool().tickCurrent}`);
+    console.log(
+      `sqrtPriceX96: ${configurableCorePool
+        .getCorePool()
+        .sqrtPriceX96.toString()}`
+    );
     await clientInstance.shutdown();
   });
 });

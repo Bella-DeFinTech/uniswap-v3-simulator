@@ -11,7 +11,7 @@ export default {
     hardhat: {
       forking: {
         url: process.env.FORKING_PROVIDER_URL,
-        blockNumber: 12464951,
+        blockNumber: 13578942,
       },
       mining: {
         auto: true,

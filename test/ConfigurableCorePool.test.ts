@@ -30,8 +30,7 @@ describe("Test ConfigurableCorePool", function () {
   let simulationDataManager: SimulationDataManager;
   let configurableCorePool: IConfigurableCorePool;
   let simulatorRoadmapManager: SimulatorRoadmapManager;
-  let liquidityEventDB: EventDBManager;
-  let swapEventDB: EventDBManager;
+  let eventDB: EventDBManager;
   let sqrtPriceX96ForInitialization = JSBI.BigInt(
     "0x43efef20f018fdc58e7a5cf0416a"
   );
@@ -42,19 +41,17 @@ describe("Test ConfigurableCorePool", function () {
     endDate: Date
   ): Promise<(LiquidityEvent | SwapEvent)[]> {
     let events: (LiquidityEvent | SwapEvent)[] = [];
-    let mintEvents: LiquidityEvent[] =
-      await liquidityEventDB.getLiquidityEventsByDate(
-        EventType.MINT,
-        format(startDate, "yyyy-MM-dd HH:mm:ss"),
-        format(endDate, "yyyy-MM-dd HH:mm:ss")
-      );
-    let burnEvents: LiquidityEvent[] =
-      await liquidityEventDB.getLiquidityEventsByDate(
-        EventType.BURN,
-        format(startDate, "yyyy-MM-dd HH:mm:ss"),
-        format(endDate, "yyyy-MM-dd HH:mm:ss")
-      );
-    let swapEvents: SwapEvent[] = await swapEventDB.getSwapEventsByDate(
+    let mintEvents: LiquidityEvent[] = await eventDB.getLiquidityEventsByDate(
+      EventType.MINT,
+      format(startDate, "yyyy-MM-dd HH:mm:ss"),
+      format(endDate, "yyyy-MM-dd HH:mm:ss")
+    );
+    let burnEvents: LiquidityEvent[] = await eventDB.getLiquidityEventsByDate(
+      EventType.BURN,
+      format(startDate, "yyyy-MM-dd HH:mm:ss"),
+      format(endDate, "yyyy-MM-dd HH:mm:ss")
+    );
+    let swapEvents: SwapEvent[] = await eventDB.getSwapEventsByDate(
       format(startDate, "yyyy-MM-dd HH:mm:ss"),
       format(endDate, "yyyy-MM-dd HH:mm:ss")
     );
@@ -203,11 +200,8 @@ describe("Test ConfigurableCorePool", function () {
     simulationDataManager = await SQLiteSimulationDataManager.buildInstance(
       "./test/database.db"
     );
-    liquidityEventDB = await EventDBManager.buildInstance(
-      "liquidity_events_usdc_weth_3000.db"
-    );
-    swapEventDB = await EventDBManager.buildInstance(
-      "swap_events_usdc_weth_3000.db"
+    eventDB = await EventDBManager.buildInstance(
+      "events_0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8.db"
     );
     simulatorRoadmapManager = new SimulatorRoadmapManager(
       simulationDataManager
@@ -222,8 +216,7 @@ describe("Test ConfigurableCorePool", function () {
 
   afterEach(async function () {
     await simulationDataManager.close();
-    await liquidityEventDB.close();
-    await swapEventDB.close();
+    await eventDB.close();
   });
 
   describe("Test get method", function () {
@@ -500,6 +493,7 @@ describe("Test ConfigurableCorePool", function () {
       console.log(
         "sqrtPriceX96: " + testPool.getCorePool().sqrtPriceX96.toString()
       );
+      console.log("tick: " + testPool.getCorePool().tickCurrent);
       console.log("liquidity: " + testPool.getCorePool().liquidity.toString());
     });
   });

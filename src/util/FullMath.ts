@@ -80,4 +80,11 @@ export abstract class FullMath {
     }
     return z;
   }
+
+  static incrTowardInfinity(value: JSBI): JSBI {
+    assert(JSBI.notEqual(value, ZERO), "ZERO");
+    return JSBI.greaterThan(value, ZERO)
+      ? JSBI.add(value, ONE)
+      : JSBI.subtract(value, ONE);
+  }
 }

@@ -3,19 +3,17 @@ import { EventType } from "../src/enum/EventType";
 import { ethers } from "hardhat";
 import type { UniswapV3Pool2 } from "../src/typechain";
 
-let liquidityEventDB: EventDBManager;
-let swapEventDB: EventDBManager;
+let eventDB: EventDBManager;
 let poolAddress = "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8";
 let fromBlock = 12777394;
 let toBlock = 13556212; //13556212;
 let batchSize = 500;
 
+// @Deprecated
+// See src/client/MainnetDataDownloader.ts instead
 async function main() {
-  liquidityEventDB = await EventDBManager.buildInstance(
+  eventDB = await EventDBManager.buildInstance(
     "liquidity_events_usdc_weth_3000.db"
-  );
-  swapEventDB = await EventDBManager.buildInstance(
-    "swap_events_usdc_weth_3000.db"
   );
   let uniswapV3Pool = (await ethers.getContractAt(
     "UniswapV3Pool2",
@@ -42,7 +40,7 @@ async function main() {
       for (let event of events) {
         let block = await ethers.provider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
-        await liquidityEventDB.insertLiquidityEvent(
+        await eventDB.insertLiquidityEvent(
           eventType,
           event.args.amount.toString(),
           event.args.amount0.toString(),
@@ -61,7 +59,7 @@ async function main() {
       for (let event of events) {
         let block = await ethers.provider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
-        await liquidityEventDB.insertLiquidityEvent(
+        await eventDB.insertLiquidityEvent(
           eventType,
           event.args.amount.toString(),
           event.args.amount0.toString(),
@@ -80,7 +78,7 @@ async function main() {
       for (let event of events) {
         let block = await ethers.provider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
-        await swapEventDB.insertSwapEvent(
+        await eventDB.insertSwapEvent(
           event.args.amount0.toString(),
           event.args.amount1.toString(),
           event.args.sqrtPriceX96.toString(),
@@ -94,8 +92,7 @@ async function main() {
       }
     }
   }
-  await liquidityEventDB.close();
-  await swapEventDB.close();
+  await eventDB.close();
 }
 
 main()
