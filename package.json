@@ -2,6 +2,14 @@
   "name": "@bella-defintech/uniswap-v3-simulator",
   "version": "0.1.1",
   "description": "the 'Tuner', a Uniswap V3 Simulator",
+  "keywords": [
+    "uniswap",
+    "uniswapv3",
+    "uniswap-v3",
+    "simulation",
+    "simulator",
+    "defi"
+  ],
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
