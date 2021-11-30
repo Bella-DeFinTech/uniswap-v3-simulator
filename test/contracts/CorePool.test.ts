@@ -8,12 +8,15 @@ describe("Test Uniswap v3 CorePool", function () {
   let loadFixture: ReturnType<typeof createFixtureLoader>;
   let deployer: Wallet;
   let uniswapV3PoolAddressOnMainnet =
-    "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8";
+    "0x92560C178cE069CC014138eD3C2F5221Ba71f58a";
+  //  "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8";
+  let sqrtPriceX96ForInitialization = "2505290050365003892876723467";
+
   let tokenA: string = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
   let tokenB: string = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
   let fee: number = FeeAmount.MEDIUM;
   let tickSpacing = 60;
-  let sqrtPriceX96ForInitialization = "0x43efef20f018fdc58e7a5cf0416a";
+
   let uniswapV3Factory: UniswapV3Factory2;
   let uniswapV3Pool: UniswapV3Pool2;
 
@@ -101,7 +104,8 @@ describe("Test Uniswap v3 CorePool", function () {
     );
     console.log("pool global state setup successfully!");
 
-    let relatedTicks = findRelatedTicks(minTick, maxTick);
+    // let relatedTicks = findRelatedTicks(minTick, maxTick);
+    let relatedTicks = [49800, 64020];
     let relatedTickBitmapWordPoses =
       findRelatedTickBitmapWordPoses(relatedTicks);
     for (let tickIndex of relatedTicks) {
@@ -123,16 +127,28 @@ describe("Test Uniswap v3 CorePool", function () {
     }
     console.log("pool tick-bitmap state setup successfully!");
 
-    // do swap as event id 15488
+    // // do swap as event id 15488
+    // let trx = await uniswapV3Pool.swap(
+    //   deployer.address,
+    //   false,
+    //   "500000000000000000000",
+    //   "1461446703485210103287273052203988822378723970341",
+    //   []
+    // );
+
+    // do swap as event id 10
     let trx = await uniswapV3Pool.swap(
       deployer.address,
       false,
-      "500000000000000000000",
-      "1461446703485210103287273052203988822378723970341",
+      "-184363245697871389668",
+      // "820850720170027688",
+      "4295128740",
       []
     );
+
     let receipt = await trx.wait();
     let event = receipt.events![0].args!;
+    console.log(event);
     console.log(event.amount0.toString());
     console.log(event.amount1.toString());
     console.log(event.sqrtPriceX96.toString());
