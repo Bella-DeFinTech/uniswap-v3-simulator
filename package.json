@@ -1,7 +1,15 @@
 {
-  "name": "uniswap-v3-simulator",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@bella-defintech/uniswap-v3-simulator",
+  "version": "0.1.1",
+  "description": "the 'Tuner', a Uniswap V3 Simulator",
+  "keywords": [
+    "uniswap",
+    "uniswapv3",
+    "uniswap-v3",
+    "simulation",
+    "simulator",
+    "defi"
+  ],
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
@@ -18,8 +26,7 @@
     "compile": "hardhat compile && yarn generate-types",
     "testcontracts": "hardhat test"
   },
-  "author": "",
-  "license": "BSL-1.0",
+  "license": "BUSL-1.1",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
@@ -46,16 +53,16 @@
     "sinon-chai": "^3.7.0",
     "ts-node": "^10.2.0",
     "typechain": "^5.2.0",
-    "typescript": "^4.3.5",
-    "uuid": "^8.3.2",
-    "dayjs": "^1.10.6"
+    "typescript": "^4.3.5"
   },
   "dependencies": {
     "jsbi": "3.1.6",
     "reflect-metadata": "^0.1.13",
     "typedjson": "^1.7.0",
     "sqlite3": "^5.0.2",
-    "knex": "^0.95.10"
+    "knex": "^0.95.10",
+    "uuid": "^8.3.2",
+    "dayjs": "^1.10.6"
   },
   "resolutions": {
     "tar": "^4.4.18"
