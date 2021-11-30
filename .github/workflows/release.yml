@@ -16,6 +16,7 @@ jobs:
           node-version: 16
           registry-url: 'https://registry.npmjs.org'
           scope: '@bella-defintech'
+          always-auth: true
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Generate typechain files from abi
@@ -31,6 +32,7 @@ jobs:
           node-version: 16
           registry-url: 'https://npm.pkg.github.com'
           scope: '@bella-defintech'
+          always-auth: true
       - name: Publish to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
