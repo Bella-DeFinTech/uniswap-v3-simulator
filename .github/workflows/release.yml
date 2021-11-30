@@ -22,16 +22,17 @@ jobs:
         run: yarn generate-types
       - name: Compile
         run: yarn tsc
-      # Publish to npm
-      - run: yarn publish
+      - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: yarn publish
       - uses: actions/setup-node@v2
         with:
           node-version: 16
           registry-url: 'https://npm.pkg.github.com'
           scope: '@bella-defintech'
-      # Publish to GitHub Packages
-      - run: yarn publish
+      - name: Publish to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn publish
+        
