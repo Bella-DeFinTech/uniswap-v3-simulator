@@ -40,11 +40,6 @@ export class SimulatorClient {
     let mainnetDataDownloader: MainnetDataDownloader =
       new MainnetDataDownloader(RPCProviderUrl);
     await mainnetDataDownloader.download(poolName, poolAddress, endBlock);
-    let endBlockInNumber =
-      await mainnetDataDownloader.parseEndBlockTypeWhenInit(
-        endBlock,
-        poolAddress
-      );
     let eventDBFilePath = mainnetDataDownloader.generateMainnetEventDBFilePath(
       poolName,
       poolAddress
@@ -54,8 +49,12 @@ export class SimulatorClient {
       let poolConfig = await eventDB.getPoolConfig();
       let configurableCorePool: IConfigurableCorePool =
         this.initCorePoolFromConfig(poolConfig!);
-
       if (endBlock == "afterDeployment") return configurableCorePool;
+      let endBlockInNumber =
+        await mainnetDataDownloader.parseEndBlockTypeWhenInit(
+          endBlock,
+          poolAddress
+        );
       await mainnetDataDownloader.initializeAndReplayEvents(
         eventDB,
         configurableCorePool,
@@ -79,17 +78,18 @@ export class SimulatorClient {
     let { poolAddress } = mainnetDataDownloader.parseFromMainnetEventDBFilePath(
       mainnetEventDBFilePath
     );
-    let endBlockInNumber =
-      await mainnetDataDownloader.parseEndBlockTypeWhenRecover(
-        endBlock,
-        poolAddress
-      );
     let eventDB = await EventDBManager.buildInstance(mainnetEventDBFilePath);
     try {
       let poolConfig = await eventDB.getPoolConfig();
       let configurableCorePool: IConfigurableCorePool =
         this.initCorePoolFromConfig(poolConfig!);
       if (endBlock == "afterDeployment") return configurableCorePool;
+      let endBlockInNumber =
+        await mainnetDataDownloader.parseEndBlockTypeWhenRecover(
+          await eventDB.getLatestEventBlockNumber(),
+          endBlock,
+          poolAddress
+        );
       await mainnetDataDownloader.initializeAndReplayEvents(
         eventDB,
         configurableCorePool,

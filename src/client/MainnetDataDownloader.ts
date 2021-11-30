@@ -67,6 +67,7 @@ export class MainnetDataDownloader {
   }
 
   async parseEndBlockTypeWhenRecover(
+    latestDownloadedEventBlockNumber: number,
     toBlock: EndBlockTypeWhenRecover,
     poolAddress: string
   ): Promise<number> {
@@ -74,7 +75,7 @@ export class MainnetDataDownloader {
       case "latestOnChain":
         return (await this.RPCProvider.getBlock("latest")).number;
       case "latestDownloaded":
-        return 0;
+        return latestDownloadedEventBlockNumber;
       case "afterDeployment":
         return await this.queryDeploymentBlockNumber(poolAddress);
       case "afterInitialization":
@@ -199,21 +200,22 @@ export class MainnetDataDownloader {
       );
 
     // check toBlock then
-    let deploymentBlockNumber = await this.queryDeploymentBlockNumber(
-      poolAddress
-    );
-    let toBlockAsNumber = await this.parseEndBlockTypeWhenRecover(
-      toBlock,
-      poolAddress
-    );
-    if (toBlockAsNumber < deploymentBlockNumber)
-      throw new Error("toBlock is too small, the pool hasn't been deployed.");
-
     let eventDB = await EventDBManager.buildInstance(mainnetEventDBFilePath);
     try {
       let latestEventBlockNumber = await eventDB.getLatestEventBlockNumber();
+      let deploymentBlockNumber = await this.queryDeploymentBlockNumber(
+        poolAddress
+      );
+      let toBlockAsNumber = await this.parseEndBlockTypeWhenRecover(
+        latestEventBlockNumber,
+        toBlock,
+        poolAddress
+      );
+      if (toBlockAsNumber < deploymentBlockNumber)
+        throw new Error("toBlock is too small, the pool hasn't been deployed.");
 
       if (toBlockAsNumber < latestEventBlockNumber) {
+        console.log("It's already up to date.");
         return;
       }
 
@@ -239,6 +241,14 @@ export class MainnetDataDownloader {
         await eventDB.saveLatestEventBlockNumber(
           initializationEventBlockNumber
         );
+      }
+
+      if (
+        !updateInitializationEvent &&
+        toBlockAsNumber == latestEventBlockNumber
+      ) {
+        console.log("It's already up to date.");
+        return;
       }
 
       // download events after initialization
