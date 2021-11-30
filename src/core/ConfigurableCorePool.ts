@@ -27,6 +27,7 @@ import { PoolStateView } from "../interface/PoolStateView";
 import { Transition as TransitionView } from "../interface/Transition";
 import { SwapEvent } from "../entity/SwapEvent";
 import { ZERO } from "../enum/InternalConstants";
+import { FullMath } from "..";
 
 export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
   readonly id: string;
@@ -279,20 +280,23 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
         sqrtPriceLimitX96
       ).then(({ amount0, amount1, sqrtPriceX96 }) => {
         return (
-          (JSBI.equal(amount0, param.amount0) &&
-            JSBI.equal(amount1, param.amount1) &&
-            JSBI.equal(sqrtPriceX96, param.sqrtPriceX96)) ||
-          param.id == 10
+          JSBI.equal(amount0, param.amount0) &&
+          JSBI.equal(amount1, param.amount1) &&
+          JSBI.equal(sqrtPriceX96, param.sqrtPriceX96)
         );
       });
     };
 
     let solution1 = {
-      amountSpecified: param.amount0,
+      amountSpecified: JSBI.equal(param.liquidity, ZERO)
+        ? FullMath.incrTowardInfinity(param.amount0)
+        : param.amount0,
       sqrtPriceLimitX96: param.sqrtPriceX96,
     };
     let solution2 = {
-      amountSpecified: param.amount1,
+      amountSpecified: JSBI.equal(param.liquidity, ZERO)
+        ? FullMath.incrTowardInfinity(param.amount1)
+        : param.amount1,
       sqrtPriceLimitX96: param.sqrtPriceX96,
     };
     let solution3 = {
