@@ -1,6 +1,6 @@
 {
   "name": "@bella-defintech/uniswap-v3-simulator",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "the 'Tuner', a Uniswap V3 Simulator",
   "keywords": [
     "uniswap",
@@ -43,7 +43,6 @@
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "ethereum-waffle": "^3.0.0",
-    "ethers": "^5.0.0",
     "hardhat": "^2.6.0",
     "mocha": "^9.0.3",
     "mocha-chai-jest-snapshot": "^1.1.3",
@@ -62,7 +61,8 @@
     "sqlite3": "^5.0.2",
     "knex": "^0.95.10",
     "uuid": "^8.3.2",
-    "dayjs": "^1.10.6"
+    "dayjs": "^1.10.6",
+    "ethers": "^5.0.0"
   },
   "resolutions": {
     "tar": "^4.4.18"
