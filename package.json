@@ -70,7 +70,7 @@
   "mocha": {
     "colors": true,
     "spec": [
-      "test/*.{test,spec}.ts"
+      "test/Visor.test.ts"
     ],
     "reporter": [
       "mochawesome"
