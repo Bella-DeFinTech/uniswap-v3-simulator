@@ -362,6 +362,8 @@ export class MainnetDataDownloader {
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertLiquidityEvent(
           eventType,
+          event.args.sender,
+          event.args.owner,
           event.args.amount.toString(),
           event.args.amount0.toString(),
           event.args.amount1.toString(),
@@ -383,6 +385,8 @@ export class MainnetDataDownloader {
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertLiquidityEvent(
           eventType,
+          event.args.owner,
+          "",
           event.args.amount.toString(),
           event.args.amount0.toString(),
           event.args.amount1.toString(),
@@ -403,6 +407,8 @@ export class MainnetDataDownloader {
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertSwapEvent(
+          event.args.sender,
+          event.args.recipient,
           event.args.amount0.toString(),
           event.args.amount1.toString(),
           event.args.sqrtPriceX96.toString(),
