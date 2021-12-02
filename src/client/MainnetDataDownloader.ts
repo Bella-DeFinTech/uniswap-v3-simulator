@@ -286,11 +286,15 @@ export class MainnetDataDownloader {
     let startBlock = initializationEventBlockNumber;
     let currBlock = startBlock;
 
-    while (currBlock < endBlock) {
+    while (currBlock <= endBlock) {
+      let nextEndBlock =
+        this.nextBatch(currBlock) > endBlock
+          ? endBlock
+          : this.nextBatch(currBlock);
       let events = await this.getAndSortEventByBlock(
         eventDB,
         currBlock,
-        this.nextBatch(currBlock)
+        nextEndBlock
       );
       if (events.length > 0) {
         await this.replayEventsAndAssertReturnValues(
@@ -299,7 +303,7 @@ export class MainnetDataDownloader {
           events
         );
       }
-      currBlock = this.nextBatch(currBlock);
+      currBlock = nextEndBlock + 1;
     }
     return configurableCorePool;
   }

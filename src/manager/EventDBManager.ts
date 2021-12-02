@@ -391,7 +391,7 @@ export class EventDBManager {
     return this.getBuilderContext("liquidity_events", trx)
       .where("type", type)
       .andWhere("block_number", ">=", fromBlock)
-      .andWhere("block_number", "<", toBlock);
+      .andWhere("block_number", "<=", toBlock);
   }
 
   private querySwapEventsByBlockNumber(
@@ -401,7 +401,7 @@ export class EventDBManager {
   ): Promise<SwapEventRecord[]> {
     return this.getBuilderContext("swap_events", trx)
       .andWhere("block_number", ">=", fromBlock)
-      .andWhere("block_number", "<", toBlock);
+      .andWhere("block_number", "<=", toBlock);
   }
 
   private insertPoolConfig(
