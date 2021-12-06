@@ -9,6 +9,7 @@ import { ConfigurableCorePool as IConfigurableCorePool } from "../src/interface/
 import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
 import JSBI from "jsbi";
 import { EndBlockTypeWhenRecover } from "../src/entity/EndBlockType";
+import { isExist } from "../src";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
@@ -30,12 +31,14 @@ describe("Test SimulatorClient v2", function () {
     // Your customed RPCProviderUrl, or use config in tuner.config.js
     let RPCProviderUrl: string | undefined = undefined;
 
-    await clientInstance.initCorePoolFromMainnet(
-      poolName,
-      poolAddress,
-      "afterDeployment",
-      RPCProviderUrl
-    );
+    if (!isExist(`${poolName}_${poolAddress}.db`)) {
+      await clientInstance.initCorePoolFromMainnet(
+        poolName,
+        poolAddress,
+        "afterDeployment",
+        RPCProviderUrl
+      );
+    }
 
     let configurableCorePool =
       await clientInstance.recoverFromMainnetEventDBFile(
