@@ -1,11 +1,14 @@
 import { EventType } from "../enum/EventType";
 import { EventDBManager } from "../manager/EventDBManager";
 import { providers } from "ethers";
-import { accessSync, constants } from "fs";
-import { basename } from "path";
 import { UniswapV3Pool2__factory as UniswapV3PoolFactory } from "../typechain/factories/UniswapV3Pool2__factory";
 import { UniswapV3Pool2 as UniswapV3Pool } from "../typechain/UniswapV3Pool2";
-import { ConfigurableCorePool, PoolConfig } from "..";
+import {
+  ConfigurableCorePool,
+  PoolConfig,
+  exists,
+  getBasenameFromPath,
+} from "..";
 import { LiquidityEvent } from "../entity/LiquidityEvent";
 import { SwapEvent } from "../entity/SwapEvent";
 import { SQLiteSimulationDataManager } from "../manager/SQLiteSimulationDataManager";
@@ -97,7 +100,7 @@ export class MainnetDataDownloader {
     poolName: string;
     poolAddress: string;
   } {
-    let fileName = basename(filePath, ".db");
+    let fileName = getBasenameFromPath(filePath, ".db");
     let nameArr = fileName.split("_");
     return { poolName: nameArr[0], poolAddress: nameArr[1] };
   }
@@ -130,12 +133,7 @@ export class MainnetDataDownloader {
 
     // check db file then
     let filePath = this.generateMainnetEventDBFilePath(poolName, poolAddress);
-    let dbExists = false;
-    try {
-      accessSync(filePath, constants.F_OK);
-      dbExists = true;
-    } catch (err) {}
-    if (dbExists)
+    if (exists(filePath))
       throw new Error(
         `The database file: ${filePath} already exists. You can either try to update or delete the database file.`
       );
@@ -189,12 +187,7 @@ export class MainnetDataDownloader {
     let { poolAddress } = this.parseFromMainnetEventDBFilePath(
       mainnetEventDBFilePath
     );
-    let dbExists = false;
-    try {
-      accessSync(mainnetEventDBFilePath, constants.F_OK);
-      dbExists = true;
-    } catch (err) {}
-    if (!dbExists)
+    if (!exists(mainnetEventDBFilePath))
       throw new Error(
         `The database file: ${mainnetEventDBFilePath} does not exist. Please download the data first.`
       );
@@ -286,11 +279,15 @@ export class MainnetDataDownloader {
     let startBlock = initializationEventBlockNumber;
     let currBlock = startBlock;
 
-    while (currBlock < endBlock) {
+    while (currBlock <= endBlock) {
+      let nextEndBlock =
+        this.nextBatch(currBlock) > endBlock
+          ? endBlock
+          : this.nextBatch(currBlock);
       let events = await this.getAndSortEventByBlock(
         eventDB,
         currBlock,
-        this.nextBatch(currBlock)
+        nextEndBlock
       );
       if (events.length > 0) {
         await this.replayEventsAndAssertReturnValues(
@@ -299,7 +296,7 @@ export class MainnetDataDownloader {
           events
         );
       }
-      currBlock = this.nextBatch(currBlock);
+      currBlock = nextEndBlock + 1;
     }
     return configurableCorePool;
   }
@@ -358,6 +355,8 @@ export class MainnetDataDownloader {
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertLiquidityEvent(
           eventType,
+          event.args.sender,
+          event.args.owner,
           event.args.amount.toString(),
           event.args.amount0.toString(),
           event.args.amount1.toString(),
@@ -379,6 +378,8 @@ export class MainnetDataDownloader {
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertLiquidityEvent(
           eventType,
+          event.args.owner,
+          "",
           event.args.amount.toString(),
           event.args.amount0.toString(),
           event.args.amount1.toString(),
@@ -399,6 +400,8 @@ export class MainnetDataDownloader {
         let block = await this.RPCProvider.getBlock(event.blockNumber);
         let date = new Date(block.timestamp * 1000);
         await eventDB.insertSwapEvent(
+          event.args.sender,
+          event.args.recipient,
           event.args.amount0.toString(),
           event.args.amount1.toString(),
           event.args.sqrtPriceX96.toString(),
@@ -485,7 +488,6 @@ export class MainnetDataDownloader {
     configurableCorePool: ConfigurableCorePool,
     paramArr: (LiquidityEvent | SwapEvent)[]
   ): Promise<void> {
-    let testUser = "";
     for (let index = 0; index < paramArr.length; index++) {
       // avoid stack overflow
       if (index % 4000 == 0) {
@@ -497,7 +499,7 @@ export class MainnetDataDownloader {
       switch (param.type) {
         case EventType.MINT:
           ({ amount0, amount1 } = await configurableCorePool.mint(
-            testUser,
+            param.recipient,
             param.tickLower,
             param.tickUpper,
             param.liquidity
@@ -514,7 +516,7 @@ export class MainnetDataDownloader {
           break;
         case EventType.BURN:
           ({ amount0, amount1 } = await configurableCorePool.burn(
-            testUser,
+            param.msgSender,
             param.tickLower,
             param.tickUpper,
             param.liquidity

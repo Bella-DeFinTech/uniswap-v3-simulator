@@ -13,6 +13,8 @@ const DATE_FORMAT: string = "YYYY-MM-DD HH:mm:ss";
 type LiquidityEventRecord = {
   id: number;
   type: number;
+  msg_sender: string;
+  recipient: string;
   liquidity: string;
   amount0: string;
   amount1: string;
@@ -26,6 +28,8 @@ type LiquidityEventRecord = {
 
 type SwapEventRecord = {
   id: number;
+  msg_sender: string;
+  recipient: string;
   amount0: string;
   amount1: string;
   amount_specified: string;
@@ -102,6 +106,8 @@ export class EventDBManager {
               function (t: Knex.TableBuilder) {
                 t.increments("id").primary();
                 t.integer("type");
+                t.string("msg_sender", 255);
+                t.string("recipient", 255);
                 t.string("liquidity", 255);
                 t.string("amount0", 255);
                 t.string("amount1", 255);
@@ -121,6 +127,8 @@ export class EventDBManager {
               "swap_events",
               function (t: Knex.TableBuilder) {
                 t.increments("id").primary();
+                t.string("msg_sender", 255);
+                t.string("recipient", 255);
                 t.string("amount0", 255);
                 t.string("amount1", 255);
                 t.string("amount_specified", 255);
@@ -291,6 +299,8 @@ export class EventDBManager {
 
   insertLiquidityEvent(
     type: number,
+    msg_sender: string,
+    recipient: string,
     liquidity: string,
     amount0: string,
     amount1: string,
@@ -306,6 +316,8 @@ export class EventDBManager {
         this.getBuilderContext("liquidity_events", trx).insert([
           {
             type,
+            msg_sender,
+            recipient,
             liquidity,
             amount0,
             amount1,
@@ -322,6 +334,8 @@ export class EventDBManager {
   }
 
   insertSwapEvent(
+    msg_sender: string,
+    recipient: string,
     amount0: string,
     amount1: string,
     sqrt_price_x96: string,
@@ -335,6 +349,8 @@ export class EventDBManager {
     return this.knex.transaction((trx) =>
       this.getBuilderContext("swap_events", trx).insert([
         {
+          msg_sender,
+          recipient,
           amount0,
           amount1,
           amount_specified: undefined,
@@ -391,7 +407,7 @@ export class EventDBManager {
     return this.getBuilderContext("liquidity_events", trx)
       .where("type", type)
       .andWhere("block_number", ">=", fromBlock)
-      .andWhere("block_number", "<", toBlock);
+      .andWhere("block_number", "<=", toBlock);
   }
 
   private querySwapEventsByBlockNumber(
@@ -401,7 +417,7 @@ export class EventDBManager {
   ): Promise<SwapEventRecord[]> {
     return this.getBuilderContext("swap_events", trx)
       .andWhere("block_number", ">=", fromBlock)
-      .andWhere("block_number", "<", toBlock);
+      .andWhere("block_number", "<=", toBlock);
   }
 
   private insertPoolConfig(
@@ -468,6 +484,8 @@ export class EventDBManager {
     return {
       id: event.id,
       type: event.type,
+      msgSender: event.msg_sender,
+      recipient: event.recipient,
       liquidity: JSBIDeserializer(event.liquidity),
       amount0: JSBIDeserializer(event.amount0),
       amount1: JSBIDeserializer(event.amount1),
@@ -484,6 +502,8 @@ export class EventDBManager {
     return {
       id: event.id,
       type: EventType.SWAP,
+      msgSender: event.msg_sender,
+      recipient: event.recipient,
       amount0: JSBIDeserializer(event.amount0),
       amount1: JSBIDeserializer(event.amount1),
       amountSpecified: JSBIDeserializer(event.amount_specified),
