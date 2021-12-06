@@ -1,6 +1,6 @@
 {
   "name": "@bella-defintech/uniswap-v3-simulator",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "the 'Tuner', a Uniswap V3 Simulator",
   "keywords": [
     "uniswap",
@@ -24,6 +24,7 @@
     "lint": "yarn prettier --write .",
     "clean": "hardhat clean",
     "compile": "hardhat compile && yarn generate-types",
+    "script": "yarn ts-node",
     "testcontracts": "hardhat test"
   },
   "license": "BUSL-1.1",
@@ -70,7 +71,7 @@
   "mocha": {
     "colors": true,
     "spec": [
-      "test/Visor.test.ts"
+      "test/*.{test,spec}.ts"
     ],
     "reporter": [
       "mochawesome"
