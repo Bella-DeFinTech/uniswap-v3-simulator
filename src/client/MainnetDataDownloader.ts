@@ -6,7 +6,7 @@ import { UniswapV3Pool2 as UniswapV3Pool } from "../typechain/UniswapV3Pool2";
 import {
   ConfigurableCorePool,
   PoolConfig,
-  isExist,
+  exists,
   getBasenameFromPath,
 } from "..";
 import { LiquidityEvent } from "../entity/LiquidityEvent";
@@ -133,7 +133,7 @@ export class MainnetDataDownloader {
 
     // check db file then
     let filePath = this.generateMainnetEventDBFilePath(poolName, poolAddress);
-    if (isExist(filePath))
+    if (exists(filePath))
       throw new Error(
         `The database file: ${filePath} already exists. You can either try to update or delete the database file.`
       );
@@ -187,7 +187,7 @@ export class MainnetDataDownloader {
     let { poolAddress } = this.parseFromMainnetEventDBFilePath(
       mainnetEventDBFilePath
     );
-    if (!isExist(mainnetEventDBFilePath))
+    if (!exists(mainnetEventDBFilePath))
       throw new Error(
         `The database file: ${mainnetEventDBFilePath} does not exist. Please download the data first.`
       );

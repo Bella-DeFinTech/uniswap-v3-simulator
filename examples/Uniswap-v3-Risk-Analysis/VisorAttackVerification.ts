@@ -8,7 +8,7 @@ import {
   SimulatorClient,
   SimulationDataManager,
   SQLiteSimulationDataManager,
-  isExist,
+  exists,
   toJSBI,
   toBN,
   mul10pow,
@@ -28,7 +28,7 @@ async function main() {
   const RPCProviderUrl = tunerConfig.RPCProviderUrl;
 
   // "download events"
-  if (!isExist(`${poolName}_${poolAddress}.db`)) {
+  if (!exists(`${poolName}_${poolAddress}.db`)) {
     let mainnetDataDownloader = new MainnetDataDownloader(RPCProviderUrl);
     await mainnetDataDownloader.download(
       poolName,
