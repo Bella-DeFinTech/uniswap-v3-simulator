@@ -9,7 +9,7 @@
 
 ### _Tuner_ is a programmatic Uniswap V3 simulator that allows strategy backtesting on a transaction-to-transaction basis with arbitrary or historical data without the EVM, it runs independently yet completely retains the exact smart-contract behavior of the intricate design and implementation of Uniswap V3.
 
-## [Quick Start](https://docs.bella.fi/)
+## [Quick Start (follow the link: https://docs.bella.fi/)](https://docs.bella.fi/)
 
 #### _Tuner_ is fundamentally a state machine, it can:
 
