@@ -1,5 +1,5 @@
 [![Twitter URL](https://img.shields.io/twitter/url.svg?label=Follow%20%40BellaProtocol&style=social&url=https%3A%2F%2Ftwitter.com%2FBellaProtocol)](https://twitter.com/BellaProtocol)
-[![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/V25W36sKMv)
+[![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/8ctd5geS8t)
 
 # the "_Tuner_", a Uniswap V3 Simulator
 
