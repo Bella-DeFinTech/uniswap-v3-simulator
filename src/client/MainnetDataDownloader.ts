@@ -248,13 +248,31 @@ export class MainnetDataDownloader {
         return;
       }
 
+      let fromBlockAsNumber = updateInitializationEvent
+        ? initializationEventBlockNumber
+        : latestEventBlockNumber + 1;
+
+      // remove incomplete events
+      await eventDB.deleteLiquidityEventsByBlockNumber(
+        EventType.MINT,
+        fromBlockAsNumber,
+        toBlockAsNumber
+      );
+      await eventDB.deleteLiquidityEventsByBlockNumber(
+        EventType.BURN,
+        fromBlockAsNumber,
+        toBlockAsNumber
+      );
+      await eventDB.deleteSwapEventsByBlockNumber(
+        fromBlockAsNumber,
+        toBlockAsNumber
+      );
+
       // download events after initialization
       await this.downloadEvents2(
         poolAddress,
         eventDB,
-        updateInitializationEvent
-          ? initializationEventBlockNumber
-          : latestEventBlockNumber + 1,
+        fromBlockAsNumber,
         toBlockAsNumber,
         batchSize
       );

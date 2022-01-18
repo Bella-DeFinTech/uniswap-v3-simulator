@@ -244,6 +244,20 @@ export class EventDBManager {
     );
   }
 
+  deleteLiquidityEventsByBlockNumber(
+    type: number,
+    fromBlock: number,
+    toBlock: number
+  ): Promise<void> {
+    return this.knex.transaction((trx) =>
+      this.getBuilderContext("liquidity_events", trx)
+        .where("type", type)
+        .andWhere("block_number", ">=", fromBlock)
+        .andWhere("block_number", "<=", toBlock)
+        .del()
+    );
+  }
+
   getSwapEventsByBlockNumber(
     fromBlock: number,
     toBlock: number
@@ -255,6 +269,18 @@ export class EventDBManager {
             (row: SwapEventRecord): SwapEvent => this.deserializeSwapEvent(row)
           )
         )
+    );
+  }
+
+  deleteSwapEventsByBlockNumber(
+    fromBlock: number,
+    toBlock: number
+  ): Promise<void> {
+    return this.knex.transaction((trx) =>
+      this.getBuilderContext("swap_events", trx)
+        .andWhere("block_number", ">=", fromBlock)
+        .andWhere("block_number", "<=", toBlock)
+        .del()
     );
   }
 

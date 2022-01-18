@@ -32,7 +32,7 @@ describe("Test SimulatorClient v2", function () {
 
     // lowercase
     let poolAddress = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8";
-    let endBlock: EndBlockTypeWhenRecover = 12374077;
+    let endBlock: EndBlockTypeWhenRecover = "latestOnChain";
     // Your customed RPCProviderUrl, or use config in tuner.config.js
     let RPCProviderUrl: string | undefined = undefined;
 
