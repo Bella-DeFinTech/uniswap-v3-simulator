@@ -117,6 +117,8 @@ export class EventDBManager {
                 t.integer("transaction_index");
                 t.integer("log_index");
                 t.text("date");
+                t.index(["type", "block_number"]);
+                t.index(["type", "date"]);
               }
             )
           : Promise.resolve()
@@ -139,6 +141,8 @@ export class EventDBManager {
                 t.integer("transaction_index");
                 t.integer("log_index");
                 t.text("date");
+                t.index(["block_number"]);
+                t.index(["date"]);
               }
             )
           : Promise.resolve()
