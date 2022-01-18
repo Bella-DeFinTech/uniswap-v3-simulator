@@ -1,5 +1,8 @@
+import BigNumber from "bignumber.js";
 import { BigNumber as BN } from "ethers";
 import JSBI from "jsbi";
+
+BigNumber.config({ EXPONENTIAL_AT: 50 });
 
 export function sum(bnArr: BN[]) {
   return bnArr.reduce((prev, current) => {
@@ -29,4 +32,11 @@ export function toBN(number: any): BN {
 
 export function toJSBI(number: any): JSBI {
   return JSBI.BigInt(number.toString());
+}
+
+export function convertTokenStrFromDecimal(
+  bnStr: string,
+  decimals: number
+): string {
+  return new BigNumber(bnStr).times(new BigNumber(10).pow(decimals)).toString();
 }

@@ -28,6 +28,7 @@ import {
 import { loadConfig } from "../config/TunerConfig";
 import { request, gql } from "graphql-request";
 import BigNumber from "bignumber.js";
+import { convertTokenStrFromDecimal } from "../util/BNUtils";
 
 export class MainnetDataDownloader {
   private APIURL = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3";
@@ -169,7 +170,9 @@ export class MainnetDataDownloader {
 
       // download events after initialization
       await this.downloadEvents2(
-        poolAddress,
+        poolAddress.toLowerCase(),
+        await this.getTokenDecimals(poolConfig!.token0),
+        await this.getTokenDecimals(poolConfig!.token1),
         eventDB,
         initializationEventBlockNumber,
         toBlockAsNumber,
@@ -269,8 +272,12 @@ export class MainnetDataDownloader {
       );
 
       // download events after initialization
+      let poolConfig = await eventDB.getPoolConfig();
+
       await this.downloadEvents2(
-        poolAddress,
+        poolAddress.toLowerCase(),
+        await this.getTokenDecimals(poolConfig!.token0),
+        await this.getTokenDecimals(poolConfig!.token1),
         eventDB,
         fromBlockAsNumber,
         toBlockAsNumber,
@@ -281,6 +288,18 @@ export class MainnetDataDownloader {
     } finally {
       await eventDB.close();
     }
+  }
+
+  private async getTokenDecimals(token: string): Promise<number> {
+    const query = gql`
+    query {
+      token(id:"${token.toLowerCase()}"){
+        decimals
+      }
+    }
+  `;
+    let data = await request(this.APIURL, query);
+    return data.token.decimals;
   }
 
   async initializeAndReplayEvents(
@@ -325,6 +344,8 @@ export class MainnetDataDownloader {
 
   private async downloadEvents2(
     poolAddress: string,
+    token0Decimals: number,
+    token1Decimals: number,
     eventDB: EventDBManager,
     fromBlock: number,
     toBlock: number,
@@ -336,6 +357,8 @@ export class MainnetDataDownloader {
       let latestEventBlockNumber = Math.max(
         await this.saveEvents2(
           poolAddress,
+          token0Decimals,
+          token1Decimals,
           eventDB,
           EventType.MINT,
           fromBlock,
@@ -343,6 +366,8 @@ export class MainnetDataDownloader {
         ),
         await this.saveEvents2(
           poolAddress,
+          token0Decimals,
+          token1Decimals,
           eventDB,
           EventType.BURN,
           fromBlock,
@@ -350,6 +375,8 @@ export class MainnetDataDownloader {
         ),
         await this.saveEvents2(
           poolAddress,
+          token0Decimals,
+          token1Decimals,
           eventDB,
           EventType.SWAP,
           fromBlock,
@@ -401,6 +428,8 @@ export class MainnetDataDownloader {
 
   private async saveEvents2(
     poolAddress: string,
+    token0Decimals: number,
+    token1Decimals: number,
     eventDB: EventDBManager,
     eventType: EventType,
     fromBlock: number,
@@ -450,13 +479,14 @@ export class MainnetDataDownloader {
             event.sender,
             event.owner,
             event.amount.toString(),
-            //TODO
-            new BigNumber(event.amount0.toString())
-              .times(new BigNumber(10).pow(6))
-              .toString(),
-            new BigNumber(event.amount1.toString())
-              .times(new BigNumber(10).pow(18))
-              .toString(),
+            convertTokenStrFromDecimal(
+              event.amount0.toString(),
+              token0Decimals
+            ),
+            convertTokenStrFromDecimal(
+              event.amount1.toString(),
+              token1Decimals
+            ),
             event.tickLower,
             event.tickUpper,
             event.transaction.blockNumber,
@@ -509,12 +539,14 @@ export class MainnetDataDownloader {
             event.owner,
             "",
             event.amount.toString(),
-            new BigNumber(event.amount0.toString())
-              .times(new BigNumber(10).pow(6))
-              .toString(),
-            new BigNumber(event.amount1.toString())
-              .times(new BigNumber(10).pow(18))
-              .toString(),
+            convertTokenStrFromDecimal(
+              event.amount0.toString(),
+              token0Decimals
+            ),
+            convertTokenStrFromDecimal(
+              event.amount1.toString(),
+              token1Decimals
+            ),
             event.tickLower,
             event.tickUpper,
             event.transaction.blockNumber,
@@ -564,12 +596,14 @@ export class MainnetDataDownloader {
           await eventDB.insertSwapEvent(
             event.sender,
             event.recipient,
-            new BigNumber(event.amount0.toString())
-              .times(new BigNumber(10).pow(6))
-              .toString(),
-            new BigNumber(event.amount1.toString())
-              .times(new BigNumber(10).pow(18))
-              .toString(),
+            convertTokenStrFromDecimal(
+              event.amount0.toString(),
+              token0Decimals
+            ),
+            convertTokenStrFromDecimal(
+              event.amount1.toString(),
+              token1Decimals
+            ),
             event.sqrtPriceX96.toString(),
             "-1",
             event.tick,

@@ -22,7 +22,7 @@ describe("Test SimulatorClient v2", function () {
       await SQLiteSimulationDataManager.buildInstance();
     let clientInstance = new SimulatorClient(simulationDataManager);
 
-    let poolName = "events0118";
+    let poolName = "events0119";
     // case 1
     // 0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8
     // 12374077
