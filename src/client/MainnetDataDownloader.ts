@@ -26,8 +26,12 @@ import {
   EndBlockTypeWhenRecover,
 } from "../entity/EndBlockType";
 import { loadConfig } from "../config/TunerConfig";
+import { request, gql } from "graphql-request";
+import BigNumber from "bignumber.js";
 
 export class MainnetDataDownloader {
+  private APIURL = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3";
+
   private RPCProvider: providers.JsonRpcProvider;
 
   constructor(RPCProviderUrl?: string) {
@@ -109,7 +113,7 @@ export class MainnetDataDownloader {
     poolName: string = "",
     poolAddress: string,
     toBlock: EndBlockTypeWhenInit,
-    batchSize: number = 500
+    batchSize: number = 5000
   ) {
     // check toBlock first
     let toBlockAsNumber = await this.parseEndBlockTypeWhenInit(
@@ -164,8 +168,8 @@ export class MainnetDataDownloader {
       if (toBlock == "afterInitialization") return;
 
       // download events after initialization
-      await this.downloadEvents(
-        uniswapV3Pool,
+      await this.downloadEvents2(
+        poolAddress,
         eventDB,
         initializationEventBlockNumber,
         toBlockAsNumber,
@@ -181,7 +185,7 @@ export class MainnetDataDownloader {
   async update(
     mainnetEventDBFilePath: string,
     toBlock: EndBlockTypeWhenRecover,
-    batchSize: number = 500
+    batchSize: number = 5000
   ) {
     // check dbfile first
     let { poolAddress } = this.parseFromMainnetEventDBFilePath(
@@ -245,8 +249,8 @@ export class MainnetDataDownloader {
       }
 
       // download events after initialization
-      await this.downloadEvents(
-        uniswapV3Pool,
+      await this.downloadEvents2(
+        poolAddress,
         eventDB,
         updateInitializationEvent
           ? initializationEventBlockNumber
@@ -301,6 +305,44 @@ export class MainnetDataDownloader {
     return configurableCorePool;
   }
 
+  private async downloadEvents2(
+    poolAddress: string,
+    eventDB: EventDBManager,
+    fromBlock: number,
+    toBlock: number,
+    batchSize: number
+  ) {
+    while (fromBlock <= toBlock) {
+      let endBlock =
+        fromBlock + batchSize > toBlock ? toBlock : fromBlock + batchSize;
+      let latestEventBlockNumber = Math.max(
+        await this.saveEvents2(
+          poolAddress,
+          eventDB,
+          EventType.MINT,
+          fromBlock,
+          endBlock
+        ),
+        await this.saveEvents2(
+          poolAddress,
+          eventDB,
+          EventType.BURN,
+          fromBlock,
+          endBlock
+        ),
+        await this.saveEvents2(
+          poolAddress,
+          eventDB,
+          EventType.SWAP,
+          fromBlock,
+          endBlock
+        )
+      );
+      await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber);
+      fromBlock += batchSize + 1;
+    }
+  }
+
   private async downloadEvents(
     uniswapV3Pool: UniswapV3Pool,
     eventDB: EventDBManager,
@@ -337,6 +379,197 @@ export class MainnetDataDownloader {
       await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber);
       fromBlock += batchSize + 1;
     }
+  }
+
+  private async saveEvents2(
+    poolAddress: string,
+    eventDB: EventDBManager,
+    eventType: EventType,
+    fromBlock: number,
+    toBlock: number
+  ): Promise<number> {
+    let fromTimestamp = (await this.RPCProvider.getBlock(fromBlock)).timestamp;
+    let toTimestamp = (await this.RPCProvider.getBlock(toBlock)).timestamp;
+    let latestEventBlockNumber = fromBlock;
+    let skip = 0;
+    while (true) {
+      if (eventType == EventType.MINT) {
+        const query = gql`
+        query {
+          pool(id: "${poolAddress}") {
+            mints(
+              first: 1000
+              skip: ${skip}
+              where: { timestamp_gte: ${fromTimestamp}, timestamp_lte: ${toTimestamp} }
+              orderBy: timestamp
+              orderDirection: asc
+            ) {
+              sender
+              owner
+              amount
+              amount0
+              amount1
+              tickLower
+              tickUpper
+              transaction {
+                blockNumber
+              }
+              logIndex
+              timestamp
+            }
+          }
+        }
+      `;
+
+        let data = await request(this.APIURL, query);
+
+        let events = data.pool.mints;
+
+        for (let event of events) {
+          let date = new Date(event.timestamp * 1000);
+          await eventDB.insertLiquidityEvent(
+            eventType,
+            event.sender,
+            event.owner,
+            event.amount.toString(),
+            //TODO
+            new BigNumber(event.amount0.toString())
+              .times(new BigNumber(10).pow(6))
+              .toString(),
+            new BigNumber(event.amount1.toString())
+              .times(new BigNumber(10).pow(18))
+              .toString(),
+            event.tickLower,
+            event.tickUpper,
+            event.transaction.blockNumber,
+            0,
+            event.logIndex,
+            date
+          );
+          latestEventBlockNumber = event.transaction.blockNumber;
+        }
+        if (events.length < 1000) {
+          break;
+        } else {
+          skip += 1000;
+        }
+      } else if (eventType == EventType.BURN) {
+        const query = gql`
+        query {
+          pool(id: "${poolAddress}") {
+            burns(
+              first: 1000
+              skip: ${skip}
+              where: { timestamp_gte: ${fromTimestamp}, timestamp_lte: ${toTimestamp} }
+              orderBy: timestamp
+              orderDirection: asc
+            ) {
+              owner
+              amount
+              amount0
+              amount1
+              tickLower
+              tickUpper
+              transaction {
+                blockNumber
+              }
+              logIndex
+              timestamp
+            }
+          }
+        }
+      `;
+
+        let data = await request(this.APIURL, query);
+
+        let events = data.pool.burns;
+
+        for (let event of events) {
+          let date = new Date(event.timestamp * 1000);
+          await eventDB.insertLiquidityEvent(
+            eventType,
+            event.owner,
+            "",
+            event.amount.toString(),
+            new BigNumber(event.amount0.toString())
+              .times(new BigNumber(10).pow(6))
+              .toString(),
+            new BigNumber(event.amount1.toString())
+              .times(new BigNumber(10).pow(18))
+              .toString(),
+            event.tickLower,
+            event.tickUpper,
+            event.transaction.blockNumber,
+            0,
+            event.logIndex,
+            date
+          );
+          latestEventBlockNumber = event.transaction.blockNumber;
+        }
+        if (events.length < 1000) {
+          break;
+        } else {
+          skip += 1000;
+        }
+      } else if (eventType == EventType.SWAP) {
+        const query = gql`
+          query {
+            pool(id: "${poolAddress}") {
+              swaps(
+                first: 1000
+                skip: ${skip}
+                where: { timestamp_gte: ${fromTimestamp}, timestamp_lte: ${toTimestamp} }
+                orderBy: timestamp
+                orderDirection: asc
+              ) {
+                sender
+                recipient
+                amount0
+                amount1
+                sqrtPriceX96
+                tick
+                transaction {
+                  blockNumber
+                }
+                logIndex
+                timestamp
+              }
+            }
+          }
+        `;
+
+        let data = await request(this.APIURL, query);
+
+        let events = data.pool.swaps;
+        for (let event of events) {
+          let date = new Date(event.timestamp * 1000);
+          await eventDB.insertSwapEvent(
+            event.sender,
+            event.recipient,
+            new BigNumber(event.amount0.toString())
+              .times(new BigNumber(10).pow(6))
+              .toString(),
+            new BigNumber(event.amount1.toString())
+              .times(new BigNumber(10).pow(18))
+              .toString(),
+            event.sqrtPriceX96.toString(),
+            "-1",
+            event.tick,
+            event.transaction.blockNumber,
+            0,
+            event.logIndex,
+            date
+          );
+          latestEventBlockNumber = event.transaction.blockNumber;
+        }
+        if (events.length < 1000) {
+          break;
+        } else {
+          skip += 1000;
+        }
+      }
+    }
+    return latestEventBlockNumber;
   }
 
   private async saveEvents(

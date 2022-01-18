@@ -9,25 +9,30 @@ import { ConfigurableCorePool as IConfigurableCorePool } from "../src/interface/
 import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
 import JSBI from "jsbi";
 import { EndBlockTypeWhenRecover } from "../src/entity/EndBlockType";
-import { exists } from "../src";
+import { exists, get10pow, TickMath, toBN } from "../src";
+import { ZERO } from "../src/enum/InternalConstants";
+import fs from "fs";
+import { BigNumber as BN } from "ethers";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
 describe("Test SimulatorClient v2", function () {
-  it("can download or update events and build the core pool at any block tag", async function () {
+  it.only("can download or update events and build the core pool at any block tag", async function () {
     let simulationDataManager: SimulationDataManager =
       await SQLiteSimulationDataManager.buildInstance();
     let clientInstance = new SimulatorClient(simulationDataManager);
 
-    let poolName = "test";
+    let poolName = "events0118";
     // case 1
     // 0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8
     // 12374077
     // case 2
     // 0x92560C178cE069CC014138eD3C2F5221Ba71f58a
     // 13578943
-    let poolAddress = "0x92560C178cE069CC014138eD3C2F5221Ba71f58a";
-    let endBlock: EndBlockTypeWhenRecover = 13579000;
+
+    // lowercase
+    let poolAddress = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8";
+    let endBlock: EndBlockTypeWhenRecover = 12374077;
     // Your customed RPCProviderUrl, or use config in tuner.config.js
     let RPCProviderUrl: string | undefined = undefined;
 
@@ -52,6 +57,44 @@ describe("Test SimulatorClient v2", function () {
         .getCorePool()
         .sqrtPriceX96.toString()}`
     );
+
+    // let ticks = configurableCorePool.getCorePool().tickManager.sortedTicks;
+
+    // // count: 29475 of legal available tick index between MIN_TICK and MAX_TICK
+    // function findAvailableTicks(): number[] {
+    //   let minTick = -887220; //-887220;
+    //   let maxTick = 887220; //887220;
+    //   let ticks: number[] = [];
+    //   let currTick = minTick;
+    //   while (currTick <= maxTick) {
+    //     ticks.push(currTick);
+    //     currTick += 60;
+    //   }
+    //   return ticks;
+    // }
+    // function sqrtPriceToView(sqrtPriceX96: BN): BN {
+    //   return get10pow(12).div(sqrtPriceX96.pow(2).shr(96 * 2));
+    // }
+
+    // let availableTicks = findAvailableTicks();
+    // let currentLiquidityNet = ZERO;
+    // let dataPath = "ticksLiquidityNet.data";
+    // let dataFile = fs.createWriteStream(dataPath, { flags: "w" });
+    // for (let tickIndex of availableTicks) {
+    //   if (ticks.has(tickIndex))
+    //     currentLiquidityNet = JSBI.add(
+    //       currentLiquidityNet,
+    //       ticks.get(tickIndex)!.liquidityNet
+    //     );
+    //   console.log(TickMath.getSqrtRatioAtTick(tickIndex).toString());
+    //   let currPrice = sqrtPriceToView(
+    //     toBN(TickMath.getSqrtRatioAtTick(tickIndex))
+    //   );
+    //   console.log(currPrice.toString());
+
+    //   dataFile.write(tickIndex + "\t" + currentLiquidityNet.toString() + "\n");
+    // }
+
     await clientInstance.shutdown();
   });
 });

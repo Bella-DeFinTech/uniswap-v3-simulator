@@ -56,14 +56,17 @@
     "typescript": "^4.3.5"
   },
   "dependencies": {
-    "jsbi": "3.1.6",
-    "reflect-metadata": "^0.1.13",
-    "typedjson": "^1.7.0",
-    "sqlite3": "^5.0.2",
-    "knex": "^0.95.10",
-    "uuid": "^8.3.2",
+    "bignumber.js": "^9.0.2",
     "dayjs": "^1.10.6",
-    "ethers": "^5.0.0"
+    "ethers": "^5.0.0",
+    "graphql": "^16.2.0",
+    "graphql-request": "^3.7.0",
+    "jsbi": "3.1.6",
+    "knex": "^0.95.10",
+    "reflect-metadata": "^0.1.13",
+    "sqlite3": "^5.0.2",
+    "typedjson": "^1.7.0",
+    "uuid": "^8.3.2"
   },
   "resolutions": {
     "tar": "^4.4.18"
@@ -71,7 +74,7 @@
   "mocha": {
     "colors": true,
     "spec": [
-      "test/*.{test,spec}.ts"
+      "test/SimulatorClient.test.ts"
     ],
     "reporter": [
       "mochawesome"
@@ -79,6 +82,6 @@
     "require": [
       "ts-node/register"
     ],
-    "timeout": 3600000
+    "timeout": 360000000
   }
 }
