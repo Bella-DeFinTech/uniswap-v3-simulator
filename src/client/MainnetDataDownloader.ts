@@ -27,7 +27,6 @@ import {
 } from "../entity/EndBlockType";
 import { loadConfig } from "../config/TunerConfig";
 import { request, gql } from "graphql-request";
-import BigNumber from "bignumber.js";
 import { convertTokenStrFromDecimal } from "../util/BNUtils";
 
 export class MainnetDataDownloader {
@@ -386,6 +385,7 @@ export class MainnetDataDownloader {
       await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber);
       fromBlock += batchSize + 1;
     }
+    console.log("Events have been downloaded successfully.");
   }
 
   private async downloadEvents(
@@ -424,6 +424,7 @@ export class MainnetDataDownloader {
       await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber);
       fromBlock += batchSize + 1;
     }
+    console.log("Events have been downloaded successfully.");
   }
 
   private async saveEvents2(
