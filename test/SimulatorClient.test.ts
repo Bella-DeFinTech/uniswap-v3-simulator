@@ -10,6 +10,7 @@ import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
 import JSBI from "jsbi";
 import { EndBlockTypeWhenRecover } from "../src/entity/EndBlockType";
 import { exists } from "../src";
+import { EventDataSourceType } from "../src/enum/EventDataSourceType";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
@@ -32,13 +33,17 @@ describe("Test SimulatorClient v2", function () {
     let endBlock: EndBlockTypeWhenRecover = 12374077;
     // Your customed RPCProviderUrl, or use config in tuner.config.js
     let RPCProviderUrl: string | undefined = undefined;
+    // You can specify data source of events here, and Uniswap v3 Subgraph as default is recommended rather than RPC for at least 75% time saving.
+    // Just a reminder, RPC endpoint is necessary for the simulator even if you choose to download events from Subgraph.
+    let eventDataSourceType: EventDataSourceType = EventDataSourceType.SUBGRAPH;
 
     if (!exists(`${poolName}_${poolAddress}.db`)) {
       await clientInstance.initCorePoolFromMainnet(
         poolName,
         poolAddress,
         "afterDeployment",
-        RPCProviderUrl
+        RPCProviderUrl,
+        eventDataSourceType
       );
     }
 
@@ -46,7 +51,8 @@ describe("Test SimulatorClient v2", function () {
       await clientInstance.recoverFromMainnetEventDBFile(
         `${poolName}_${poolAddress}.db`,
         endBlock,
-        RPCProviderUrl
+        RPCProviderUrl,
+        eventDataSourceType
       );
     console.log(`tick: ${configurableCorePool.getCorePool().tickCurrent}`);
     console.log(

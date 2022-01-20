@@ -15,7 +15,8 @@ import { SQLiteSimulationDataManager } from "../manager/SQLiteSimulationDataMana
 import { SimulationDataManager } from "../interface/SimulationDataManager";
 import { printParams } from "../util/Serializer";
 import JSBI from "jsbi";
-import { ZERO } from "../enum/InternalConstants";
+import { UNISWAP_V3_SUBGRAPH_ENDPOINT, ZERO } from "../enum/InternalConstants";
+import { EventDataSourceType } from "../enum/EventDataSourceType";
 import { PoolState } from "../model/PoolState";
 import { ConfigurableCorePool as ConfigurableCorePoolImpl } from "../core/ConfigurableCorePool";
 import { SimulatorConsoleVisitor } from "../manager/SimulatorConsoleVisitor";
@@ -30,16 +31,20 @@ import { request, gql } from "graphql-request";
 import { convertTokenStrFromDecimal } from "../util/BNUtils";
 
 export class MainnetDataDownloader {
-  private APIURL = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3";
-
   private RPCProvider: providers.JsonRpcProvider;
 
-  constructor(RPCProviderUrl?: string) {
+  private eventDataSourceType: EventDataSourceType;
+
+  constructor(
+    RPCProviderUrl: string | undefined,
+    eventDataSourceType: EventDataSourceType
+  ) {
     if (RPCProviderUrl == undefined) {
       let tunerConfig = loadConfig(undefined);
       RPCProviderUrl = tunerConfig.RPCProviderUrl;
     }
     this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
+    this.eventDataSourceType = eventDataSourceType;
   }
 
   async queryDeploymentBlockNumber(poolAddress: string): Promise<number> {
@@ -168,16 +173,25 @@ export class MainnetDataDownloader {
       if (toBlock == "afterInitialization") return;
 
       // download events after initialization
-      await this.downloadEvents2(
-        poolAddress.toLowerCase(),
-        await this.getTokenDecimals(poolConfig!.token0),
-        await this.getTokenDecimals(poolConfig!.token1),
-        eventDB,
-        initializationEventBlockNumber,
-        toBlockAsNumber,
-        batchSize
-      );
-
+      if (this.eventDataSourceType == EventDataSourceType.SUBGRAPH) {
+        await this.downloadEventsFromSubgraph(
+          poolAddress.toLowerCase(),
+          await this.getTokenDecimals(poolConfig!.token0),
+          await this.getTokenDecimals(poolConfig!.token1),
+          eventDB,
+          initializationEventBlockNumber,
+          toBlockAsNumber,
+          batchSize
+        );
+      } else if (this.eventDataSourceType == EventDataSourceType.RPC) {
+        await this.downloadEventsFromRPC(
+          uniswapV3Pool,
+          eventDB,
+          initializationEventBlockNumber,
+          toBlockAsNumber,
+          batchSize
+        );
+      }
       await this.preProcessSwapEvent(eventDB);
     } finally {
       await eventDB.close();
@@ -273,15 +287,25 @@ export class MainnetDataDownloader {
       // download events after initialization
       let poolConfig = await eventDB.getPoolConfig();
 
-      await this.downloadEvents2(
-        poolAddress.toLowerCase(),
-        await this.getTokenDecimals(poolConfig!.token0),
-        await this.getTokenDecimals(poolConfig!.token1),
-        eventDB,
-        fromBlockAsNumber,
-        toBlockAsNumber,
-        batchSize
-      );
+      if (this.eventDataSourceType == EventDataSourceType.SUBGRAPH) {
+        await this.downloadEventsFromSubgraph(
+          poolAddress.toLowerCase(),
+          await this.getTokenDecimals(poolConfig!.token0),
+          await this.getTokenDecimals(poolConfig!.token1),
+          eventDB,
+          fromBlockAsNumber,
+          toBlockAsNumber,
+          batchSize
+        );
+      } else if (this.eventDataSourceType == EventDataSourceType.RPC) {
+        await this.downloadEventsFromRPC(
+          uniswapV3Pool,
+          eventDB,
+          fromBlockAsNumber,
+          toBlockAsNumber,
+          batchSize
+        );
+      }
 
       await this.preProcessSwapEvent(eventDB);
     } finally {
@@ -297,7 +321,7 @@ export class MainnetDataDownloader {
       }
     }
   `;
-    let data = await request(this.APIURL, query);
+    let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
     return data.token.decimals;
   }
 
@@ -341,7 +365,7 @@ export class MainnetDataDownloader {
     return configurableCorePool;
   }
 
-  private async downloadEvents2(
+  private async downloadEventsFromSubgraph(
     poolAddress: string,
     token0Decimals: number,
     token1Decimals: number,
@@ -354,7 +378,7 @@ export class MainnetDataDownloader {
       let endBlock =
         fromBlock + batchSize > toBlock ? toBlock : fromBlock + batchSize;
       let latestEventBlockNumber = Math.max(
-        await this.saveEvents2(
+        await this.saveEventsFromSubgraph(
           poolAddress,
           token0Decimals,
           token1Decimals,
@@ -363,7 +387,7 @@ export class MainnetDataDownloader {
           fromBlock,
           endBlock
         ),
-        await this.saveEvents2(
+        await this.saveEventsFromSubgraph(
           poolAddress,
           token0Decimals,
           token1Decimals,
@@ -372,7 +396,7 @@ export class MainnetDataDownloader {
           fromBlock,
           endBlock
         ),
-        await this.saveEvents2(
+        await this.saveEventsFromSubgraph(
           poolAddress,
           token0Decimals,
           token1Decimals,
@@ -388,7 +412,7 @@ export class MainnetDataDownloader {
     console.log("Events have been downloaded successfully.");
   }
 
-  private async downloadEvents(
+  private async downloadEventsFromRPC(
     uniswapV3Pool: UniswapV3Pool,
     eventDB: EventDBManager,
     fromBlock: number,
@@ -399,21 +423,21 @@ export class MainnetDataDownloader {
       let endBlock =
         fromBlock + batchSize > toBlock ? toBlock : fromBlock + batchSize;
       let latestEventBlockNumber = Math.max(
-        await this.saveEvents(
+        await this.saveEventsFromRPC(
           uniswapV3Pool,
           eventDB,
           EventType.MINT,
           fromBlock,
           endBlock
         ),
-        await this.saveEvents(
+        await this.saveEventsFromRPC(
           uniswapV3Pool,
           eventDB,
           EventType.BURN,
           fromBlock,
           endBlock
         ),
-        await this.saveEvents(
+        await this.saveEventsFromRPC(
           uniswapV3Pool,
           eventDB,
           EventType.SWAP,
@@ -427,7 +451,7 @@ export class MainnetDataDownloader {
     console.log("Events have been downloaded successfully.");
   }
 
-  private async saveEvents2(
+  private async saveEventsFromSubgraph(
     poolAddress: string,
     token0Decimals: number,
     token1Decimals: number,
@@ -469,7 +493,7 @@ export class MainnetDataDownloader {
         }
       `;
 
-        let data = await request(this.APIURL, query);
+        let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
 
         let events = data.pool.mints;
 
@@ -529,7 +553,7 @@ export class MainnetDataDownloader {
         }
       `;
 
-        let data = await request(this.APIURL, query);
+        let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
 
         let events = data.pool.burns;
 
@@ -589,7 +613,7 @@ export class MainnetDataDownloader {
           }
         `;
 
-        let data = await request(this.APIURL, query);
+        let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
 
         let events = data.pool.swaps;
         for (let event of events) {
@@ -625,7 +649,7 @@ export class MainnetDataDownloader {
     return latestEventBlockNumber;
   }
 
-  private async saveEvents(
+  private async saveEventsFromRPC(
     uniswapV3Pool: UniswapV3Pool,
     eventDB: EventDBManager,
     eventType: EventType,
