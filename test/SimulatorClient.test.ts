@@ -15,7 +15,7 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 
 describe("Test SimulatorClient v2", function () {
-  it.only("can download or update events and build the core pool at any block tag", async function () {
+  it("can download or update events and build the core pool at any block tag", async function () {
     let simulationDataManager: SimulationDataManager =
       await SQLiteSimulationDataManager.buildInstance();
     let clientInstance = new SimulatorClient(simulationDataManager);
@@ -28,8 +28,7 @@ describe("Test SimulatorClient v2", function () {
     // 0x92560C178cE069CC014138eD3C2F5221Ba71f58a
     // 13578943
 
-    // lowercase
-    let poolAddress = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8";
+    let poolAddress = "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8";
     let endBlock: EndBlockTypeWhenRecover = 12374077;
     // Your customed RPCProviderUrl, or use config in tuner.config.js
     let RPCProviderUrl: string | undefined = undefined;
