@@ -42,9 +42,7 @@
 - this means the strategists can do advanced statistical analysis both in real-time and after the testing.
 
 # Bella "Tuner"
----
-description: A programmable, transaction-based Uniswap V3 Simulator with 100% Precision
----
+- A programmable, transaction-based Uniswap V3 Simulator with 100% Precision
 
 ### Quick Start
 
