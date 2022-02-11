@@ -108,7 +108,7 @@ yarn add @bella-defintech/uniswap-v3-simulator
 
 The overall design of the simulator consists of several components (rough dependency graph shown below), this **does NOT** necessarily 100% reflect how everything is implemented, but to give you an intuitive understanding of the relationships between the components and their corresponding purposes:
 
-**`SimulatorClient` ** - _The high-level and easiest way to use the simulator_
+**`SimulatorClient`** - _The high-level and easiest way to use the simulator_
 
 &#x20; |\_\_ **`ConfigurableCorePool`** - _To give **`CorePool`** snapshot and roadmap capabilities_
 
