@@ -1,6 +1,7 @@
 import JSBI from "jsbi";
 import { NEGATIVE_ONE, ZERO, MaxUint128, Q96 } from "../enum/InternalConstants";
 import assert from "assert";
+import { SqrtPriceMath } from "./SqrtPriceMath";
 
 export abstract class LiquidityMath {
   static addDelta(x: JSBI, y: JSBI): JSBI {
@@ -14,6 +15,45 @@ export abstract class LiquidityMath {
       assert(JSBI.lessThanOrEqual(JSBI.add(x, y), MaxUint128), "OVERFLOW");
       return JSBI.add(x, y);
     }
+  }
+
+  static getAmountsForLiquidity(
+    sqrtRatioX96: JSBI,
+    sqrtRatioAX96: JSBI,
+    sqrtRatioBX96: JSBI,
+    liquidity: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
+    let amount0: JSBI = ZERO;
+    let amount1: JSBI = ZERO;
+    if (JSBI.greaterThan(sqrtRatioAX96, sqrtRatioBX96)) {
+      [sqrtRatioAX96, sqrtRatioBX96] = [sqrtRatioBX96, sqrtRatioAX96];
+    }
+
+    if (JSBI.lessThanOrEqual(sqrtRatioX96, sqrtRatioAX96)) {
+      amount0 = SqrtPriceMath.getAmount0Delta(
+        sqrtRatioAX96,
+        sqrtRatioBX96,
+        liquidity
+      );
+    } else if (JSBI.lessThan(sqrtRatioX96, sqrtRatioBX96)) {
+      amount0 = SqrtPriceMath.getAmount0Delta(
+        sqrtRatioX96,
+        sqrtRatioBX96,
+        liquidity
+      );
+      amount1 = SqrtPriceMath.getAmount1Delta(
+        sqrtRatioAX96,
+        sqrtRatioX96,
+        liquidity
+      );
+    } else {
+      amount1 = SqrtPriceMath.getAmount1Delta(
+        sqrtRatioAX96,
+        sqrtRatioBX96,
+        liquidity
+      );
+    }
+    return { amount0, amount1 };
   }
 
   /**

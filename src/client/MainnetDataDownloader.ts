@@ -1,18 +1,22 @@
 import { EventType } from "../enum/EventType";
 import { EventDBManager } from "../manager/EventDBManager";
 import { providers } from "ethers";
-import { accessSync, constants } from "fs";
-import { basename } from "path";
 import { UniswapV3Pool2__factory as UniswapV3PoolFactory } from "../typechain/factories/UniswapV3Pool2__factory";
 import { UniswapV3Pool2 as UniswapV3Pool } from "../typechain/UniswapV3Pool2";
-import { ConfigurableCorePool, PoolConfig } from "..";
+import {
+  ConfigurableCorePool,
+  PoolConfig,
+  exists,
+  getDatabaseNameFromPath,
+} from "..";
 import { LiquidityEvent } from "../entity/LiquidityEvent";
 import { SwapEvent } from "../entity/SwapEvent";
 import { SQLiteSimulationDataManager } from "../manager/SQLiteSimulationDataManager";
 import { SimulationDataManager } from "../interface/SimulationDataManager";
 import { printParams } from "../util/Serializer";
 import JSBI from "jsbi";
-import { ZERO } from "../enum/InternalConstants";
+import { UNISWAP_V3_SUBGRAPH_ENDPOINT, ZERO } from "../enum/InternalConstants";
+import { EventDataSourceType } from "../enum/EventDataSourceType";
 import { PoolState } from "../model/PoolState";
 import { ConfigurableCorePool as ConfigurableCorePoolImpl } from "../core/ConfigurableCorePool";
 import { SimulatorConsoleVisitor } from "../manager/SimulatorConsoleVisitor";
@@ -23,16 +27,24 @@ import {
   EndBlockTypeWhenRecover,
 } from "../entity/EndBlockType";
 import { loadConfig } from "../config/TunerConfig";
+import { request, gql } from "graphql-request";
+import { convertTokenStrFromDecimal } from "../util/BNUtils";
 
 export class MainnetDataDownloader {
   private RPCProvider: providers.JsonRpcProvider;
 
-  constructor(RPCProviderUrl?: string) {
+  private eventDataSourceType: EventDataSourceType;
+
+  constructor(
+    RPCProviderUrl: string | undefined,
+    eventDataSourceType: EventDataSourceType
+  ) {
     if (RPCProviderUrl == undefined) {
       let tunerConfig = loadConfig(undefined);
       RPCProviderUrl = tunerConfig.RPCProviderUrl;
     }
     this.RPCProvider = new providers.JsonRpcProvider(RPCProviderUrl);
+    this.eventDataSourceType = eventDataSourceType;
   }
 
   async queryDeploymentBlockNumber(poolAddress: string): Promise<number> {
@@ -97,8 +109,8 @@ export class MainnetDataDownloader {
     poolName: string;
     poolAddress: string;
   } {
-    let fileName = basename(filePath, ".db");
-    let nameArr = fileName.split("_");
+    let databaseName = getDatabaseNameFromPath(filePath, ".db");
+    let nameArr = databaseName.split("_");
     return { poolName: nameArr[0], poolAddress: nameArr[1] };
   }
 
@@ -106,7 +118,7 @@ export class MainnetDataDownloader {
     poolName: string = "",
     poolAddress: string,
     toBlock: EndBlockTypeWhenInit,
-    batchSize: number = 500
+    batchSize: number = 5000
   ) {
     // check toBlock first
     let toBlockAsNumber = await this.parseEndBlockTypeWhenInit(
@@ -130,12 +142,7 @@ export class MainnetDataDownloader {
 
     // check db file then
     let filePath = this.generateMainnetEventDBFilePath(poolName, poolAddress);
-    let dbExists = false;
-    try {
-      accessSync(filePath, constants.F_OK);
-      dbExists = true;
-    } catch (err) {}
-    if (dbExists)
+    if (exists(filePath))
       throw new Error(
         `The database file: ${filePath} already exists. You can either try to update or delete the database file.`
       );
@@ -152,7 +159,7 @@ export class MainnetDataDownloader {
       await eventDB.addPoolConfig(poolConfig);
       await eventDB.saveLatestEventBlockNumber(deploymentBlockNumber);
 
-      if (toBlock == "afterDeployment") return;
+      if (toBlock === "afterDeployment") return;
 
       // record initialize event
       await eventDB.addInitialSqrtPriceX96(
@@ -163,17 +170,28 @@ export class MainnetDataDownloader {
       );
       await eventDB.saveLatestEventBlockNumber(initializationEventBlockNumber);
 
-      if (toBlock == "afterInitialization") return;
+      if (toBlock === "afterInitialization") return;
 
       // download events after initialization
-      await this.downloadEvents(
-        uniswapV3Pool,
-        eventDB,
-        initializationEventBlockNumber,
-        toBlockAsNumber,
-        batchSize
-      );
-
+      if (this.eventDataSourceType === EventDataSourceType.SUBGRAPH) {
+        await this.downloadEventsFromSubgraph(
+          poolAddress.toLowerCase(),
+          await this.getTokenDecimals(poolConfig!.token0),
+          await this.getTokenDecimals(poolConfig!.token1),
+          eventDB,
+          initializationEventBlockNumber,
+          toBlockAsNumber,
+          batchSize
+        );
+      } else if (this.eventDataSourceType === EventDataSourceType.RPC) {
+        await this.downloadEventsFromRPC(
+          uniswapV3Pool,
+          eventDB,
+          initializationEventBlockNumber,
+          toBlockAsNumber,
+          batchSize
+        );
+      }
       await this.preProcessSwapEvent(eventDB);
     } finally {
       await eventDB.close();
@@ -183,18 +201,13 @@ export class MainnetDataDownloader {
   async update(
     mainnetEventDBFilePath: string,
     toBlock: EndBlockTypeWhenRecover,
-    batchSize: number = 500
+    batchSize: number = 5000
   ) {
     // check dbfile first
     let { poolAddress } = this.parseFromMainnetEventDBFilePath(
       mainnetEventDBFilePath
     );
-    let dbExists = false;
-    try {
-      accessSync(mainnetEventDBFilePath, constants.F_OK);
-      dbExists = true;
-    } catch (err) {}
-    if (!dbExists)
+    if (!exists(mainnetEventDBFilePath))
       throw new Error(
         `The database file: ${mainnetEventDBFilePath} does not exist. Please download the data first.`
       );
@@ -251,21 +264,65 @@ export class MainnetDataDownloader {
         return;
       }
 
-      // download events after initialization
-      await this.downloadEvents(
-        uniswapV3Pool,
-        eventDB,
-        updateInitializationEvent
-          ? initializationEventBlockNumber
-          : latestEventBlockNumber + 1,
-        toBlockAsNumber,
-        batchSize
+      let fromBlockAsNumber = updateInitializationEvent
+        ? initializationEventBlockNumber
+        : latestEventBlockNumber + 1;
+
+      // remove incomplete events
+      await eventDB.deleteLiquidityEventsByBlockNumber(
+        EventType.MINT,
+        fromBlockAsNumber,
+        toBlockAsNumber
       );
+      await eventDB.deleteLiquidityEventsByBlockNumber(
+        EventType.BURN,
+        fromBlockAsNumber,
+        toBlockAsNumber
+      );
+      await eventDB.deleteSwapEventsByBlockNumber(
+        fromBlockAsNumber,
+        toBlockAsNumber
+      );
+
+      // download events after initialization
+      let poolConfig = await eventDB.getPoolConfig();
+
+      if (this.eventDataSourceType === EventDataSourceType.SUBGRAPH) {
+        await this.downloadEventsFromSubgraph(
+          poolAddress.toLowerCase(),
+          await this.getTokenDecimals(poolConfig!.token0),
+          await this.getTokenDecimals(poolConfig!.token1),
+          eventDB,
+          fromBlockAsNumber,
+          toBlockAsNumber,
+          batchSize
+        );
+      } else if (this.eventDataSourceType === EventDataSourceType.RPC) {
+        await this.downloadEventsFromRPC(
+          uniswapV3Pool,
+          eventDB,
+          fromBlockAsNumber,
+          toBlockAsNumber,
+          batchSize
+        );
+      }
 
       await this.preProcessSwapEvent(eventDB);
     } finally {
       await eventDB.close();
     }
+  }
+
+  private async getTokenDecimals(token: string): Promise<number> {
+    const query = gql`
+    query {
+      token(id:"${token.toLowerCase()}"){
+        decimals
+      }
+    }
+  `;
+    let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
+    return data.token.decimals;
   }
 
   async initializeAndReplayEvents(
@@ -308,7 +365,56 @@ export class MainnetDataDownloader {
     return configurableCorePool;
   }
 
-  private async downloadEvents(
+  private async downloadEventsFromSubgraph(
+    poolAddress: string,
+    token0Decimals: number,
+    token1Decimals: number,
+    eventDB: EventDBManager,
+    fromBlock: number,
+    toBlock: number,
+    batchSize: number
+  ) {
+    while (fromBlock <= toBlock) {
+      let endBlock =
+        fromBlock + batchSize > toBlock ? toBlock : fromBlock + batchSize;
+      let latestEventBlockNumber = Math.max(
+        await this.saveEventsFromSubgraph(
+          poolAddress,
+          token0Decimals,
+          token1Decimals,
+          eventDB,
+          EventType.MINT,
+          fromBlock,
+          endBlock
+        ),
+        await this.saveEventsFromSubgraph(
+          poolAddress,
+          token0Decimals,
+          token1Decimals,
+          eventDB,
+          EventType.BURN,
+          fromBlock,
+          endBlock
+        ),
+        await this.saveEventsFromSubgraph(
+          poolAddress,
+          token0Decimals,
+          token1Decimals,
+          eventDB,
+          EventType.SWAP,
+          fromBlock,
+          endBlock
+        )
+      );
+      await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber);
+      fromBlock += batchSize + 1;
+    }
+    console.log(
+      "Events have been downloaded successfully. Please wait for pre-process to be done..."
+    );
+  }
+
+  private async downloadEventsFromRPC(
     uniswapV3Pool: UniswapV3Pool,
     eventDB: EventDBManager,
     fromBlock: number,
@@ -319,21 +425,21 @@ export class MainnetDataDownloader {
       let endBlock =
         fromBlock + batchSize > toBlock ? toBlock : fromBlock + batchSize;
       let latestEventBlockNumber = Math.max(
-        await this.saveEvents(
+        await this.saveEventsFromRPC(
           uniswapV3Pool,
           eventDB,
           EventType.MINT,
           fromBlock,
           endBlock
         ),
-        await this.saveEvents(
+        await this.saveEventsFromRPC(
           uniswapV3Pool,
           eventDB,
           EventType.BURN,
           fromBlock,
           endBlock
         ),
-        await this.saveEvents(
+        await this.saveEventsFromRPC(
           uniswapV3Pool,
           eventDB,
           EventType.SWAP,
@@ -344,9 +450,210 @@ export class MainnetDataDownloader {
       await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber);
       fromBlock += batchSize + 1;
     }
+    console.log(
+      "Events have been downloaded successfully. Please wait for pre-process to be done..."
+    );
   }
 
-  private async saveEvents(
+  private async saveEventsFromSubgraph(
+    poolAddress: string,
+    token0Decimals: number,
+    token1Decimals: number,
+    eventDB: EventDBManager,
+    eventType: EventType,
+    fromBlock: number,
+    toBlock: number
+  ): Promise<number> {
+    let fromTimestamp = (await this.RPCProvider.getBlock(fromBlock)).timestamp;
+    let toTimestamp = (await this.RPCProvider.getBlock(toBlock)).timestamp;
+    let latestEventBlockNumber = fromBlock;
+    let skip = 0;
+    while (true) {
+      if (eventType === EventType.MINT) {
+        const query = gql`
+        query {
+          pool(id: "${poolAddress}") {
+            mints(
+              first: 1000
+              skip: ${skip}
+              where: { timestamp_gte: ${fromTimestamp}, timestamp_lte: ${toTimestamp} }
+              orderBy: timestamp
+              orderDirection: asc
+            ) {
+              sender
+              owner
+              amount
+              amount0
+              amount1
+              tickLower
+              tickUpper
+              transaction {
+                blockNumber
+              }
+              logIndex
+              timestamp
+            }
+          }
+        }
+      `;
+
+        let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
+
+        let events = data.pool.mints;
+
+        for (let event of events) {
+          let date = new Date(event.timestamp * 1000);
+          await eventDB.insertLiquidityEvent(
+            eventType,
+            event.sender,
+            event.owner,
+            event.amount.toString(),
+            convertTokenStrFromDecimal(
+              event.amount0.toString(),
+              token0Decimals
+            ),
+            convertTokenStrFromDecimal(
+              event.amount1.toString(),
+              token1Decimals
+            ),
+            event.tickLower,
+            event.tickUpper,
+            event.transaction.blockNumber,
+            0,
+            event.logIndex,
+            date
+          );
+          latestEventBlockNumber = event.transaction.blockNumber;
+        }
+        if (events.length < 1000) {
+          break;
+        } else {
+          skip += 1000;
+        }
+      } else if (eventType === EventType.BURN) {
+        const query = gql`
+        query {
+          pool(id: "${poolAddress}") {
+            burns(
+              first: 1000
+              skip: ${skip}
+              where: { timestamp_gte: ${fromTimestamp}, timestamp_lte: ${toTimestamp} }
+              orderBy: timestamp
+              orderDirection: asc
+            ) {
+              owner
+              amount
+              amount0
+              amount1
+              tickLower
+              tickUpper
+              transaction {
+                blockNumber
+              }
+              logIndex
+              timestamp
+            }
+          }
+        }
+      `;
+
+        let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
+
+        let events = data.pool.burns;
+
+        for (let event of events) {
+          let date = new Date(event.timestamp * 1000);
+          await eventDB.insertLiquidityEvent(
+            eventType,
+            event.owner,
+            "",
+            event.amount.toString(),
+            convertTokenStrFromDecimal(
+              event.amount0.toString(),
+              token0Decimals
+            ),
+            convertTokenStrFromDecimal(
+              event.amount1.toString(),
+              token1Decimals
+            ),
+            event.tickLower,
+            event.tickUpper,
+            event.transaction.blockNumber,
+            0,
+            event.logIndex,
+            date
+          );
+          latestEventBlockNumber = event.transaction.blockNumber;
+        }
+        if (events.length < 1000) {
+          break;
+        } else {
+          skip += 1000;
+        }
+      } else if (eventType === EventType.SWAP) {
+        const query = gql`
+          query {
+            pool(id: "${poolAddress}") {
+              swaps(
+                first: 1000
+                skip: ${skip}
+                where: { timestamp_gte: ${fromTimestamp}, timestamp_lte: ${toTimestamp} }
+                orderBy: timestamp
+                orderDirection: asc
+              ) {
+                sender
+                recipient
+                amount0
+                amount1
+                sqrtPriceX96
+                tick
+                transaction {
+                  blockNumber
+                }
+                logIndex
+                timestamp
+              }
+            }
+          }
+        `;
+
+        let data = await request(UNISWAP_V3_SUBGRAPH_ENDPOINT, query);
+
+        let events = data.pool.swaps;
+        for (let event of events) {
+          let date = new Date(event.timestamp * 1000);
+          await eventDB.insertSwapEvent(
+            event.sender,
+            event.recipient,
+            convertTokenStrFromDecimal(
+              event.amount0.toString(),
+              token0Decimals
+            ),
+            convertTokenStrFromDecimal(
+              event.amount1.toString(),
+              token1Decimals
+            ),
+            event.sqrtPriceX96.toString(),
+            "-1",
+            event.tick,
+            event.transaction.blockNumber,
+            0,
+            event.logIndex,
+            date
+          );
+          latestEventBlockNumber = event.transaction.blockNumber;
+        }
+        if (events.length < 1000) {
+          break;
+        } else {
+          skip += 1000;
+        }
+      }
+    }
+    return latestEventBlockNumber;
+  }
+
+  private async saveEventsFromRPC(
     uniswapV3Pool: UniswapV3Pool,
     eventDB: EventDBManager,
     eventType: EventType,
@@ -354,7 +661,7 @@ export class MainnetDataDownloader {
     toBlock: number
   ): Promise<number> {
     let latestEventBlockNumber = fromBlock;
-    if (eventType == EventType.MINT) {
+    if (eventType === EventType.MINT) {
       let topic = uniswapV3Pool.filters.Mint();
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
@@ -377,7 +684,7 @@ export class MainnetDataDownloader {
         if (event.blockNumber > latestEventBlockNumber)
           latestEventBlockNumber = event.blockNumber;
       }
-    } else if (eventType == EventType.BURN) {
+    } else if (eventType === EventType.BURN) {
       let topic = uniswapV3Pool.filters.Burn();
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
@@ -400,7 +707,7 @@ export class MainnetDataDownloader {
         if (event.blockNumber > latestEventBlockNumber)
           latestEventBlockNumber = event.blockNumber;
       }
-    } else if (eventType == EventType.SWAP) {
+    } else if (eventType === EventType.SWAP) {
       let topic = uniswapV3Pool.filters.Swap();
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
@@ -444,6 +751,7 @@ export class MainnetDataDownloader {
       await eventDB.getLatestEventBlockNumber()
     );
     await simulatorDBManager.close();
+    console.log("Events have been pre-processed successfully.");
   }
 
   private nextBatch(currBlock: number) {
@@ -495,7 +803,6 @@ export class MainnetDataDownloader {
     configurableCorePool: ConfigurableCorePool,
     paramArr: (LiquidityEvent | SwapEvent)[]
   ): Promise<void> {
-    let testUser = "";
     for (let index = 0; index < paramArr.length; index++) {
       // avoid stack overflow
       if (index % 4000 == 0) {
@@ -507,7 +814,7 @@ export class MainnetDataDownloader {
       switch (param.type) {
         case EventType.MINT:
           ({ amount0, amount1 } = await configurableCorePool.mint(
-            testUser,
+            param.recipient,
             param.tickLower,
             param.tickUpper,
             param.liquidity
@@ -524,7 +831,7 @@ export class MainnetDataDownloader {
           break;
         case EventType.BURN:
           ({ amount0, amount1 } = await configurableCorePool.burn(
-            testUser,
+            param.msgSender,
             param.tickLower,
             param.tickUpper,
             param.liquidity
