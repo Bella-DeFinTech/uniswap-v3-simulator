@@ -112,7 +112,7 @@ The overall design of the simulator consists of several components (rough depend
 
 &#x20; |\_\_ **`ConfigurableCorePool`** - _To give **`CorePool`** snapshot and roadmap capabilities_
 
-&#x20; |\_\_ **`CorePool`** - _The re-implementation of_ [_Uniswap-V3-Core logic_](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol)\_\_
+&#x20; |\_\_ **`CorePool`** - _The re-implementation of_ [_Uniswap-V3-Core logic_](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol)
 
 &#x20; |\_\_ **`MainnetDataDownloader`** - _The download-and-update utility to retrieve mainnet events_
 
