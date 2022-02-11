@@ -41,10 +41,9 @@
 
 - this means the strategists can do advanced statistical analysis both in real-time and after the testing.
 
+---
 
----
-description: A programmable, transaction-based Uniswap V3 Simulator with 100% Precision
----
+## description: A programmable, transaction-based Uniswap V3 Simulator with 100% Precision
 
 # Bella "Tuner"
 
