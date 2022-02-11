@@ -409,7 +409,9 @@ export class MainnetDataDownloader {
       await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber);
       fromBlock += batchSize + 1;
     }
-    console.log("Events have been downloaded successfully.");
+    console.log(
+      "Events have been downloaded successfully. Please wait for pre-process to be done..."
+    );
   }
 
   private async downloadEventsFromRPC(
@@ -448,7 +450,9 @@ export class MainnetDataDownloader {
       await eventDB.saveLatestEventBlockNumber(latestEventBlockNumber);
       fromBlock += batchSize + 1;
     }
-    console.log("Events have been downloaded successfully.");
+    console.log(
+      "Events have been downloaded successfully. Please wait for pre-process to be done..."
+    );
   }
 
   private async saveEventsFromSubgraph(
@@ -747,6 +751,7 @@ export class MainnetDataDownloader {
       await eventDB.getLatestEventBlockNumber()
     );
     await simulatorDBManager.close();
+    console.log("Events have been pre-processed successfully.");
   }
 
   private nextBatch(currBlock: number) {
