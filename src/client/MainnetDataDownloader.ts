@@ -7,7 +7,7 @@ import {
   ConfigurableCorePool,
   PoolConfig,
   exists,
-  getBasenameFromPath,
+  getDatabaseNameFromPath,
 } from "..";
 import { LiquidityEvent } from "../entity/LiquidityEvent";
 import { SwapEvent } from "../entity/SwapEvent";
@@ -109,8 +109,8 @@ export class MainnetDataDownloader {
     poolName: string;
     poolAddress: string;
   } {
-    let fileName = getBasenameFromPath(filePath, ".db");
-    let nameArr = fileName.split("_");
+    let databaseName = getDatabaseNameFromPath(filePath, ".db");
+    let nameArr = databaseName.split("_");
     return { poolName: nameArr[0], poolAddress: nameArr[1] };
   }
 
@@ -159,7 +159,7 @@ export class MainnetDataDownloader {
       await eventDB.addPoolConfig(poolConfig);
       await eventDB.saveLatestEventBlockNumber(deploymentBlockNumber);
 
-      if (toBlock == "afterDeployment") return;
+      if (toBlock === "afterDeployment") return;
 
       // record initialize event
       await eventDB.addInitialSqrtPriceX96(
@@ -170,10 +170,10 @@ export class MainnetDataDownloader {
       );
       await eventDB.saveLatestEventBlockNumber(initializationEventBlockNumber);
 
-      if (toBlock == "afterInitialization") return;
+      if (toBlock === "afterInitialization") return;
 
       // download events after initialization
-      if (this.eventDataSourceType == EventDataSourceType.SUBGRAPH) {
+      if (this.eventDataSourceType === EventDataSourceType.SUBGRAPH) {
         await this.downloadEventsFromSubgraph(
           poolAddress.toLowerCase(),
           await this.getTokenDecimals(poolConfig!.token0),
@@ -183,7 +183,7 @@ export class MainnetDataDownloader {
           toBlockAsNumber,
           batchSize
         );
-      } else if (this.eventDataSourceType == EventDataSourceType.RPC) {
+      } else if (this.eventDataSourceType === EventDataSourceType.RPC) {
         await this.downloadEventsFromRPC(
           uniswapV3Pool,
           eventDB,
@@ -287,7 +287,7 @@ export class MainnetDataDownloader {
       // download events after initialization
       let poolConfig = await eventDB.getPoolConfig();
 
-      if (this.eventDataSourceType == EventDataSourceType.SUBGRAPH) {
+      if (this.eventDataSourceType === EventDataSourceType.SUBGRAPH) {
         await this.downloadEventsFromSubgraph(
           poolAddress.toLowerCase(),
           await this.getTokenDecimals(poolConfig!.token0),
@@ -297,7 +297,7 @@ export class MainnetDataDownloader {
           toBlockAsNumber,
           batchSize
         );
-      } else if (this.eventDataSourceType == EventDataSourceType.RPC) {
+      } else if (this.eventDataSourceType === EventDataSourceType.RPC) {
         await this.downloadEventsFromRPC(
           uniswapV3Pool,
           eventDB,
@@ -469,7 +469,7 @@ export class MainnetDataDownloader {
     let latestEventBlockNumber = fromBlock;
     let skip = 0;
     while (true) {
-      if (eventType == EventType.MINT) {
+      if (eventType === EventType.MINT) {
         const query = gql`
         query {
           pool(id: "${poolAddress}") {
@@ -530,7 +530,7 @@ export class MainnetDataDownloader {
         } else {
           skip += 1000;
         }
-      } else if (eventType == EventType.BURN) {
+      } else if (eventType === EventType.BURN) {
         const query = gql`
         query {
           pool(id: "${poolAddress}") {
@@ -590,7 +590,7 @@ export class MainnetDataDownloader {
         } else {
           skip += 1000;
         }
-      } else if (eventType == EventType.SWAP) {
+      } else if (eventType === EventType.SWAP) {
         const query = gql`
           query {
             pool(id: "${poolAddress}") {
@@ -661,7 +661,7 @@ export class MainnetDataDownloader {
     toBlock: number
   ): Promise<number> {
     let latestEventBlockNumber = fromBlock;
-    if (eventType == EventType.MINT) {
+    if (eventType === EventType.MINT) {
       let topic = uniswapV3Pool.filters.Mint();
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
@@ -684,7 +684,7 @@ export class MainnetDataDownloader {
         if (event.blockNumber > latestEventBlockNumber)
           latestEventBlockNumber = event.blockNumber;
       }
-    } else if (eventType == EventType.BURN) {
+    } else if (eventType === EventType.BURN) {
       let topic = uniswapV3Pool.filters.Burn();
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {
@@ -707,7 +707,7 @@ export class MainnetDataDownloader {
         if (event.blockNumber > latestEventBlockNumber)
           latestEventBlockNumber = event.blockNumber;
       }
-    } else if (eventType == EventType.SWAP) {
+    } else if (eventType === EventType.SWAP) {
       let topic = uniswapV3Pool.filters.Swap();
       let events = await uniswapV3Pool.queryFilter(topic, fromBlock, toBlock);
       for (let event of events) {

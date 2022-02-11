@@ -312,7 +312,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
       sqrtPriceLimitX96?: JSBI;
     }[] = [solution3, solution4];
 
-    if (!JSBI.equal(param.sqrtPriceX96, this.getCorePool().sqrtPriceX96)) {
+    if (JSBI.notEqual(param.sqrtPriceX96, this.getCorePool().sqrtPriceX96)) {
       if (JSBI.equal(param.liquidity, JSBI.BigInt(-1))) {
         let solution5 = {
           amountSpecified: param.amount0,

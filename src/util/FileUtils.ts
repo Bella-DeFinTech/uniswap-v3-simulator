@@ -10,7 +10,7 @@ export function exists(filePath: string): boolean {
   }
 }
 
-export function getBasenameFromPath(
+export function getDatabaseNameFromPath(
   filePath: string,
   extToMove?: string
 ): string {
