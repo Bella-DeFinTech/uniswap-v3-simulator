@@ -4,6 +4,8 @@ import JSBI from "jsbi";
 export interface SwapEvent {
   id: number;
   type: EventType.SWAP;
+  msgSender: string;
+  recipient: string;
   amount0: JSBI;
   amount1: JSBI;
   amountSpecified: JSBI;

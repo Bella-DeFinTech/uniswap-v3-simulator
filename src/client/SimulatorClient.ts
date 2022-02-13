@@ -15,6 +15,7 @@ import {
   EndBlockTypeWhenInit,
   EndBlockTypeWhenRecover,
 } from "../entity/EndBlockType";
+import { EventDataSourceType } from "../enum/EventDataSourceType";
 
 export class SimulatorClient {
   private simulatorDBManager: SimulationDataManager;
@@ -35,10 +36,11 @@ export class SimulatorClient {
     poolName: string = "",
     poolAddress: string,
     endBlock: EndBlockTypeWhenInit,
-    RPCProviderUrl?: string
+    RPCProviderUrl: string | undefined = undefined,
+    eventDataSourceType: EventDataSourceType = EventDataSourceType.SUBGRAPH
   ): Promise<IConfigurableCorePool> {
     let mainnetDataDownloader: MainnetDataDownloader =
-      new MainnetDataDownloader(RPCProviderUrl);
+      new MainnetDataDownloader(RPCProviderUrl, eventDataSourceType);
     await mainnetDataDownloader.download(poolName, poolAddress, endBlock);
     let eventDBFilePath = mainnetDataDownloader.generateMainnetEventDBFilePath(
       poolName,
@@ -70,10 +72,11 @@ export class SimulatorClient {
   async recoverFromMainnetEventDBFile(
     mainnetEventDBFilePath: string,
     endBlock: EndBlockTypeWhenRecover,
-    RPCProviderUrl?: string
+    RPCProviderUrl: string | undefined = undefined,
+    eventDataSourceType: EventDataSourceType = EventDataSourceType.SUBGRAPH
   ): Promise<IConfigurableCorePool> {
     let mainnetDataDownloader: MainnetDataDownloader =
-      new MainnetDataDownloader(RPCProviderUrl);
+      new MainnetDataDownloader(RPCProviderUrl, eventDataSourceType);
     await mainnetDataDownloader.update(mainnetEventDBFilePath, endBlock);
     let { poolAddress } = mainnetDataDownloader.parseFromMainnetEventDBFilePath(
       mainnetEventDBFilePath

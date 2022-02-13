@@ -2,6 +2,9 @@ import JSBI from "jsbi";
 import { FeeAmount } from "./FeeAmount";
 
 // constants used internally but not expected to be used externally
+export const UNISWAP_V3_SUBGRAPH_ENDPOINT =
+  "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3";
+
 export const NEGATIVE_ONE = JSBI.BigInt(-1);
 export const ZERO = JSBI.BigInt(0);
 export const ONE = JSBI.BigInt(1);

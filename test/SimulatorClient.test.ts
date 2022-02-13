@@ -9,6 +9,8 @@ import { ConfigurableCorePool as IConfigurableCorePool } from "../src/interface/
 import { ConfigurableCorePool } from "../src/core/ConfigurableCorePool";
 import JSBI from "jsbi";
 import { EndBlockTypeWhenRecover } from "../src/entity/EndBlockType";
+import { exists } from "../src";
+import { EventDataSourceType } from "../src/enum/EventDataSourceType";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
@@ -18,30 +20,38 @@ describe("Test SimulatorClient v2", function () {
       await SQLiteSimulationDataManager.buildInstance();
     let clientInstance = new SimulatorClient(simulationDataManager);
 
-    let poolName = "test";
+    let poolName = "events-test";
     // case 1
     // 0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8
     // 12374077
     // case 2
     // 0x92560C178cE069CC014138eD3C2F5221Ba71f58a
     // 13578943
-    let poolAddress = "0x92560C178cE069CC014138eD3C2F5221Ba71f58a";
-    let endBlock: EndBlockTypeWhenRecover = 13579000;
+
+    let poolAddress = "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8";
+    let endBlock: EndBlockTypeWhenRecover = 12374077;
     // Your customed RPCProviderUrl, or use config in tuner.config.js
     let RPCProviderUrl: string | undefined = undefined;
+    // You can specify data source of events here, and Uniswap v3 Subgraph as default is recommended rather than RPC for at least 75% time saving.
+    // Just a reminder, RPC endpoint is necessary for the simulator even if you choose to download events from Subgraph.
+    let eventDataSourceType: EventDataSourceType = EventDataSourceType.SUBGRAPH;
 
-    await clientInstance.initCorePoolFromMainnet(
-      poolName,
-      poolAddress,
-      "afterDeployment",
-      RPCProviderUrl
-    );
+    if (!exists(`${poolName}_${poolAddress}.db`)) {
+      await clientInstance.initCorePoolFromMainnet(
+        poolName,
+        poolAddress,
+        "afterDeployment",
+        RPCProviderUrl,
+        eventDataSourceType
+      );
+    }
 
     let configurableCorePool =
       await clientInstance.recoverFromMainnetEventDBFile(
         `${poolName}_${poolAddress}.db`,
         endBlock,
-        RPCProviderUrl
+        RPCProviderUrl,
+        eventDataSourceType
       );
     console.log(`tick: ${configurableCorePool.getCorePool().tickCurrent}`);
     console.log(
@@ -49,6 +59,7 @@ describe("Test SimulatorClient v2", function () {
         .getCorePool()
         .sqrtPriceX96.toString()}`
     );
+
     await clientInstance.shutdown();
   });
 });

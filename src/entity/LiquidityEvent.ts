@@ -4,6 +4,8 @@ import JSBI from "jsbi";
 export interface LiquidityEvent {
   id: number;
   type: EventType.MINT | EventType.BURN;
+  msgSender: string;
+  recipient: string;
   liquidity: JSBI;
   amount0: JSBI;
   amount1: JSBI;
