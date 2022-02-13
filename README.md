@@ -1,15 +1,19 @@
 [![Twitter URL](https://img.shields.io/twitter/url.svg?label=Follow%20%40BellaProtocol&style=social&url=https%3A%2F%2Ftwitter.com%2FBellaProtocol)](https://twitter.com/BellaProtocol)
 [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/8ctd5geS8t)
 
-# the "_Tuner_", a Uniswap V3 Simulator
+# the "_Tuner_", a programmable, transaction-based Uniswap V3 Simulator with 100% Precision
 
 > Before an ochestra, every musical instrument has to be _in-tune_, to ensure an outstanding performance.
 >
 > Before running a strategy, every parameter has to be _fine tuned_, to maximaze the performance.
 
-### _Tuner_ is a programmatic Uniswap V3 simulator that allows strategy backtesting on a transaction-to-transaction basis with arbitrary or historical data without the EVM, it runs independently yet completely retains the exact smart-contract behavior of the intricate design and implementation of Uniswap V3.
+#### _Tuner_ is a programmatic Uniswap V3 simulator that allows strategy backtesting on a transaction-to-transaction basis with arbitrary or historical data without the EVM, it runs independently yet completely retains the exact smart-contract behavior of the intricate design and implementation of Uniswap V3.
 
-## [Quick Start (follow the link: https://docs.bella.fi/)](https://docs.bella.fi/)
+## Documentation
+
+- [Getting Started](https://docs.bella.fi/)
+- [Configuration](https://docs.bella.fi/configuration)
+- Developer Articles(stay tuned)
 
 #### _Tuner_ is fundamentally a state machine, it can:
 
