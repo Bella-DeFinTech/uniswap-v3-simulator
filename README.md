@@ -11,8 +11,9 @@
 
 ## Documentation
 
-- [Getting Started](https://docs.bella.fi/)
+- [Getting Started](https://docs.bella.fi/getting-started)
 - [Configuration](https://docs.bella.fi/configuration)
+- [Guides](https://docs.bella.fi/guides)
 - Developer Articles(stay tuned)
 
 #### _Tuner_ is fundamentally a state machine, it can:

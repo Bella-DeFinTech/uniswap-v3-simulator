@@ -10,7 +10,9 @@
 
 - [Quick Start](docs/quick-start.md)
 
-## [Configuration](docs/configuration.md)
+## Configuration
+
+- [Configuration](docs/configuration.md)
 
 ## Guides
 
@@ -34,7 +36,9 @@
   - [Persisting & Recovering](docs/persisting-and-recovering.md)
   - [SimulatorRoadmapManager](docs/simulator-roadmap-manager.md)
 
-## [Performance](docs/performance.md)
+## Performance
+
+- [Performance](docs/performance.md)
 
 ## Examples
 
@@ -44,4 +48,6 @@
 
 - Uniswap-v3-Risk-Analysis(for some reason, not published yet)
 
-## [Contributing](docs/contributing.md)
+## Contributing
+
+- [Contributing](docs/contributing.md)
