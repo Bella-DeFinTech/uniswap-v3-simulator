@@ -27,6 +27,7 @@
 
   - [Fetching all the data of a certain pool from Ethereum](docs/fetching-all-the-data-of-a-certain-pool-from-ethereum.md)
   - [Getting a pool instance with the data fetched](docs/getting-a-pool-instance-with-the-data-fetched.md)
+  - [Loading and streaming events into a pool](docs/loading-and-streaming-events-into-a-pool.md)
 
 - (Advanced)For a better user experience as a state machine
 

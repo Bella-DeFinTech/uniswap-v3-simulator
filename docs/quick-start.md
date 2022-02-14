@@ -1,6 +1,12 @@
 ### Quick Start
 
 ```typescript
+import {
+  SimulationDataManager,
+  SimulatorClient,
+  SQLiteSimulationDataManager,
+} from "@bella-defintech/uniswap-v3-simulator";
+
 // 1. Instantiate a SimulationDataManager
 // this is for handling the internal data (snapshots, roadmaps, etc.)
 let simulationDataManager: SimulationDataManager =
@@ -26,7 +32,7 @@ let endBlock = 12374077;
 // 3. This method helps you:
 //    Download event data of a certain Uniswap V3 pool from mainnet
 //    Pre-process the data to figure out the inputs of swap events
-await clientInstance.initCorePoolFromMainnetPool(
+await clientInstance.initCorePoolFromMainnet(
   poolName,
   poolAddress,
   "afterDeployment"

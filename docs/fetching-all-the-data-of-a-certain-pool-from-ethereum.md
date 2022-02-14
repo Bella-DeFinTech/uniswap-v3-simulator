@@ -32,6 +32,14 @@ This means, there is more information added on top of the mainnet events, and th
 An example of the whole process will be:
 
 ```typescript
+import {
+  EndBlockTypeWhenRecover,
+  EventDataSourceType,
+  SimulationDataManager,
+  SimulatorClient,
+  SQLiteSimulationDataManager,
+} from "@bella-defintech/uniswap-v3-simulator";
+
 // 1. Instantiate a SimulationDataManager
 // this is for handling the internal data (snapshots, roadmaps, etc.)
 let simulationDataManager: SimulationDataManager =
