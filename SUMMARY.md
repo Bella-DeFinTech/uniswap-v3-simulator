@@ -47,7 +47,7 @@
 
 - [Uniswap-v3-Strategy-Backtest](https://github.com/Bella-DeFinTech/uniswap-v3-simulator/tree/main/examples/Uniswap-v3-Strategy-Backtest)
 
-- Uniswap-v3-Risk-Analysis(for some reason, not published yet)
+- Uniswap-v3-Risk-Analysis(will be available soon)
 
 ## Contributing
 
