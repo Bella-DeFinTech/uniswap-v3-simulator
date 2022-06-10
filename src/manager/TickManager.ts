@@ -71,7 +71,7 @@ export class TickManager {
   ): { nextTick: number; initialized: boolean } {
     const sortedTicks = this.getSortedTicks();
     let compressed = Math.floor(tick / tickSpacing); // matches rounding in the code
-    if (tick < 0 && tick % tickSpacing != 0) compressed--;
+    // if (tick < 0 && tick % tickSpacing != 0) compressed--;
     if (lte) {
       const wordPos = compressed >> 8;
       const minimum = (wordPos << 8) * tickSpacing;

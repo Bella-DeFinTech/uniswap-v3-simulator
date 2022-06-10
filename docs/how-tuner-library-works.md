@@ -14,7 +14,7 @@ The overall design of the simulator consists of several components (rough depend
 
 &#x20; |\_\_ **`SimulatorRoadMapManager`** - _To take snapshots and do state-change roadmap tracking_
 
-&#x20; |\_\_ **`InternalDBManager`** - _To persist snapshots and roadmaps using SQLite_
+&#x20; |\_\_ **`SimulationDataManager`** - _To persist snapshots and roadmaps using SQLite_
 
 There are 2 abstraction layers of the library:
 
