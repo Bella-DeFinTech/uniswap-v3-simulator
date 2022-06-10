@@ -1,6 +1,6 @@
 {
   "name": "@bella-defintech/uniswap-v3-simulator",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "the 'Tuner', a Uniswap V3 Simulator",
   "keywords": [
     "uniswap",
