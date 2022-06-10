@@ -6,7 +6,7 @@ chai.use(chaiAsPromised);
 describe("Test Uniswap v3 Subgraph", function () {
   const APIURL = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3";
 
-  it.only("can download events", async function () {
+  it("can download events", async function () {
     const query = gql`
       query {
         pool(id: "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8") {
