@@ -3,9 +3,9 @@
 
 # the "_Tuner_", a programmable, transaction-based Uniswap V3 Simulator with 100% Precision
 
-> Before an ochestra, every musical instrument has to be _in-tune_, to ensure an outstanding performance.
+> Before an orchestra, every musical instrument has to be _in-tune_, to ensure an outstanding performance.
 >
-> Before running a strategy, every parameter has to be _fine tuned_, to maximaze the performance.
+> Before running a strategy, every parameter has to be _fine tuned_, to maximize the performance.
 
 #### _Tuner_ is a programmatic Uniswap V3 simulator that allows strategy backtesting on a transaction-to-transaction basis with arbitrary or historical data without the EVM, it runs independently yet completely retains the exact smart-contract behavior of the intricate design and implementation of Uniswap V3.
 
@@ -22,7 +22,7 @@
 
 - this means your strategy will run through the Uniswap V3 implementation logic instead of just the high-level mathematic model.
 
-> **Maintain the identical tick-level percision of prices, fees, and positions of Uniswap V3**
+> **Maintain the identical tick-level precision of prices, fees, and positions of Uniswap V3**
 
 - this means the result of your backtesting is true to the real performance with the minimum margin of deviations.
 
