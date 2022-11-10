@@ -1,0 +1,32 @@
+name: Build and deploy to IPFS
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install and build
+        run: npm install && npm run build
+        shell: bash
+
+      - name: pin4everland
+        id: pin4everland
+        uses: 4everland/pin-action@v1.3
+        with:
+          EVER_TOKEN: ${{secrets.EVER_TOKEN}}
+          EVER_PROJECT_NAME: "uniswap-v3-simulator"
+          EVER_PROJECT_PLAT: "AR"
+          BUILD_LOCATION: "./dist"
+          
+      - name: output ipfs uri
+        run: echo ${{ steps.pin4everland.outputs.uri }}
