@@ -25,7 +25,7 @@ jobs:
         with:
           EVER_TOKEN: ${{secrets.EVER_TOKEN}}
           EVER_PROJECT_NAME: "uniswap-v3-simulator"
-          EVER_PROJECT_PLAT: "IPFS"
+          EVER_PROJECT_PLAT: "AR"
           BUILD_LOCATION: "./dist"
           
       - name: output ipfs uri
