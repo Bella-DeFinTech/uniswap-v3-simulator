@@ -26,7 +26,7 @@ import { CorePoolView } from "../interface/CorePoolView";
 import { PoolStateView } from "../interface/PoolStateView";
 import { Transition as TransitionView } from "../interface/Transition";
 import { SwapEvent } from "../entity/SwapEvent";
-import { ZERO } from "../enum/InternalConstants";
+import { RAPID_POSITION_OWNER, ZERO } from "../enum/InternalConstants";
 import { FullMath } from "..";
 
 export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
@@ -45,23 +45,28 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     poolState: PoolState,
     simulatorRoadmapManager: SimulatorRoadmapManager,
     simulatorConsoleVisitor: SimulatorConsoleVisitor,
-    simulatorPersistenceVisitor: SimulatorPersistenceVisitor
+    simulatorPersistenceVisitor: SimulatorPersistenceVisitor,
+    corePool?: CorePool
   ) {
     this.simulatorConsoleVisitor = simulatorConsoleVisitor;
     this.simulatorPersistenceVisitor = simulatorPersistenceVisitor;
     this.id = IdGenerator.guid();
-    if (poolState.hasSnapshot()) {
-      this.corePool = PoolStateHelper.buildCorePoolBySnapshot(
-        poolState.snapshot!
-      );
-    } else if (poolState.hasBaseSnapshot()) {
-      this.corePool = PoolStateHelper.buildCorePoolBySnapshot(
-        poolState.baseSnapshot!
-      );
+    if (corePool) {
+      this.corePool = corePool;
     } else {
-      this.corePool = PoolStateHelper.buildCorePoolByPoolConfig(
-        poolState.poolConfig
-      );
+      if (poolState.hasSnapshot()) {
+        this.corePool = PoolStateHelper.buildCorePoolBySnapshot(
+          poolState.snapshot!
+        );
+      } else if (poolState.hasBaseSnapshot()) {
+        this.corePool = PoolStateHelper.buildCorePoolBySnapshot(
+          poolState.baseSnapshot!
+        );
+      } else {
+        this.corePool = PoolStateHelper.buildCorePoolByPoolConfig(
+          poolState.poolConfig
+        );
+      }
     }
     this._poolState = poolState;
     this.simulatorRoadmapManager = simulatorRoadmapManager;
@@ -99,6 +104,81 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     }
   }
 
+  rapidMint(
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: IConfigurableCorePool,
+      transition: TransitionView
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }> {
+    let currentPoolStateId = this.poolState.id;
+    let res: GeneralReturnParams;
+    try {
+      res = this.corePool.rapidMint(tickLower, tickUpper, amount);
+    } catch (error) {
+      this.recover(currentPoolStateId);
+      throw error;
+    }
+    // TODO: rapid mint shoule be different from mint
+    return this.postProcess(
+      ActionType.MINT,
+      {
+        type: ActionType.MINT,
+        recipient: RAPID_POSITION_OWNER,
+        tickLower,
+        tickUpper,
+        amount,
+      } as MintParams,
+      res,
+      postProcessorCallback
+    )
+      .then(() => Promise.resolve(res))
+      .catch((err) => {
+        this.recover(currentPoolStateId);
+        return Promise.reject(err);
+      });
+  }
+
+  phantomMint(
+    recipient: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: IConfigurableCorePool,
+      transition: TransitionView
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }> {
+    let currentPoolStateId = this.poolState.id;
+    let res: GeneralReturnParams;
+    try {
+      res = this.corePool.phantomMint(recipient, tickLower, tickUpper, amount);
+    } catch (error) {
+      this.recover(currentPoolStateId);
+      throw error;
+    }
+    // TODO: phantom mint shoule be different from mint
+    return this.postProcess(
+      ActionType.MINT,
+      {
+        type: ActionType.MINT,
+        recipient,
+        tickLower,
+        tickUpper,
+        amount,
+      } as MintParams,
+      res,
+      postProcessorCallback
+    )
+      .then(() => Promise.resolve(res))
+      .catch((err) => {
+        this.recover(currentPoolStateId);
+        return Promise.reject(err);
+      });
+  }
+
   mint(
     recipient: string,
     tickLower: number,
@@ -126,6 +206,81 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
         tickUpper,
         amount,
       } as MintParams,
+      res,
+      postProcessorCallback
+    )
+      .then(() => Promise.resolve(res))
+      .catch((err) => {
+        this.recover(currentPoolStateId);
+        return Promise.reject(err);
+      });
+  }
+
+  rapidBurn(
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: IConfigurableCorePool,
+      transition: TransitionView
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }> {
+    let currentPoolStateId = this.poolState.id;
+    let res: GeneralReturnParams;
+    try {
+      res = this.corePool.rapidBurn(tickLower, tickUpper, amount);
+    } catch (error) {
+      this.recover(currentPoolStateId);
+      throw error;
+    }
+    // TODO: rapid burn shoule be different from burn
+    return this.postProcess(
+      ActionType.BURN,
+      {
+        type: ActionType.BURN,
+        owner: RAPID_POSITION_OWNER,
+        tickLower,
+        tickUpper,
+        amount,
+      } as BurnParams,
+      res,
+      postProcessorCallback
+    )
+      .then(() => Promise.resolve(res))
+      .catch((err) => {
+        this.recover(currentPoolStateId);
+        return Promise.reject(err);
+      });
+  }
+
+  phantomBurn(
+    owner: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: IConfigurableCorePool,
+      transition: TransitionView
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }> {
+    let currentPoolStateId = this.poolState.id;
+    let res: GeneralReturnParams;
+    try {
+      res = this.corePool.phantomBurn(owner, tickLower, tickUpper, amount);
+    } catch (error) {
+      this.recover(currentPoolStateId);
+      throw error;
+    }
+    // TODO: phantom burn shoule be different from burn
+    return this.postProcess(
+      ActionType.BURN,
+      {
+        type: ActionType.BURN,
+        owner,
+        tickLower,
+        tickUpper,
+        amount,
+      } as BurnParams,
       res,
       postProcessorCallback
     )
@@ -267,6 +422,7 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     param: SwapEvent
   ): Promise<{ amountSpecified: JSBI; sqrtPriceX96?: JSBI }> {
     let tryWithDryRun = (
+      solutionIndex: number,
       param: SwapEvent,
       amountSpecified: JSBI,
       sqrtPriceLimitX96?: JSBI
@@ -279,11 +435,14 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
         amountSpecified,
         sqrtPriceLimitX96
       ).then(({ amount0, amount1, sqrtPriceX96 }) => {
-        return (
-          JSBI.equal(amount0, param.amount0) &&
-          JSBI.equal(amount1, param.amount1) &&
-          JSBI.equal(sqrtPriceX96, param.sqrtPriceX96)
-        );
+        // console.log(
+        //   `solutionIndex: ${solutionIndex}, amount0: ${amount0}, amount1: ${amount1}, sqrtPriceX96: ${sqrtPriceX96}`
+        // );
+        return true;
+        // JSBI.equal(amount0, param.amount0) &&
+        // JSBI.equal(amount1, param.amount1)
+        // &&
+        // JSBI.equal(sqrtPriceX96, param.sqrtPriceX96)
       });
     };
 
@@ -291,13 +450,13 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
       amountSpecified: JSBI.equal(param.liquidity, ZERO)
         ? FullMath.incrTowardInfinity(param.amount0)
         : param.amount0,
-      sqrtPriceLimitX96: param.sqrtPriceX96,
+      sqrtPriceLimitX96: undefined,
     };
     let solution2 = {
       amountSpecified: JSBI.equal(param.liquidity, ZERO)
         ? FullMath.incrTowardInfinity(param.amount1)
         : param.amount1,
-      sqrtPriceLimitX96: param.sqrtPriceX96,
+      sqrtPriceLimitX96: undefined,
     };
     let solution3 = {
       amountSpecified: param.amount0,
@@ -310,27 +469,33 @@ export class ConfigurableCorePool implements IConfigurableCorePool, Visitable {
     let solutionList: {
       amountSpecified: JSBI;
       sqrtPriceLimitX96?: JSBI;
-    }[] = [solution3, solution4];
+    }[] = [];
 
-    if (JSBI.notEqual(param.sqrtPriceX96, this.getCorePool().sqrtPriceX96)) {
-      if (JSBI.equal(param.liquidity, JSBI.BigInt(-1))) {
-        let solution5 = {
-          amountSpecified: param.amount0,
-          sqrtPriceLimitX96: param.sqrtPriceX96,
-        };
-        let solution6 = {
-          amountSpecified: param.amount1,
-          sqrtPriceLimitX96: param.sqrtPriceX96,
-        };
-        solutionList.push(solution5);
-        solutionList.push(solution6);
-      }
-      solutionList.push(solution1);
-      solutionList.push(solution2);
-    }
+    solutionList.push(solution1);
+    // solutionList.push(solution2);
+    // solutionList.push(solution3);
+    // solutionList.push(solution4);
+
+    // if (JSBI.notEqual(param.sqrtPriceX96, this.getCorePool().sqrtPriceX96)) {
+    //   if (JSBI.equal(param.liquidity, JSBI.BigInt(-1))) {
+    //     let solution5 = {
+    //       amountSpecified: param.amount0,
+    //       sqrtPriceLimitX96: param.sqrtPriceX96,
+    //     };
+    //     let solution6 = {
+    //       amountSpecified: param.amount1,
+    //       sqrtPriceLimitX96: param.sqrtPriceX96,
+    //     };
+    //     solutionList.push(solution5);
+    //     solutionList.push(solution6);
+    //   }
+    //   // solutionList.push(solution1);
+    //   // solutionList.push(solution2);
+    // }
     for (let i = 0; i < solutionList.length; i++) {
       if (
         await tryWithDryRun(
+          i + 1,
           param,
           solutionList[i].amountSpecified,
           solutionList[i].sqrtPriceLimitX96

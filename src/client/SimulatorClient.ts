@@ -10,12 +10,14 @@ import { ConfigurableCorePool as IConfigurableCorePool } from "../interface/Conf
 import { SimulatorConsoleVisitor } from "../manager/SimulatorConsoleVisitor";
 import { SimulatorPersistenceVisitor } from "../manager/SimulatorPersistenceVisitor";
 import { EventDBManager } from "../manager/EventDBManager";
-import { MainnetDataDownloader } from "./MainnetDataDownloader";
+import { BSCDataDownloader } from "./BSCDataDownloader";
 import {
   EndBlockTypeWhenInit,
   EndBlockTypeWhenRecover,
 } from "../entity/EndBlockType";
 import { EventDataSourceType } from "../enum/EventDataSourceType";
+import { Tick } from "../model/Tick";
+import { PoolStateHelper } from "../util/PoolStateHelper";
 
 export class SimulatorClient {
   private simulatorDBManager: SimulationDataManager;
@@ -32,42 +34,49 @@ export class SimulatorClient {
     );
   }
 
-  async initCorePoolFromMainnet(
-    poolName: string = "",
-    poolAddress: string,
-    endBlock: EndBlockTypeWhenInit,
-    RPCProviderUrl: string | undefined = undefined,
-    eventDataSourceType: EventDataSourceType = EventDataSourceType.SUBGRAPH
-  ): Promise<IConfigurableCorePool> {
-    let mainnetDataDownloader: MainnetDataDownloader =
-      new MainnetDataDownloader(RPCProviderUrl, eventDataSourceType);
-    await mainnetDataDownloader.download(poolName, poolAddress, endBlock);
-    let eventDBFilePath = mainnetDataDownloader.generateMainnetEventDBFilePath(
-      poolName,
-      poolAddress
-    );
-    let eventDB = await EventDBManager.buildInstance(eventDBFilePath);
-    try {
-      let poolConfig = await eventDB.getPoolConfig();
-      let configurableCorePool: IConfigurableCorePool =
-        this.initCorePoolFromConfig(poolConfig!);
-      if (endBlock == "afterDeployment") return configurableCorePool;
-      let endBlockInNumber =
-        await mainnetDataDownloader.parseEndBlockTypeWhenInit(
-          endBlock,
-          poolAddress
-        );
-      await mainnetDataDownloader.initializeAndReplayEvents(
-        eventDB,
-        configurableCorePool,
-        endBlockInNumber,
-        endBlock == "afterInitialization"
-      );
-      return configurableCorePool;
-    } finally {
-      await eventDB.close();
-    }
-  }
+  // async initCorePoolFromMainnet(
+  //   poolName: string = "",
+  //   poolAddress: string,
+  //   endBlock: EndBlockTypeWhenInit,
+  //   RPCProviderUrl: string | undefined = undefined,
+  //   eventDataSourceType: EventDataSourceType = EventDataSourceType.SUBGRAPH
+  // ): Promise<IConfigurableCorePool> {
+  //   let mainnetDataDownloader: BSCDataDownloader = new BSCDataDownloader(
+  //     RPCProviderUrl,
+  //     eventDataSourceType
+  //   );
+  //   await mainnetDataDownloader.download(
+  //     poolName,
+  //     poolAddress,
+  //     deploymentBlockNumber,
+  //     endBlock
+  //   );
+  //   let eventDBFilePath = mainnetDataDownloader.generateMainnetEventDBFilePath(
+  //     poolName,
+  //     poolAddress
+  //   );
+  //   let eventDB = await EventDBManager.buildInstance(eventDBFilePath);
+  //   try {
+  //     let poolConfig = await eventDB.getPoolConfig();
+  //     let configurableCorePool: IConfigurableCorePool =
+  //       this.initCorePoolFromConfig(poolConfig!);
+  //     if (endBlock == "afterDeployment") return configurableCorePool;
+  //     let endBlockInNumber =
+  //       await mainnetDataDownloader.parseEndBlockTypeWhenInit(
+  //         endBlock,
+  //         poolAddress
+  //       );
+  //     await mainnetDataDownloader.initializeAndReplayEvents(
+  //       eventDB,
+  //       configurableCorePool,
+  //       endBlockInNumber,
+  //       endBlock == "afterInitialization"
+  //     );
+  //     return configurableCorePool;
+  //   } finally {
+  //     await eventDB.close();
+  //   }
+  // }
 
   async recoverFromMainnetEventDBFile(
     mainnetEventDBFilePath: string,
@@ -75,8 +84,10 @@ export class SimulatorClient {
     RPCProviderUrl: string | undefined = undefined,
     eventDataSourceType: EventDataSourceType = EventDataSourceType.SUBGRAPH
   ): Promise<IConfigurableCorePool> {
-    let mainnetDataDownloader: MainnetDataDownloader =
-      new MainnetDataDownloader(RPCProviderUrl, eventDataSourceType);
+    let mainnetDataDownloader: BSCDataDownloader = new BSCDataDownloader(
+      RPCProviderUrl,
+      eventDataSourceType
+    );
     await mainnetDataDownloader.update(mainnetEventDBFilePath, endBlock);
     let { poolAddress } = mainnetDataDownloader.parseFromMainnetEventDBFilePath(
       mainnetEventDBFilePath
@@ -111,6 +122,32 @@ export class SimulatorClient {
       this._simulatorRoadmapManager,
       new SimulatorConsoleVisitor(),
       new SimulatorPersistenceVisitor(this.simulatorDBManager)
+    );
+  }
+
+  initCorePoolFromOnchainData(
+    poolConfig: PoolConfig,
+    sqrtPriceX96: bigint,
+    liquidity: bigint,
+    tickCurrent: number,
+    feeGrowthGlobal0X128: bigint,
+    feeGrowthGlobal1X128: bigint,
+    populatedTicks: Map<number, Tick>
+  ): IConfigurableCorePool {
+    return new ConfigurableCorePool(
+      new PoolState(poolConfig),
+      this._simulatorRoadmapManager,
+      new SimulatorConsoleVisitor(),
+      new SimulatorPersistenceVisitor(this.simulatorDBManager),
+      PoolStateHelper.buildCorePoolByOnchainData(
+        poolConfig,
+        sqrtPriceX96,
+        liquidity,
+        tickCurrent,
+        feeGrowthGlobal0X128,
+        feeGrowthGlobal1X128,
+        populatedTicks
+      )
     );
   }
 

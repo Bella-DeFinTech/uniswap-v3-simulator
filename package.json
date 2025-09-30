@@ -1,6 +1,6 @@
 {
   "name": "@bella-defintech/uniswap-v3-simulator",
-  "version": "0.1.5",
+  "version": "0.1.9",
   "description": "the 'Tuner', a Uniswap V3 Simulator",
   "keywords": [
     "uniswap",
@@ -58,11 +58,13 @@
   "dependencies": {
     "bignumber.js": "^9.0.2",
     "dayjs": "^1.10.6",
-    "ethers": "^5.0.0",
+    "dotenv": "^17.2.1",
+    "ethers": "^5.7.0",
     "graphql": "^16.2.0",
     "graphql-request": "^3.7.0",
     "jsbi": "3.1.6",
     "knex": "^0.95.10",
+    "log4js": "^6.9.1",
     "reflect-metadata": "^0.1.13",
     "sqlite3": "^5.0.2",
     "typedjson": "^1.7.0",

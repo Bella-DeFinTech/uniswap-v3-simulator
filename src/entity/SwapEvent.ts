@@ -13,7 +13,8 @@ export interface SwapEvent {
   liquidity: JSBI;
   tick: number;
   blockNumber: number;
-  transactionIndex: number;
+  transactionHash: string;
   logIndex: number;
   date: Date;
+  verified: boolean;
 }

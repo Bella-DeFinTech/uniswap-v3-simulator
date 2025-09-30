@@ -6,7 +6,14 @@ import { Position } from "../model/Position";
 import { TickMath } from "../util/TickMath";
 import { SqrtPriceMath } from "../util/SqrtPriceMath";
 import { StepComputations } from "../entity/StepComputations";
-import { ZERO, ONE, NEGATIVE_ONE, Q128 } from "../enum/InternalConstants";
+import {
+  ZERO,
+  ONE,
+  NEGATIVE_ONE,
+  Q128,
+  PROTOCOL_FEE_DENOMINATOR,
+  PROTOCOL_FEE,
+} from "../enum/InternalConstants";
 import { SwapMath } from "../util/SwapMath";
 import { LiquidityMath } from "../util/LiquidityMath";
 import { FullMath } from "../util/FullMath";
@@ -104,6 +111,52 @@ export class CorePool {
     this._sqrtPriceX96 = sqrtPriceX96;
   }
 
+  phantomMint(
+    recipient: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
+    assert(JSBI.greaterThan(amount, ZERO), "Mint amount should greater than 0");
+
+    let amount0 = ZERO;
+    let amount1 = ZERO;
+
+    let positionStep = this.phantomModifyPosition(
+      recipient,
+      tickLower,
+      tickUpper,
+      amount
+    );
+
+    amount0 = positionStep.amount0;
+    amount1 = positionStep.amount1;
+    return {
+      amount0,
+      amount1,
+    };
+  }
+
+  rapidMint(
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
+    assert(JSBI.greaterThan(amount, ZERO), "Mint amount should greater than 0");
+
+    let amount0 = ZERO;
+    let amount1 = ZERO;
+
+    let positionStep = this.rapidModifyPosition(tickLower, tickUpper, amount);
+
+    amount0 = positionStep.amount0;
+    amount1 = positionStep.amount1;
+    return {
+      amount0,
+      amount1,
+    };
+  }
+
   mint(
     recipient: string,
     tickLower: number,
@@ -124,6 +177,55 @@ export class CorePool {
 
     amount0 = positionStep.amount0;
     amount1 = positionStep.amount1;
+    return {
+      amount0,
+      amount1,
+    };
+  }
+
+  phantomBurn(
+    owner: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
+    let { position, amount0, amount1 } = this.phantomModifyPosition(
+      owner,
+      tickLower,
+      tickUpper,
+      JSBI.unaryMinus(amount)
+    );
+
+    amount0 = JSBI.unaryMinus(amount0);
+    amount1 = JSBI.unaryMinus(amount1);
+
+    if (JSBI.greaterThan(amount0, ZERO) || JSBI.greaterThan(amount1, ZERO)) {
+      let newTokensOwed0 = JSBI.add(position.tokensOwed0, amount0);
+      let newTokensOwed1 = JSBI.add(position.tokensOwed1, amount1);
+
+      position.updateBurn(newTokensOwed0, newTokensOwed1);
+    }
+
+    return {
+      amount0,
+      amount1,
+    };
+  }
+
+  rapidBurn(
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
+    let { amount0, amount1 } = this.rapidModifyPosition(
+      tickLower,
+      tickUpper,
+      JSBI.unaryMinus(amount)
+    );
+
+    amount0 = JSBI.unaryMinus(amount0);
+    amount1 = JSBI.unaryMinus(amount1);
+
     return {
       amount0,
       amount1,
@@ -322,6 +424,20 @@ export class CorePool {
         );
       }
 
+      //   // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+      //   if (cache.feeProtocol > 0) {
+      //     uint256 delta = (step.feeAmount.mul(cache.feeProtocol)) / PROTOCOL_FEE_DENOMINATOR;
+      //     step.feeAmount -= delta;
+      //     state.protocolFee += uint128(delta);
+      // }
+
+      // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+      let delta = JSBI.divide(
+        JSBI.multiply(step.feeAmount, PROTOCOL_FEE),
+        PROTOCOL_FEE_DENOMINATOR
+      );
+      step.feeAmount = JSBI.subtract(step.feeAmount, delta);
+
       if (JSBI.greaterThan(state.liquidity, ZERO))
         state.feeGrowthGlobalX128 = JSBI.add(
           state.feeGrowthGlobalX128,
@@ -401,6 +517,129 @@ export class CorePool {
     );
   }
 
+  private phantomModifyPosition(
+    owner: string,
+    tickLower: number,
+    tickUpper: number,
+    liquidityDelta: JSBI
+  ): { position: Position; amount0: JSBI; amount1: JSBI } {
+    this.checkTicks(tickLower, tickUpper);
+
+    let amount0: JSBI = ZERO,
+      amount1: JSBI = ZERO;
+
+    let positionView: PositionView = this.getPosition(
+      owner,
+      tickLower,
+      tickUpper
+    );
+
+    if (JSBI.lessThan(liquidityDelta, ZERO)) {
+      const negatedLiquidityDelta = JSBI.multiply(liquidityDelta, NEGATIVE_ONE);
+      assert(
+        JSBI.greaterThanOrEqual(positionView.liquidity, negatedLiquidityDelta),
+        "Liquidity Underflow"
+      );
+    }
+
+    // check ticks pass, update position
+    let position = this.phantomUpdatePosition(
+      owner,
+      tickLower,
+      tickUpper,
+      liquidityDelta
+    );
+    // use switch or pattern matching
+    // check if liquidity happen add() or remove()
+    if (JSBI.notEqual(liquidityDelta, ZERO)) {
+      if (this.tickCurrent < tickLower) {
+        amount0 = SqrtPriceMath.getAmount0Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+      } else if (this.tickCurrent < tickUpper) {
+        amount0 = SqrtPriceMath.getAmount0Delta(
+          this._sqrtPriceX96,
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+
+        amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          this._sqrtPriceX96,
+          liquidityDelta
+        );
+      } else {
+        amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+      }
+    }
+
+    return {
+      position,
+      amount0,
+      amount1,
+    };
+  }
+
+  private rapidModifyPosition(
+    tickLower: number,
+    tickUpper: number,
+    liquidityDelta: JSBI
+  ): { amount0: JSBI; amount1: JSBI } {
+    this.checkTicks(tickLower, tickUpper);
+
+    let amount0: JSBI = ZERO,
+      amount1: JSBI = ZERO;
+
+    // check ticks pass, update position
+    this.rapidUpdatePosition(tickLower, tickUpper, liquidityDelta);
+
+    // use switch or pattern matching
+    // check if liquidity happen add() or remove()
+    if (JSBI.notEqual(liquidityDelta, ZERO)) {
+      if (this.tickCurrent < tickLower) {
+        amount0 = SqrtPriceMath.getAmount0Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+      } else if (this.tickCurrent < tickUpper) {
+        amount0 = SqrtPriceMath.getAmount0Delta(
+          this._sqrtPriceX96,
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+
+        amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          this._sqrtPriceX96,
+          liquidityDelta
+        );
+
+        this._liquidity = LiquidityMath.addDelta(
+          this._liquidity,
+          liquidityDelta
+        );
+      } else {
+        amount1 = SqrtPriceMath.getAmount1Delta(
+          TickMath.getSqrtRatioAtTick(tickLower),
+          TickMath.getSqrtRatioAtTick(tickUpper),
+          liquidityDelta
+        );
+      }
+    }
+
+    return {
+      amount0,
+      amount1,
+    };
+  }
+
   private modifyPosition(
     owner: string,
     tickLower: number,
@@ -475,6 +714,77 @@ export class CorePool {
     };
   }
 
+  private phantomUpdatePosition(
+    owner: string,
+    tickLower: number,
+    tickUpper: number,
+    liquidityDelta: JSBI
+  ): Position {
+    let position: Position = this.positionManager.getPositionAndInitIfAbsent(
+      owner,
+      tickLower,
+      tickUpper
+    );
+
+    let feeGrowthInsideStep = this.tickManager.getFeeGrowthInside(
+      tickLower,
+      tickUpper,
+      this.tickCurrent,
+      this.feeGrowthGlobal0X128,
+      this.feeGrowthGlobal1X128
+    );
+
+    position.update(
+      liquidityDelta,
+      feeGrowthInsideStep.feeGrowthInside0X128,
+      feeGrowthInsideStep.feeGrowthInside1X128
+    );
+
+    return position;
+  }
+
+  private rapidUpdatePosition(
+    tickLower: number,
+    tickUpper: number,
+    liquidityDelta: JSBI
+  ) {
+    let flippedLower: boolean = false;
+    let flippedUpper: boolean = false;
+
+    if (JSBI.notEqual(liquidityDelta, ZERO)) {
+      flippedLower = this.tickManager
+        .getTickAndInitIfAbsent(tickLower)
+        .update(
+          liquidityDelta,
+          this.tickCurrent,
+          this.feeGrowthGlobal0X128,
+          this.feeGrowthGlobal1X128,
+          false,
+          this.maxLiquidityPerTick
+        );
+
+      flippedUpper = this.tickManager
+        .getTickAndInitIfAbsent(tickUpper)
+        .update(
+          liquidityDelta,
+          this.tickCurrent,
+          this.feeGrowthGlobal0X128,
+          this.feeGrowthGlobal1X128,
+          true,
+          this.maxLiquidityPerTick
+        );
+    }
+
+    if (JSBI.lessThan(liquidityDelta, ZERO)) {
+      if (flippedLower) {
+        this.tickManager.clear(tickLower);
+      }
+      if (flippedUpper) {
+        this.tickManager.clear(tickUpper);
+      }
+    }
+  }
+
   private updatePosition(
     owner: string,
     tickLower: number,
@@ -482,7 +792,9 @@ export class CorePool {
     liquidityDelta: JSBI
   ): Position {
     let position: Position = this.positionManager.getPositionAndInitIfAbsent(
-      PositionManager.getKey(owner, tickLower, tickUpper)
+      owner,
+      tickLower,
+      tickUpper
     );
 
     let flippedLower: boolean = false;
@@ -556,6 +868,49 @@ export class CorePool {
       tickLower,
       tickUpper
     );
+  }
+
+  getPositionBalance(
+    owner: string,
+    tickLower: number,
+    tickUpper: number
+  ): {
+    amount0: JSBI;
+    amount1: JSBI;
+  } {
+    let position = this.getPosition(owner, tickLower, tickUpper);
+    let amount0: JSBI = ZERO;
+    let amount1: JSBI = ZERO;
+
+    if (this.tickCurrent < tickLower) {
+      amount0 = SqrtPriceMath.getAmount0Delta(
+        TickMath.getSqrtRatioAtTick(tickLower),
+        TickMath.getSqrtRatioAtTick(tickUpper),
+        position.liquidity
+      );
+    } else if (this.tickCurrent < tickUpper) {
+      amount0 = SqrtPriceMath.getAmount0Delta(
+        this._sqrtPriceX96,
+        TickMath.getSqrtRatioAtTick(tickUpper),
+        position.liquidity
+      );
+
+      amount1 = SqrtPriceMath.getAmount1Delta(
+        TickMath.getSqrtRatioAtTick(tickLower),
+        this._sqrtPriceX96,
+        position.liquidity
+      );
+    } else {
+      amount1 = SqrtPriceMath.getAmount1Delta(
+        TickMath.getSqrtRatioAtTick(tickLower),
+        TickMath.getSqrtRatioAtTick(tickUpper),
+        position.liquidity
+      );
+    }
+    return {
+      amount0,
+      amount1,
+    };
   }
 
   toString(): string {

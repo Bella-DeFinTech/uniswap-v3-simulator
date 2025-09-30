@@ -1,2 +1,2 @@
 export * from "./SimulatorClient";
-export * from "./MainnetDataDownloader";
+export * from "./BSCDataDownloader";

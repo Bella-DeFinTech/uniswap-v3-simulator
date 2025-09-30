@@ -10,8 +10,11 @@ export class PositionManager {
   @jsonMapMember(String, Position, { name: "positions_json" })
   private positions: Map<string, Position>;
 
+  // private owner_positions: Map<string, Map<string, Position>>;
+
   constructor(positions: Map<string, Position> = new Map()) {
     this.positions = positions;
+    // this.owner_positions = new Map();
   }
 
   static getKey(owner: string, tickLower: number, tickUpper: number): string {
@@ -20,18 +23,48 @@ export class PositionManager {
     return owner + "_" + tickLower.toString() + "_" + tickUpper.toString();
   }
 
-  set(key: string, position: Position) {
+  static extractFromKey(key: string): {
+    owner: string;
+    tickLower: number;
+    tickUpper: number;
+  } {
+    const [owner, tickLower, tickUpper] = key.split("_");
+    return {
+      owner: owner,
+      tickLower: parseInt(tickLower),
+      tickUpper: parseInt(tickUpper),
+    };
+  }
+
+  set(owner: string, key: string, position: Position) {
     this.positions.set(key, position);
+
+    // if (!this.owner_positions.has(owner)) {
+    //   this.owner_positions.set(owner, new Map());
+    // }
+    // this.owner_positions.get(owner)!.set(key, position);
   }
 
   clear(key: string) {
     if (this.positions.has(key)) this.positions.delete(key);
   }
 
-  getPositionAndInitIfAbsent(key: string): Position {
+  // getPositionsByOwner(owner: string): Map<string, Position> {
+  //   if (!this.owner_positions.has(owner)) {
+  //     this.owner_positions.set(owner, new Map());
+  //   }
+  //   return this.owner_positions.get(owner)!;
+  // }
+
+  getPositionAndInitIfAbsent(
+    owner: string,
+    tickLower: number,
+    tickUpper: number
+  ): Position {
+    const key = PositionManager.getKey(owner, tickLower, tickUpper);
     if (this.positions.has(key)) return this.positions.get(key)!;
     const newPosition = new Position();
-    this.set(key, newPosition);
+    this.set(owner, key, newPosition);
     return newPosition;
   }
 

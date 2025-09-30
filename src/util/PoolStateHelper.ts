@@ -8,6 +8,9 @@ import { Serializer } from "./Serializer";
 import { TickManager } from "../manager/TickManager";
 import { PositionManager } from "../manager/PositionManager";
 import { PoolStateView } from "../interface/PoolStateView";
+import { Tick } from "../model/Tick";
+import { toJSBI } from "./BNUtils";
+import { ZERO } from "../enum/InternalConstants";
 
 export abstract class PoolStateHelper {
   static countHistoricalPoolStateTransitions(poolState: PoolStateView): number {
@@ -66,6 +69,31 @@ export abstract class PoolStateHelper {
         PositionManager,
         Serializer.serialize(PositionManager, snapshot.positionManager)
       )
+    );
+  }
+
+  static buildCorePoolByOnchainData(
+    poolConfig: PoolConfig,
+    sqrtPriceX96: bigint,
+    liquidity: bigint,
+    tickCurrent: number,
+    feeGrowthGlobal0X128: bigint,
+    feeGrowthGlobal1X128: bigint,
+    populatedTicks: Map<number, Tick>
+  ): CorePool {
+    return new CorePool(
+      poolConfig.token0,
+      poolConfig.token1,
+      poolConfig.fee,
+      poolConfig.tickSpacing,
+      ZERO,
+      ZERO,
+      toJSBI(sqrtPriceX96),
+      toJSBI(liquidity),
+      tickCurrent,
+      toJSBI(feeGrowthGlobal0X128),
+      toJSBI(feeGrowthGlobal1X128),
+      new TickManager(populatedTicks)
     );
   }
 

@@ -12,7 +12,8 @@ export interface LiquidityEvent {
   tickLower: number;
   tickUpper: number;
   blockNumber: number;
-  transactionIndex: number;
+  transactionHash: string;
   logIndex: number;
   date: Date;
+  verified: boolean;
 }

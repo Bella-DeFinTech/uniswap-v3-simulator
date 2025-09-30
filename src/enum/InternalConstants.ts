@@ -1,9 +1,18 @@
 import JSBI from "jsbi";
 import { FeeAmount } from "./FeeAmount";
 
+import dotenv from "dotenv";
+
+// load .env file
+dotenv.config();
+
+export const SUBGRAPH_API_KEY = process.env.SUBGRAPH_API_KEY;
+
 // constants used internally but not expected to be used externally
 export const UNISWAP_V3_SUBGRAPH_ENDPOINT =
   "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3";
+
+export const BSC_PANCAKE_V3_SUBGRAPH_ENDPOINT = `https://gateway.thegraph.com/api/subgraphs/id/A1BC1hzDsK4NTeXBpKQnDBphngpYZAwDUF7dEBfa3jHK`;
 
 export const NEGATIVE_ONE = JSBI.BigInt(-1);
 export const ZERO = JSBI.BigInt(0);
@@ -38,9 +47,16 @@ export const Q192 = JSBI.exponentiate(Q96, TWO);
 // used in fee calculation
 export const MAX_FEE = JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(6));
 
+export const PROTOCOL_FEE = JSBI.BigInt(3300);
+export const PROTOCOL_FEE_DENOMINATOR = JSBI.BigInt(10000);
+
 // The default factory tick spacings by fee amount.
 export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
+  [FeeAmount.EXTRA_LOW]: 1,
   [FeeAmount.LOW]: 10,
   [FeeAmount.MEDIUM]: 60,
   [FeeAmount.HIGH]: 200,
 };
+
+export const RAPID_POSITION_OWNER =
+  "0x00000000000000000000000000000001ECAE3608";

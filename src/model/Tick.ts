@@ -6,6 +6,7 @@ import { JSBIDeserializer, JSBISerializer } from "../util/Serializer";
 import { LiquidityMath } from "../util/LiquidityMath";
 import { MaxInt128, MinInt128, ZERO } from "../enum/InternalConstants";
 import { TickView } from "../interface/TickView";
+import { toJSBI } from "../util";
 
 @jsonObject({
   initializer: (_, rawSourceObject: TickView) => {
@@ -40,12 +41,42 @@ export class Tick {
   })
   protected _feeGrowthOutside1X128: JSBI = ZERO;
 
-  constructor(tickIndex: number) {
+  constructor(
+    tickIndex: number,
+    liquidityGross?: JSBI,
+    liquidityNet?: JSBI,
+    feeGrowthOutside0X128?: JSBI,
+    feeGrowthOutside1X128?: JSBI
+  ) {
     assert(
       tickIndex >= TickMath.MIN_TICK && tickIndex <= TickMath.MAX_TICK,
       "TICK"
     );
     this._tickIndex = tickIndex;
+    this._liquidityGross = liquidityGross ? liquidityGross : ZERO;
+    this._liquidityNet = liquidityNet ? liquidityNet : ZERO;
+    this._feeGrowthOutside0X128 = feeGrowthOutside0X128
+      ? feeGrowthOutside0X128
+      : ZERO;
+    this._feeGrowthOutside1X128 = feeGrowthOutside1X128
+      ? feeGrowthOutside1X128
+      : ZERO;
+  }
+
+  static fromOnchainData(
+    tickIndex: number,
+    liquidityGross: bigint,
+    liquidityNet: bigint,
+    feeGrowthOutside0X128: bigint,
+    feeGrowthOutside1X128: bigint
+  ): Tick {
+    return new Tick(
+      tickIndex,
+      toJSBI(liquidityGross),
+      toJSBI(liquidityNet),
+      toJSBI(feeGrowthOutside0X128),
+      toJSBI(feeGrowthOutside1X128)
+    );
   }
 
   public get tickIndex(): number {

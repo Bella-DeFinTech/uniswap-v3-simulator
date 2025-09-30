@@ -40,3 +40,7 @@ export function convertTokenStrFromDecimal(
 ): string {
   return new BigNumber(bnStr).times(new BigNumber(10).pow(decimals)).toString();
 }
+
+export function convertTokenStr(bnStr: string): string {
+  return new BigNumber(bnStr).toString();
+}

@@ -13,8 +13,50 @@ export interface ConfigurableCorePool {
 
   initialize(sqrtPriceX96: JSBI): Promise<void>;
 
+  rapidMint(
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: TransitionView
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }>;
+
+  phantomMint(
+    recipient: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: TransitionView
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }>;
+
   mint(
     recipient: string,
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: TransitionView
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }>;
+
+  rapidBurn(
+    tickLower: number,
+    tickUpper: number,
+    amount: JSBI,
+    postProcessorCallback?: (
+      configurableCorePool: ConfigurableCorePool,
+      transition: TransitionView
+    ) => Promise<void>
+  ): Promise<{ amount0: JSBI; amount1: JSBI }>;
+
+  phantomBurn(
+    owner: string,
     tickLower: number,
     tickUpper: number,
     amount: JSBI,

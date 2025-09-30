@@ -7,6 +7,9 @@ import { EventType } from "../enum/EventType";
 import { PoolConfig } from "../model/PoolConfig";
 import { ZERO } from "../enum/InternalConstants";
 import JSBI from "jsbi";
+import * as log4js from "log4js";
+
+const logger = log4js.getLogger("EventDBManager");
 
 const DATE_FORMAT: string = "YYYY-MM-DD HH:mm:ss";
 
@@ -21,9 +24,10 @@ type LiquidityEventRecord = {
   tick_lower: number;
   tick_upper: number;
   block_number: number;
-  transaction_index: number;
+  transaction_hash: string;
   log_index: number;
   date: string;
+  verified: boolean;
 };
 
 type SwapEventRecord = {
@@ -37,9 +41,10 @@ type SwapEventRecord = {
   liquidity: string;
   tick: number;
   block_number: number;
-  transaction_index: number;
+  transaction_hash: string;
   log_index: number;
   date: string;
+  verified: boolean;
 };
 
 type PoolConfigRecord = {
@@ -52,6 +57,8 @@ type PoolConfigRecord = {
   initial_sqrt_price_X96: string;
   initialization_event_block_number: number;
   latest_event_block_number: number;
+  latest_verified_swap_block_number: number;
+  latest_verified_burn_block_number: number;
   timestamp: string;
 };
 
@@ -80,25 +87,31 @@ export class EventDBManager {
   initTables(): Promise<void> {
     const knex = this.knex;
     let tasks = [
-      knex.schema.hasTable("pool_config").then((exists: boolean) =>
-        !exists
-          ? knex.schema.createTable(
-              "pool_config",
-              function (t: Knex.TableBuilder) {
-                t.increments("id").primary();
-                t.string("pool_config_id", 32);
-                t.string("token0", 255);
-                t.string("token1", 255);
-                t.integer("fee");
-                t.integer("tick_spacing");
-                t.string("initial_sqrt_price_X96", 255);
-                t.integer("initialization_event_block_number");
-                t.integer("latest_event_block_number");
-                t.text("timestamp");
-              }
-            )
-          : Promise.resolve()
-      ),
+      knex.schema
+        .hasTable("pool_config")
+        .then((exists: boolean) =>
+          !exists
+            ? knex.schema.createTable(
+                "pool_config",
+                function (t: Knex.TableBuilder) {
+                  t.increments("id").primary();
+                  t.string("pool_config_id", 32);
+                  t.string("token0", 255);
+                  t.string("token1", 255);
+                  t.integer("fee");
+                  t.integer("tick_spacing");
+                  t.string("initial_sqrt_price_X96", 255);
+                  t.integer("initialization_event_block_number");
+                  t.integer("latest_event_block_number");
+                  t.integer("latest_verified_swap_block_number");
+                  t.integer("latest_verified_burn_block_number");
+                  t.text("timestamp");
+                }
+              )
+            : Promise.resolve()
+        )
+        .then(() => this.migratePoolConfigTable())
+        .then(() => this.migrateEventTables()),
       knex.schema.hasTable("liquidity_events").then((exists: boolean) =>
         !exists
           ? knex.schema.createTable(
@@ -114,11 +127,13 @@ export class EventDBManager {
                 t.integer("tick_lower");
                 t.integer("tick_upper");
                 t.integer("block_number");
-                t.integer("transaction_index");
+                t.string("transaction_hash", 255);
                 t.integer("log_index");
                 t.text("date");
+                t.boolean("verified").defaultTo(false);
                 t.index(["type", "block_number"]);
                 t.index(["type", "date"]);
+                t.index(["transaction_hash", "log_index"]);
               }
             )
           : Promise.resolve()
@@ -138,11 +153,13 @@ export class EventDBManager {
                 t.string("liquidity", 255);
                 t.integer("tick");
                 t.integer("block_number");
-                t.integer("transaction_index");
+                t.string("transaction_hash", 255);
                 t.integer("log_index");
                 t.text("date");
+                t.boolean("verified").defaultTo(false);
                 t.index(["block_number"]);
                 t.index(["date"]);
+                t.index(["transaction_hash", "log_index"]);
               }
             )
           : Promise.resolve()
@@ -272,6 +289,19 @@ export class EventDBManager {
     );
   }
 
+  getBurnEventsByTransactionHash(
+    transactionHash: string
+  ): Promise<LiquidityEvent[]> {
+    return this.queryBurnEventsByTransactionHash(transactionHash).then(
+      (rows: LiquidityEventRecord[]) =>
+        Promise.resolve(
+          rows.map((row: LiquidityEventRecord) =>
+            this.deserializeLiquidityEvent(row)
+          )
+        )
+    );
+  }
+
   deleteSwapEventsByBlockNumber(
     fromBlock: number,
     toBlock: number
@@ -294,8 +324,8 @@ export class EventDBManager {
 
   addAmountSpecified(id: number, amountSpecified: string): Promise<number> {
     return this.knex.transaction((trx) =>
-      this.updateAmountSpecified(id, amountSpecified, trx).then((ids) =>
-        Promise.resolve(ids[0])
+      this.updateAmountSpecified(id, amountSpecified, trx).then(
+        (updated_rows) => Promise.resolve(updated_rows)
       )
     );
   }
@@ -327,6 +357,183 @@ export class EventDBManager {
     );
   }
 
+  saveBurnEvent(
+    transactionHash: string,
+    logIndex: number,
+    liquidity: string,
+    amount0: string,
+    amount1: string,
+    tickLower: number,
+    tickUpper: number
+  ): Promise<number> {
+    return this.knex.transaction((trx) =>
+      this.updateBurnEvent(
+        transactionHash,
+        logIndex,
+        liquidity,
+        amount0,
+        amount1,
+        tickLower,
+        tickUpper,
+        trx
+      ).then((id) => Promise.resolve(id))
+    );
+  }
+
+  getLatestVerifiedSwapBlockNumber(): Promise<number> {
+    return this.readPoolConfig().then((res) =>
+      !res
+        ? Promise.resolve(0)
+        : Promise.resolve(
+            null == res.latest_verified_swap_block_number
+              ? 0
+              : res.latest_verified_swap_block_number
+          )
+    );
+  }
+
+  getLatestVerifiedBurnBlockNumber(): Promise<number> {
+    return this.readPoolConfig().then((res) =>
+      !res
+        ? Promise.resolve(0)
+        : Promise.resolve(
+            null == res.latest_verified_burn_block_number
+              ? 0
+              : res.latest_verified_burn_block_number
+          )
+    );
+  }
+
+  saveLatestVerifiedSwapBlockNumber(
+    latestVerifiedSwapBlockNumber: number
+  ): Promise<number> {
+    return this.knex.transaction((trx) =>
+      this.updateLatestVerifiedSwapBlockNumber(
+        latestVerifiedSwapBlockNumber,
+        trx
+      ).then((id) => Promise.resolve(id))
+    );
+  }
+
+  saveLatestVerifiedBurnBlockNumber(
+    latestVerifiedBurnBlockNumber: number
+  ): Promise<number> {
+    return this.knex.transaction((trx) =>
+      this.updateLatestVerifiedBurnBlockNumber(
+        latestVerifiedBurnBlockNumber,
+        trx
+      ).then((id) => Promise.resolve(id))
+    );
+  }
+
+  /**
+   * mark liquidity event as verified
+   * @param eventId event id
+   * @returns updated rows
+   */
+  markLiquidityEventAsVerified(eventId: number): Promise<number> {
+    return this.knex.transaction((trx) =>
+      this.getBuilderContext("liquidity_events", trx)
+        .where("id", eventId)
+        .update({ verified: true })
+    );
+  }
+
+  /**
+   * mark swap event as verified
+   * @param eventId event id
+   * @returns updated rows
+   */
+  markSwapEventAsVerified(eventId: number): Promise<number> {
+    return this.knex.transaction((trx) =>
+      this.getBuilderContext("swap_events", trx)
+        .where("id", eventId)
+        .update({ verified: true })
+    );
+  }
+
+  /**
+   * batch mark liquidity events as verified
+   * @param eventIds event ids
+   * @returns updated rows
+   */
+  markLiquidityEventsAsVerified(eventIds: number[]): Promise<number> {
+    if (eventIds.length === 0) {
+      return Promise.resolve(0);
+    }
+    return this.knex.transaction((trx) =>
+      this.getBuilderContext("liquidity_events", trx)
+        .whereIn("id", eventIds)
+        .update({ verified: true })
+    );
+  }
+
+  /**
+   * batch mark swap events as verified
+   * @param eventIds event ids
+   * @returns updated rows
+   */
+  markSwapEventsAsVerified(eventIds: number[]): Promise<number> {
+    if (eventIds.length === 0) {
+      return Promise.resolve(0);
+    }
+    return this.knex.transaction((trx) =>
+      this.getBuilderContext("swap_events", trx)
+        .whereIn("id", eventIds)
+        .update({ verified: true })
+    );
+  }
+
+  /**
+   * get unverified liquidity events
+   * @param type event type
+   * @param fromBlock start block
+   * @param toBlock end block
+   * @returns unverified liquidity events
+   */
+  getUnverifiedLiquidityEvents(
+    type: number,
+    fromBlock: number,
+    toBlock: number
+  ): Promise<LiquidityEvent[]> {
+    return this.getBuilderContext("liquidity_events")
+      .where("type", type)
+      .andWhere("block_number", ">=", fromBlock)
+      .andWhere("block_number", "<=", toBlock)
+      .andWhere("verified", false)
+      .then((rows: LiquidityEventRecord[]) =>
+        Promise.resolve(
+          rows.map(
+            (row: LiquidityEventRecord): LiquidityEvent =>
+              this.deserializeLiquidityEvent(row)
+          )
+        )
+      );
+  }
+
+  /**
+   * get unverified swap events
+   * @param fromBlock start block
+   * @param toBlock end block
+   * @returns unverified swap events
+   */
+  getUnverifiedSwapEvents(
+    fromBlock: number,
+    toBlock: number
+  ): Promise<SwapEvent[]> {
+    return this.getBuilderContext("swap_events")
+      .where("block_number", ">=", fromBlock)
+      .andWhere("block_number", "<=", toBlock)
+      .andWhere("verified", false)
+      .then((rows: SwapEventRecord[]) =>
+        Promise.resolve(
+          rows.map(
+            (row: SwapEventRecord): SwapEvent => this.deserializeSwapEvent(row)
+          )
+        )
+      );
+  }
+
   insertLiquidityEvent(
     type: number,
     msg_sender: string,
@@ -337,7 +544,7 @@ export class EventDBManager {
     tick_lower: number,
     tick_upper: number,
     block_number: number,
-    transaction_index: number,
+    transaction_hash: string,
     log_index: number,
     date: Date
   ): Promise<number> {
@@ -354,13 +561,109 @@ export class EventDBManager {
             tick_lower,
             tick_upper,
             block_number,
-            transaction_index,
+            transaction_hash,
             log_index,
             date: DateConverter.formatDate(date, DATE_FORMAT),
+            verified: false,
           },
         ])
       )
       .then((ids) => Promise.resolve(ids[0]));
+  }
+
+  /**
+   * batch insert liquidity events
+   * @param events event array
+   * @param batchSize batch size, default 500
+   * @returns inserted record ids
+   */
+  async batchInsertLiquidityEvents(
+    events: Array<{
+      type: number;
+      msg_sender: string;
+      recipient: string;
+      liquidity: string;
+      amount0: string;
+      amount1: string;
+      tick_lower: number;
+      tick_upper: number;
+      block_number: number;
+      transaction_hash: string;
+      log_index: number;
+      date: Date;
+    }>,
+    batchSize: number = 500
+  ): Promise<number[]> {
+    if (events.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    // if the number of events is less than or equal to the batch size, insert directly
+    if (events.length <= batchSize) {
+      const records = events.map((event) => ({
+        type: event.type,
+        msg_sender: event.msg_sender,
+        recipient: event.recipient,
+        liquidity: event.liquidity,
+        amount0: event.amount0,
+        amount1: event.amount1,
+        tick_lower: event.tick_lower,
+        tick_upper: event.tick_upper,
+        block_number: event.block_number,
+        transaction_hash: event.transaction_hash,
+        log_index: event.log_index,
+        date: DateConverter.formatDate(event.date, DATE_FORMAT),
+        verified: false,
+      }));
+
+      logger.info(
+        `Inserted ${records.length} liquidity events, type: ${events[0].type}`
+      );
+
+      return this.knex
+        .transaction((trx) =>
+          this.getBuilderContext("liquidity_events", trx).insert(records)
+        )
+        .then((ids) => Promise.resolve(ids));
+    }
+
+    // batch process large data
+    const allIds: number[] = [];
+    const totalBatches = Math.ceil(events.length / batchSize);
+
+    for (let i = 0; i < totalBatches; i++) {
+      const startIndex = i * batchSize;
+      const endIndex = Math.min(startIndex + batchSize, events.length);
+      const batch = events.slice(startIndex, endIndex);
+
+      const records = batch.map((event) => ({
+        type: event.type,
+        msg_sender: event.msg_sender,
+        recipient: event.recipient,
+        liquidity: event.liquidity,
+        amount0: event.amount0,
+        amount1: event.amount1,
+        tick_lower: event.tick_lower,
+        tick_upper: event.tick_upper,
+        block_number: event.block_number,
+        transaction_hash: event.transaction_hash,
+        log_index: event.log_index,
+        date: DateConverter.formatDate(event.date, DATE_FORMAT),
+        verified: false,
+      }));
+
+      const batchIds = await this.knex.transaction((trx) =>
+        this.getBuilderContext("liquidity_events", trx).insert(records)
+      );
+
+      allIds.push(...batchIds);
+    }
+
+    logger.info(
+      `Inserted ${events.length} liquidity events, type: ${events[0].type}, batchSize: ${batchSize}, totalBatches: ${totalBatches}, allIds: ${allIds.length}`
+    );
+
+    return Promise.resolve(allIds);
   }
 
   insertSwapEvent(
@@ -372,7 +675,7 @@ export class EventDBManager {
     liquidity: string,
     tick: number,
     block_number: number,
-    transaction_index: number,
+    transaction_hash: string,
     log_index: number,
     date: Date
   ): Promise<number> {
@@ -388,12 +691,105 @@ export class EventDBManager {
           liquidity,
           tick,
           block_number,
-          transaction_index,
+          transaction_hash,
           log_index,
           date: DateConverter.formatDate(date, DATE_FORMAT),
+          verified: false,
         },
       ])
     );
+  }
+
+  /**
+   * batch insert swap events
+   * @param events event array
+   * @param batchSize batch size, default 500
+   * @returns inserted record ids
+   */
+  async batchInsertSwapEvents(
+    events: Array<{
+      msg_sender: string;
+      recipient: string;
+      amount0: string;
+      amount1: string;
+      sqrt_price_x96: string;
+      liquidity: string;
+      tick: number;
+      block_number: number;
+      transaction_hash: string;
+      log_index: number;
+      date: Date;
+    }>,
+    batchSize: number = 500
+  ): Promise<number[]> {
+    if (events.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    // if the number of events is less than or equal to the batch size, insert directly
+    if (events.length <= batchSize) {
+      const records = events.map((event) => ({
+        msg_sender: event.msg_sender,
+        recipient: event.recipient,
+        amount0: event.amount0,
+        amount1: event.amount1,
+        amount_specified: undefined,
+        sqrt_price_x96: event.sqrt_price_x96,
+        liquidity: event.liquidity,
+        tick: event.tick,
+        block_number: event.block_number,
+        transaction_hash: event.transaction_hash,
+        log_index: event.log_index,
+        date: DateConverter.formatDate(event.date, DATE_FORMAT),
+        verified: false,
+      }));
+
+      logger.info(`Inserted ${records.length} swap events`);
+
+      return this.knex
+        .transaction((trx) =>
+          this.getBuilderContext("swap_events", trx).insert(records)
+        )
+        .then((ids) => Promise.resolve(ids));
+    }
+
+    // batch process large data
+    const allIds: number[] = [];
+    const totalBatches = Math.ceil(events.length / batchSize);
+
+    for (let i = 0; i < totalBatches; i++) {
+      const startIndex = i * batchSize;
+      const endIndex = Math.min(startIndex + batchSize, events.length);
+      const batch = events.slice(startIndex, endIndex);
+
+      const records = batch.map((event) => ({
+        msg_sender: event.msg_sender,
+        recipient: event.recipient,
+        amount0: event.amount0,
+        amount1: event.amount1,
+        amount_specified: undefined,
+        sqrt_price_x96: event.sqrt_price_x96,
+        liquidity: event.liquidity,
+        tick: event.tick,
+        block_number: event.block_number,
+        transaction_hash: event.transaction_hash,
+        log_index: event.log_index,
+        date: DateConverter.formatDate(event.date, DATE_FORMAT),
+        verified: false,
+      }));
+
+      const batchIds = await this.knex.transaction((trx) =>
+        this.getBuilderContext("swap_events", trx).insert(records)
+      );
+
+      allIds.push(...batchIds);
+    }
+
+    logger.info(
+      `Inserted ${events.length} swap events, batchSize: ${batchSize}, totalBatches: ${totalBatches}, allIds: ${allIds.length}`
+    );
+
+    return Promise.resolve(allIds);
   }
 
   close(): Promise<void> {
@@ -450,6 +846,16 @@ export class EventDBManager {
       .andWhere("block_number", "<=", toBlock);
   }
 
+  private queryBurnEventsByTransactionHash(
+    transactionHash: string,
+    trx?: Knex.Transaction
+  ): Promise<LiquidityEventRecord[]> {
+    return this.getBuilderContext("liquidity_events", trx)
+      .where("transaction_hash", transactionHash)
+      .andWhere("type", EventType.BURN)
+      .andWhere("verified", false);
+  }
+
   private insertPoolConfig(
     poolConfig: PoolConfig,
     trx?: Knex.Transaction
@@ -463,6 +869,8 @@ export class EventDBManager {
         tick_spacing: poolConfig.tickSpacing,
         initial_sqrt_price_X96: undefined,
         latest_event_block_number: 0,
+        latest_verified_swap_block_number: 0,
+        latest_verified_burn_block_number: 0,
         timestamp: DateConverter.formatDate(new Date(), DATE_FORMAT),
       },
     ]);
@@ -472,9 +880,12 @@ export class EventDBManager {
     id: number,
     amountSpecified: string,
     trx?: Knex.Transaction
-  ): Promise<Array<number>> {
+  ): Promise<number> {
     return this.getBuilderContext("swap_events", trx)
-      .update("amount_specified", amountSpecified)
+      .update({
+        amount_specified: amountSpecified,
+        verified: true,
+      })
       .where("id", id);
   }
 
@@ -508,6 +919,180 @@ export class EventDBManager {
       .where("id", 1);
   }
 
+  private updateLatestVerifiedSwapBlockNumber(
+    latestVerifiedSwapBlockNumber: number,
+    trx?: Knex.Transaction
+  ): Promise<number> {
+    return this.getBuilderContext("pool_config", trx)
+      .update(
+        "latest_verified_swap_block_number",
+        latestVerifiedSwapBlockNumber
+      )
+      .where("id", 1);
+  }
+
+  private updateLatestVerifiedBurnBlockNumber(
+    latestVerifiedBurnBlockNumber: number,
+    trx?: Knex.Transaction
+  ): Promise<number> {
+    return this.getBuilderContext("pool_config", trx)
+      .update(
+        "latest_verified_burn_block_number",
+        latestVerifiedBurnBlockNumber
+      )
+      .where("id", 1);
+  }
+
+  private updateBurnEvent(
+    transactionHash: string,
+    logIndex: number,
+    liquidity: string,
+    amount0: string,
+    amount1: string,
+    tickLower: number,
+    tickUpper: number,
+    trx?: Knex.Transaction
+  ): Promise<number> {
+    return this.getBuilderContext("liquidity_events", trx)
+      .update({
+        liquidity,
+        amount0,
+        amount1,
+        tick_lower: tickLower,
+        tick_upper: tickUpper,
+        verified: true,
+      })
+      .where("transaction_hash", transactionHash)
+      .andWhere("type", EventType.BURN)
+      .andWhere("verified", false)
+      .orderBy("log_index", "asc")
+      .limit(1);
+    // because collect from subgraph is different from burn from RPC, we can't use logIndex to update
+    // .andWhere("log_index", logIndex)
+  }
+
+  private async migratePoolConfigTable(): Promise<void> {
+    try {
+      // check if new columns are needed
+      const hasVerifiedSwapColumn = await this.knex.schema.hasColumn(
+        "pool_config",
+        "latest_verified_swap_block_number"
+      );
+      const hasVerifiedBurnColumn = await this.knex.schema.hasColumn(
+        "pool_config",
+        "latest_verified_burn_block_number"
+      );
+
+      if (!hasVerifiedSwapColumn) {
+        await this.knex.schema.alterTable("pool_config", (table) => {
+          table.integer("latest_verified_swap_block_number").defaultTo(0);
+        });
+        logger.info(
+          "Added latest_verified_swap_block_number column to pool_config table"
+        );
+      }
+
+      if (!hasVerifiedBurnColumn) {
+        await this.knex.schema.alterTable("pool_config", (table) => {
+          table.integer("latest_verified_burn_block_number").defaultTo(0);
+        });
+        logger.info(
+          "Added latest_verified_burn_block_number column to pool_config table"
+        );
+      }
+
+      // update existing records with default values
+      await this.knex("pool_config")
+        .whereNull("latest_verified_swap_block_number")
+        .update({ latest_verified_swap_block_number: 0 });
+
+      await this.knex("pool_config")
+        .whereNull("latest_verified_burn_block_number")
+        .update({ latest_verified_burn_block_number: 0 });
+
+      logger.info("Migration completed successfully");
+    } catch (error) {
+      logger.error("Migration failed:", error);
+      throw error;
+    }
+  }
+
+  private async migrateEventTables(): Promise<void> {
+    try {
+      // check if liquidity_events table has transaction_hash_log_index index
+      const liquidityEventsIndexes = await this.knex.raw(
+        "PRAGMA index_list(liquidity_events)"
+      );
+      const hasLiquidityEventsIndex = liquidityEventsIndexes.some(
+        (index: any) =>
+          index.name === "liquidity_events_transaction_hash_log_index"
+      );
+
+      if (!hasLiquidityEventsIndex) {
+        await this.knex.schema.alterTable("liquidity_events", (table) => {
+          table.index(
+            ["transaction_hash", "log_index"],
+            "liquidity_events_transaction_hash_log_index"
+          );
+        });
+        logger.info(
+          "Added transaction_hash_log_index index to liquidity_events table"
+        );
+      }
+
+      // check if swap_events table has transaction_hash_log_index index
+      const swapEventsIndexes = await this.knex.raw(
+        "PRAGMA index_list(swap_events)"
+      );
+      const hasSwapEventsIndex = swapEventsIndexes.some(
+        (index: any) => index.name === "swap_events_transaction_hash_log_index"
+      );
+
+      if (!hasSwapEventsIndex) {
+        await this.knex.schema.alterTable("swap_events", (table) => {
+          table.index(
+            ["transaction_hash", "log_index"],
+            "swap_events_transaction_hash_log_index"
+          );
+        });
+        logger.info(
+          "Added transaction_hash_log_index index to swap_events table"
+        );
+      }
+
+      // check and add verified column to liquidity_events table
+      const hasLiquidityEventsVerifiedColumn = await this.knex.schema.hasColumn(
+        "liquidity_events",
+        "verified"
+      );
+
+      if (!hasLiquidityEventsVerifiedColumn) {
+        await this.knex.schema.alterTable("liquidity_events", (table) => {
+          table.boolean("verified").defaultTo(false);
+        });
+        logger.info("Added verified column to liquidity_events table");
+      }
+
+      // check and add verified column to swap_events table
+      const hasSwapEventsVerifiedColumn = await this.knex.schema.hasColumn(
+        "swap_events",
+        "verified"
+      );
+
+      if (!hasSwapEventsVerifiedColumn) {
+        await this.knex.schema.alterTable("swap_events", (table) => {
+          table.boolean("verified").defaultTo(false);
+        });
+        logger.info("Added verified column to swap_events table");
+      }
+
+      logger.info("Event tables migration completed successfully");
+    } catch (error) {
+      logger.error("Event tables migration failed:", error);
+      throw error;
+    }
+  }
+
   private deserializeLiquidityEvent(
     event: LiquidityEventRecord
   ): LiquidityEvent {
@@ -522,9 +1107,10 @@ export class EventDBManager {
       tickLower: event.tick_lower,
       tickUpper: event.tick_upper,
       blockNumber: event.block_number,
-      transactionIndex: event.transaction_index,
+      transactionHash: event.transaction_hash,
       logIndex: event.log_index,
       date: DateConverter.parseDate(event.date),
+      verified: event.verified || false,
     };
   }
 
@@ -541,9 +1127,10 @@ export class EventDBManager {
       liquidity: JSBIDeserializer(event.liquidity),
       tick: event.tick,
       blockNumber: event.block_number,
-      transactionIndex: event.transaction_index,
+      transactionHash: event.transaction_hash,
       logIndex: event.log_index,
       date: DateConverter.parseDate(event.date),
+      verified: event.verified || false,
     };
   }
 

@@ -111,10 +111,10 @@ export class TickManager {
     feeGrowthGlobal0X128: JSBI,
     feeGrowthGlobal1X128: JSBI
   ): { feeGrowthInside0X128: JSBI; feeGrowthInside1X128: JSBI } {
-    assert(
-      this.sortedTicks.has(tickLower) && this.sortedTicks.has(tickUpper),
-      "INVALID_TICK"
-    );
+    // assert(
+    //   this.sortedTicks.has(tickLower) && this.sortedTicks.has(tickUpper),
+    //   "INVALID_TICK"
+    // );
     const lower = this.getTickAndInitIfAbsent(tickLower);
     const upper = this.getTickAndInitIfAbsent(tickUpper);
     let feeGrowthBelow0X128: JSBI;

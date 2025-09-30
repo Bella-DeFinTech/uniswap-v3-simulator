@@ -8,6 +8,10 @@ import { PoolState } from "../model/PoolState";
 import { PoolStateHelper } from "../util/PoolStateHelper";
 import { SimulationDataManager } from "../interface/SimulationDataManager";
 
+import * as log4js from "log4js";
+
+const logger = log4js.getLogger("SimulatorRoadmapManager");
+
 export class SimulatorRoadmapManager
   implements ISimulatorRoadmapManager, PoolStateContainer
 {
@@ -79,16 +83,16 @@ export class SimulatorRoadmapManager
           return Promise.reject(
             new Error("Can't find Roadmap, id: " + roadmapId)
           );
-        console.log(printRoadmap(roadmap));
+        logger.debug(printRoadmap(roadmap));
         return this.simulationDataManager.getSnapshots(roadmap.snapshots);
       })
       .then((snapshots: Snapshot[]) => {
         if (snapshots.length == 0) return Promise.resolve();
-        console.log(printPoolConfig(snapshots[0].poolConfig));
+        logger.debug(printPoolConfig(snapshots[0].poolConfig));
         snapshots.forEach((snapshot: Snapshot) => {
           let recoveredCorePool =
             PoolStateHelper.buildCorePoolBySnapshot(snapshot);
-          console.log(recoveredCorePool.toString());
+          logger.debug(recoveredCorePool.toString());
         });
         return Promise.resolve();
       });

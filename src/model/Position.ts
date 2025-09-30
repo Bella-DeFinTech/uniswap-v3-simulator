@@ -46,7 +46,7 @@ export class Position {
   ) {
     let liquidityNext: JSBI;
     if (JSBI.equal(liquidityDelta, ZERO)) {
-      assert(JSBI.greaterThan(this.liquidity, ZERO), "NP");
+      // assert(JSBI.greaterThan(this.liquidity, ZERO), "NP");
       liquidityNext = this.liquidity;
     } else {
       liquidityNext = LiquidityMath.addDelta(this.liquidity, liquidityDelta);

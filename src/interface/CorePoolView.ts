@@ -4,7 +4,7 @@ export type CorePoolView = Pick<
   CorePool,
   {
     [K in keyof CorePool]-?: CorePool[K] extends Function
-      ? K extends "getTick" | "getPosition" | "querySwap"
+      ? K extends "getTick" | "getPosition" | "querySwap" | "getPositionBalance"
         ? K
         : never
       : K;

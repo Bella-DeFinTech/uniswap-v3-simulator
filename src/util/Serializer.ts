@@ -28,7 +28,11 @@ export function printParams(params: object): string {
   let str = "{";
   for (let key in params) {
     let value: any = params[key as keyof object];
-    str += key + ": " + (isObject(value) ? value.toString() : value) + ", ";
+    if (value == null) {
+      str += key + ": null, ";
+    } else {
+      str += key + ": " + (isObject(value) ? value.toString() : value) + ", ";
+    }
   }
   if (str.lastIndexOf(" ") == str.length - 1) str = str.slice(0, -2);
   str += "}";
